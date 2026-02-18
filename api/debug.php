@@ -1,3 +1,3 @@
 <?php
-require_once __DIR__ . '/config.php';
-echo function_exists('getPDO') ? 'OK - getPDO exists' : 'FAIL - getPDO not defined';
+$content = file_get_contents(__DIR__ . '/members.php');
+echo substr($content, 0, 300);

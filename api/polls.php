@@ -2,7 +2,44 @@
 
 declare(strict_types=1);
 
-require_once __DIR__ . '/config.php';
+function getPDO(): PDO
+{
+    static $pdo = null;
+    if ($pdo !== null) return $pdo;
+
+    $host = getenv('DB_HOST') ?: ($_ENV['DB_HOST'] ?? '');
+    $name = getenv('DB_NAME') ?: ($_ENV['DB_NAME'] ?? '');
+    $user = getenv('DB_USER') ?: ($_ENV['DB_USER'] ?? '');
+    $pass = getenv('DB_PASS') ?: ($_ENV['DB_PASS'] ?? '');
+    $port = getenv('DB_PORT') ?: ($_ENV['DB_PORT'] ?? '3306');
+
+    if (!$host || !$name || !$user) {
+        http_response_code(500);
+        header('Content-Type: application/json; charset=utf-8');
+        echo json_encode(['error' => 'Database configuration missing.']);
+        exit;
+    }
+
+    try {
+        $pdo = new PDO(
+            "mysql:host={$host};port={$port};dbname={$name};charset=utf8mb4",
+            $user, $pass,
+            [
+                PDO::ATTR_ERRMODE            => PDO::ERRMODE_EXCEPTION,
+                PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
+                PDO::ATTR_EMULATE_PREPARES   => false,
+            ]
+        );
+        $pdo->exec("SET NAMES utf8mb4 COLLATE utf8mb4_unicode_ci");
+    } catch (PDOException $e) {
+        http_response_code(500);
+        header('Content-Type: application/json; charset=utf-8');
+        echo json_encode(['error' => 'Database connection failed.']);
+        exit;
+    }
+
+    return $pdo;
+}
 
 // ──────────────────────────────────────────────────────────────
 // CORS

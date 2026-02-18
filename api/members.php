@@ -6,76 +6,57 @@ require_once __DIR__ . '/config.php';
 
 /*
 |--------------------------------------------------------------------------
-| ROUTER HELPERS
+| SETUP ROUTE (MUST RUN BEFORE ANY SELECT)
 |--------------------------------------------------------------------------
 */
 
-function parseId(): ?string
-{
-    $id = $_GET['id'] ?? null;
-    if ($id !== null && !preg_match('/^[a-zA-Z0-9_-]{1,64}$/', $id)) {
-        respond(400, ['error' => 'Invalid ID format.']);
-    }
-    return $id;
-}
+if (isset($_GET['setup'])) {
 
-/*
-|--------------------------------------------------------------------------
-| VALIDATION
-|--------------------------------------------------------------------------
-*/
+    $pdo = getPDO();
 
-const VALID_STATUSES = ['نشط', 'معفي', 'غير نشط'];
+    $tables = [
 
-function validateMemberPayload(array $data, bool $requireAll = true): array
-{
-    $fields = [];
+        "CREATE TABLE IF NOT EXISTS `members` (
+            `id` VARCHAR(36) NOT NULL,
+            `name` VARCHAR(200) NOT NULL,
+            `family` VARCHAR(200) NOT NULL DEFAULT '',
+            `phone` VARCHAR(20) DEFAULT NULL,
+            `id_num` VARCHAR(20) DEFAULT NULL,
+            `join_date` DATE DEFAULT NULL,
+            `status` ENUM('نشط','معفي','غير نشط') NOT NULL DEFAULT 'نشط',
+            `notes` TEXT,
+            `branch_id` VARCHAR(36) DEFAULT NULL,
+            `created_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            `updated_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+            PRIMARY KEY (`id`),
+            UNIQUE KEY `uq_id_num` (`id_num`)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci",
 
-    if ($requireAll || array_key_exists('name', $data)) {
-        $name = trim((string)($data['name'] ?? ''));
-        if ($requireAll && $name === '') {
-            respond(422, ['error' => 'Field "name" is required.']);
+    ];
+
+    $errors = [];
+    $created = [];
+
+    foreach ($tables as $sql) {
+        try {
+            $pdo->exec($sql);
+            preg_match('/CREATE TABLE IF NOT EXISTS `(\w+)`/', $sql, $m);
+            $created[] = $m[1] ?? '?';
+        } catch (PDOException $e) {
+            $errors[] = $e->getMessage();
         }
-        $fields['name'] = $name;
     }
 
-    if ($requireAll || array_key_exists('family', $data)) {
-        $fields['family'] = trim((string)($data['family'] ?? ''));
-    }
-
-    if ($requireAll || array_key_exists('phone', $data)) {
-        $fields['phone'] = trim((string)($data['phone'] ?? ''));
-    }
-
-    if ($requireAll || array_key_exists('id_num', $data)) {
-        $fields['id_num'] = trim((string)($data['id_num'] ?? ''));
-    }
-
-    if ($requireAll || array_key_exists('join_date', $data)) {
-        $join = trim((string)($data['join_date'] ?? ''));
-        if ($join !== '' && !preg_match('/^\d{4}-\d{2}-\d{2}$/', $join)) {
-            respond(422, ['error' => 'join_date must be YYYY-MM-DD']);
-        }
-        $fields['join_date'] = $join === '' ? null : $join;
-    }
-
-    if ($requireAll || array_key_exists('status', $data)) {
-        $status = trim((string)($data['status'] ?? 'نشط'));
-        if (!in_array($status, VALID_STATUSES, true)) {
-            respond(422, ['error' => 'Invalid status value.']);
-        }
-        $fields['status'] = $status;
-    }
-
-    if ($requireAll || array_key_exists('notes', $data)) {
-        $fields['notes'] = trim((string)($data['notes'] ?? ''));
-    }
-
-    if (array_key_exists('branch_id', $data)) {
-        $fields['branch_id'] = $data['branch_id'] ?: null;
-    }
-
-    return $fields;
+    respond(
+        empty($errors) ? 200 : 500,
+        [
+            'status'  => empty($errors)
+                ? 'SUCCESS — remove ?setup=1 from URL'
+                : 'PARTIAL',
+            'created' => $created,
+            'errors'  => $errors,
+        ]
+    );
 }
 
 /*
@@ -88,7 +69,7 @@ function handleGetAll(): void
 {
     $pdo = getPDO();
 
-    $stmt = $pdo->query("SELECT * FROM members ORDER BY name ASC");
+    $stmt = $pdo->query('SELECT * FROM members ORDER BY name ASC');
     $members = $stmt->fetchAll();
 
     respond(200, [
@@ -101,10 +82,11 @@ function handleGetOne(string $id): void
 {
     $pdo = getPDO();
 
-    $stmt = $pdo->prepare("SELECT * FROM members WHERE id = :id LIMIT 1");
+    $stmt = $pdo->prepare('SELECT * FROM members WHERE id = :id LIMIT 1');
     $stmt->execute([':id' => $id]);
 
     $member = $stmt->fetch();
+
     if (!$member) {
         respond(404, ['error' => 'Member not found.']);
     }
@@ -114,29 +96,28 @@ function handleGetOne(string $id): void
 
 function handlePost(): void
 {
-    $pdo = getPDO();
+    $pdo  = getPDO();
     $data = bodyJson();
-    $fields = validateMemberPayload($data, true);
 
-    $id = bin2hex(random_bytes(8));
+    $id = uid();
 
-    $stmt = $pdo->prepare("
-        INSERT INTO members
+    $stmt = $pdo->prepare(
+        "INSERT INTO members
         (id, name, family, phone, id_num, join_date, status, notes, branch_id)
         VALUES
-        (:id, :name, :family, :phone, :id_num, :join_date, :status, :notes, :branch_id)
-    ");
+        (:id, :name, :family, :phone, :id_num, :join_date, :status, :notes, :branch_id)"
+    );
 
     $stmt->execute([
         ':id'        => $id,
-        ':name'      => $fields['name'],
-        ':family'    => $fields['family'] ?? '',
-        ':phone'     => $fields['phone'] ?? '',
-        ':id_num'    => $fields['id_num'] ?? '',
-        ':join_date' => $fields['join_date'] ?? null,
-        ':status'    => $fields['status'],
-        ':notes'     => $fields['notes'] ?? '',
-        ':branch_id' => $fields['branch_id'] ?? null,
+        ':name'      => $data['name'] ?? '',
+        ':family'    => $data['family'] ?? '',
+        ':phone'     => $data['phone'] ?? '',
+        ':id_num'    => $data['id_num'] ?? '',
+        ':join_date' => $data['join_date'] ?? null,
+        ':status'    => $data['status'] ?? 'نشط',
+        ':notes'     => $data['notes'] ?? '',
+        ':branch_id' => $data['branch_id'] ?? null,
     ]);
 
     handleGetOne($id);
@@ -144,25 +125,23 @@ function handlePost(): void
 
 function handlePut(string $id): void
 {
-    $pdo = getPDO();
-
+    $pdo  = getPDO();
     $data = bodyJson();
-    $fields = validateMemberPayload($data, false);
 
-    if (!$fields) {
-        respond(422, ['error' => 'No valid fields provided.']);
+    $fields = [];
+    $params = [':id' => $id];
+
+    foreach ($data as $key => $value) {
+        $fields[] = "{$key} = :{$key}";
+        $params[":{$key}"] = $value;
     }
 
-    $set = [];
-    foreach ($fields as $key => $val) {
-        $set[] = "{$key} = :{$key}";
+    if (empty($fields)) {
+        respond(422, ['error' => 'No fields provided for update.']);
     }
 
-    $sql = "UPDATE members SET " . implode(', ', $set) . " WHERE id = :id";
-    $fields['id'] = $id;
-
-    $stmt = $pdo->prepare($sql);
-    $stmt->execute($fields);
+    $sql = "UPDATE members SET " . implode(', ', $fields) . " WHERE id = :id";
+    $pdo->prepare($sql)->execute($params);
 
     handleGetOne($id);
 }
@@ -171,10 +150,10 @@ function handleDelete(string $id): void
 {
     $pdo = getPDO();
 
-    $stmt = $pdo->prepare("DELETE FROM members WHERE id = :id");
+    $stmt = $pdo->prepare('DELETE FROM members WHERE id = :id');
     $stmt->execute([':id' => $id]);
 
-    respond(200, ['message' => 'Member deleted']);
+    respond(200, ['message' => 'Member deleted successfully.']);
 }
 
 /*
@@ -184,13 +163,16 @@ function handleDelete(string $id): void
 */
 
 $method = $_SERVER['REQUEST_METHOD'];
-$id     = parseId();
+$id     = $_GET['id'] ?? null;
 
 match (true) {
+
     $method === 'GET'    && $id === null => handleGetAll(),
     $method === 'GET'    && $id !== null => handleGetOne($id),
     $method === 'POST'                   => handlePost(),
     $method === 'PUT'   && $id !== null  => handlePut($id),
     $method === 'DELETE' && $id !== null => handleDelete($id),
-    default                              => respond(405, ['error' => 'Method not allowed']),
+
+    default => respond(405, ['error' => 'Method not allowed.']),
+
 };

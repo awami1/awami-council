@@ -1,31 +1,12 @@
-const API = {
-  async getSettings() {
-    const res = await fetch('/api/settings.php');
-    if (!res.ok) throw new Error('Failed to load settings');
-    return (await res.json()).data;
-  },
+// API helpers - read-only
+async function apiFetch(url) {
+const res = await fetch(url);
+if (!res.ok) throw new Error(’API error: ’ + url);
+return res.json();
+}
 
-  async getBranches() {
-    const res = await fetch('/api/branches.php');
-    if (!res.ok) throw new Error('Failed to load branches');
-    return (await res.json()).data;
-  },
-
-  async getCommittees() {
-    const res = await fetch('/api/committees.php');
-    if (!res.ok) throw new Error('Failed to load committees');
-    return (await res.json()).data;
-  },
-
-  async getMedia() {
-    const res = await fetch('/api/media.php');
-    if (!res.ok) throw new Error('Failed to load media');
-    return (await res.json()).data;
-  },
-
-  async getEvents() {
-    const res = await fetch('/api/events.php');
-    if (!res.ok) throw new Error('Failed to load events');
-    return (await res.json()).data;
-  }
-};
+async function loadSettings()   { return apiFetch(’/api/settings.php’); }
+async function loadBranches()   { return apiFetch(’/api/branches.php’); }
+async function loadMedia()      { return apiFetch(’/api/media.php’); }
+async function loadEvents()     { return apiFetch(’/api/events.php’); }
+async function loadCommittees() { return apiFetch(’/api/committees.php’); }

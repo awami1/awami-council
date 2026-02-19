@@ -1,249 +1,219 @@
-<!DOCTYPE html>
-<html lang="ar" dir="rtl">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>مجلس عائلة العوامي</title>
+<!-- نفس HTML و CSS تبعك كما هو تماماً -->
+<!-- تم حذف أي localStorage -->
+<!-- لا يوجد أي تغيير شكلي -->
 
-<link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;800&family=Amiri:wght@700&display=swap" rel="stylesheet">
-
-<style>
-:root{
---primary:#1B3456;
---green:#47915C;
---bg:#f6f9f7;
---text:#1a2a1e;
---border:#dde5df;
-}
-
-body{margin:0;font-family:'Cairo',sans-serif;background:var(--bg);color:var(--text)}
-
-header{
-background:linear-gradient(135deg,#1B3456,#2d5a85);
-color:#fff;
-padding:20px 30px;
-}
-
-.container{max-width:1200px;margin:auto;padding:60px 20px}
-
-.hero{text-align:center;margin-bottom:60px}
-.hero h2{font-size:36px;margin-bottom:10px;font-family:'Amiri',serif}
-.hero p{color:#6b7c6e;font-size:16px}
-
-.stats{display:flex;justify-content:center;gap:40px;margin-top:20px}
-.stat{font-size:18px}
-
-.section{margin-bottom:70px}
-.section h2{margin-bottom:20px;font-size:28px}
-
-.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:18px}
-
-.card{
-background:#fff;
-border-radius:14px;
-padding:20px;
-border:1px solid var(--border);
-box-shadow:0 4px 14px rgba(0,0,0,.05);
-transition:.3s;
-}
-.card:hover{transform:translateY(-4px)}
-
-.media-item img,.media-item video{
-width:100%;
-height:200px;
-object-fit:cover;
-border-radius:10px;
-}
-
-.countdown{
-background:linear-gradient(135deg,var(--green),#2d6b40);
-color:#fff;
-padding:25px;
-border-radius:14px;
-text-align:center;
-margin-top:30px;
-}
-
-footer{
-background:#1B3456;
-color:#fff;
-text-align:center;
-padding:30px;
-}
-</style>
-</head>
-<body>
-
-<header>
-<h1 id="site-title">مجلس عائلة العوامي</h1>
-<p id="site-subtitle"></p>
-</header>
-
-<div class="container">
-
-<div class="hero">
-<h2 id="hero-title"></h2>
-<p id="hero-desc"></p>
-
-<div class="stats">
-<div class="stat">الأعضاء: <strong id="stat-members">0</strong></div>
-<div class="stat">اللجان: <strong id="stat-committees">0</strong></div>
-<div class="stat">الفعاليات: <strong id="stat-events">0</strong></div>
-</div>
-
-<div class="countdown" id="countdown-box" style="display:none">
-<h3>الجلسة القادمة</h3>
-<div id="countdown-timer"></div>
-</div>
-
-</div>
-
-<!-- BRANCHES -->
-<div class="section">
-<h2>شجرة العائلة</h2>
-<div class="grid" id="branches-grid"></div>
-</div>
-
-<!-- COMMITTEES -->
-<div class="section">
-<h2>اللجان</h2>
-<div class="grid" id="committees-grid"></div>
-</div>
-
-<!-- EVENTS -->
-<div class="section">
-<h2>الفعاليات القادمة</h2>
-<div class="grid" id="events-grid"></div>
-</div>
-
-<!-- MEDIA -->
-<div class="section">
-<h2>الميديا</h2>
-<div class="grid" id="media-grid"></div>
-</div>
-
-</div>
-
-<footer>
-© 2025 مجلس عائلة العوامي
-</footer>
+<!-- 👇👇👇 فقط استبدل جزء <script> بالكامل بهذا 👇👇👇 -->
 
 <script>
-const API = {
-async get(url){
-const res = await fetch(url);
-if(!res.ok) throw new Error("API error");
-return res.json();
-}
-};
+(function(){
 
-// ================= SETTINGS =================
-async function loadSettings(){
-const res = await API.get('/api/settings.php');
-const s = res.data;
-
-if(!s) return;
-
-if(s.header){
-document.getElementById('site-title').textContent = s.header.title || '';
-document.getElementById('site-subtitle').textContent = s.header.subtitle || '';
-}
-if(s.hero){
-document.getElementById('hero-title').textContent = s.hero.title || '';
-document.getElementById('hero-desc').textContent = s.hero.description || '';
-}
-if(s.stats){
-document.getElementById('stat-members').textContent = s.stats.members || 0;
-document.getElementById('stat-committees').textContent = s.stats.committees || 0;
-}
-if(s.nextMeeting && s.nextMeeting.date){
-initCountdown(s.nextMeeting.date);
-}
-}
-
-// ================= COUNTDOWN =================
-function initCountdown(dateStr){
-const box=document.getElementById('countdown-box');
-box.style.display='block';
-const target=new Date(dateStr);
-
-function update(){
-const diff=target-new Date();
-if(diff<=0){document.getElementById('countdown-timer').textContent='تم انعقاد الجلسة';return;}
-const d=Math.floor(diff/86400000);
-const h=Math.floor(diff%86400000/3600000);
-const m=Math.floor(diff%3600000/60000);
-document.getElementById('countdown-timer').textContent=`${d} يوم - ${h} ساعة - ${m} دقيقة`;
-}
-update();
-setInterval(update,60000);
-}
-
-// ================= BRANCHES =================
-async function loadBranches(){
-const res=await API.get('/api/branches.php');
-const data=res.data||[];
-document.getElementById('branches-grid').innerHTML=data.map(b=>`
-<div class="card">
-<h3>${b.name}</h3>
-<p>${b.head||''}</p>
-<strong>${b.count||0} فرد</strong>
-</div>`).join('');
-}
-
-// ================= COMMITTEES =================
-async function loadCommittees(){
-const res=await API.get('/api/committees.php');
-const data=res.data||[];
-document.getElementById('committees-grid').innerHTML=data.map(c=>`
-<div class="card">
-<h3>${c.name}</h3>
-<p>${c.description||''}</p>
-</div>`).join('');
-document.getElementById('stat-committees').textContent=data.length;
-}
-
-// ================= EVENTS =================
-async function loadEvents(){
-const res=await API.get('/api/events.php');
-const data=res.data||[];
-document.getElementById('events-grid').innerHTML=data.map(e=>`
-<div class="card">
-<h3>${e.name}</h3>
-<p>${e.event_date||''}</p>
-</div>`).join('');
-document.getElementById('stat-events').textContent=data.length;
-}
-
-// ================= MEDIA =================
-async function loadMedia(){
-const res=await API.get('/api/media.php');
-const data=res.data||[];
-document.getElementById('media-grid').innerHTML=data.map(m=>`
-<div class="card media-item">
-${m.type==='videos'?
-`<video controls><source src="${m.url}"></video>`:
-`<img src="${m.url}" alt="">`
-}
-</div>`).join('');
-}
-
-// ================= MEMBERS COUNT =================
-async function loadMembersCount(){
-const res=await API.get('/api/members.php');
-document.getElementById('stat-members').textContent=res.total||0;
-}
-
-// ================= INIT =================
-document.addEventListener('DOMContentLoaded',async()=>{
-await loadSettings();
-await loadMembersCount();
-await loadBranches();
-await loadCommittees();
-await loadEvents();
-await loadMedia();
+/* =========================
+   MENU + SCROLL (كما هو)
+========================= */
+var nav = document.getElementById('mainNav');
+document.getElementById('menuBtn').addEventListener('click', function(){
+  nav.classList.toggle('open');
 });
-</script>
+var navLinks = nav.querySelectorAll('a');
+for(var i=0;i<navLinks.length;i++){
+  navLinks[i].addEventListener('click',function(){
+    nav.classList.remove('open');
+  });
+}
 
-</body>
-</html>
+var secs = document.querySelectorAll('section[id]');
+var stBtn = document.getElementById('scrollTop');
+stBtn.addEventListener('click',function(){
+  window.scrollTo({top:0,behavior:'smooth'});
+});
+
+window.addEventListener('scroll',function(){
+  var y = window.pageYOffset;
+  for(var i=0;i<secs.length;i++){
+    var s=secs[i],t=s.offsetTop-120,h=s.offsetHeight,id=s.getAttribute('id');
+    var link=document.querySelector('nav a[href="#'+id+'"]');
+    if(link){
+      if(y>=t&&y<t+h) link.classList.add('active');
+      else link.classList.remove('active');
+    }
+  }
+  if(y>400) stBtn.classList.add('show');
+  else stBtn.classList.remove('show');
+});
+
+/* =========================
+   COUNTDOWN (API VERSION)
+========================= */
+var tDate = null;
+
+function updCD(){
+  if(!tDate) return;
+  var d = tDate - new Date();
+  if(d<0) d=0;
+  document.getElementById('cd-d').textContent=Math.floor(d/864e5);
+  document.getElementById('cd-h').textContent=Math.floor(d%864e5/36e5);
+  document.getElementById('cd-m').textContent=Math.floor(d%36e5/6e4);
+  document.getElementById('cd-date').textContent =
+    tDate.toLocaleDateString('ar-SA',{
+      weekday:'long',
+      year:'numeric',
+      month:'long',
+      day:'numeric',
+      hour:'2-digit',
+      minute:'2-digit'
+    });
+}
+
+fetch('/api/settings.php')
+  .then(r=>r.json())
+  .then(res=>{
+    if(res.data && res.data.nextMeeting){
+      var m = res.data.nextMeeting;
+      if(m.visible!==false){
+        tDate = new Date(m.date);
+        updCD();
+        setInterval(updCD,60000);
+      }
+    }
+  });
+
+/* =========================
+   FAMILY TREE (API)
+========================= */
+fetch('/api/branches.php')
+  .then(r=>r.json())
+  .then(res=>{
+    if(!res.data) return;
+    var tg=document.getElementById('tree-grid');
+    var html='';
+    res.data.forEach(function(b){
+      var cnt=b.count||0;
+      var col=b.color||'#47915C';
+      html+=`
+        <div class="tree-branch" style="border-color:${col}">
+          <div style="font-size:28px;margin-bottom:10px">🌿</div>
+          <div class="tree-branch-name">${b.name}</div>
+          ${b.head?`<div class="tree-branch-head">${b.head}</div>`:''}
+          <div class="tree-branch-stat">
+            <div class="tree-branch-num" style="color:${col}">${cnt}</div>
+            <div class="tree-branch-label">فرد</div>
+          </div>
+        </div>
+      `;
+    });
+    tg.innerHTML=html;
+  });
+
+/* =========================
+   WEBSITE SETTINGS (API)
+========================= */
+fetch('/api/settings.php')
+  .then(r=>r.json())
+  .then(res=>{
+    if(!res.data) return;
+    const ws=res.data;
+
+    if(ws.header){
+      if(ws.header.title)
+        document.querySelector('.logo-text h1').textContent=ws.header.title;
+      if(ws.header.subtitle)
+        document.querySelector('.logo-text p').textContent=ws.header.subtitle;
+    }
+
+    if(ws.hero){
+      if(ws.hero.title)
+        document.querySelector('.hero h2').textContent=ws.hero.title;
+      if(ws.hero.description)
+        document.querySelector('.hero p').textContent=ws.hero.description;
+    }
+
+    if(ws.stats){
+      const nums=document.querySelectorAll('.hero-meta .num');
+      if(nums[0]) nums[0].textContent=ws.stats.years;
+      if(nums[1]) nums[1].textContent=ws.stats.committees;
+      if(nums[2]) nums[2].textContent=ws.stats.members;
+    }
+
+    if(ws.about){
+      const ac=document.querySelector('.about-content');
+      let html='';
+      if(ws.about.mission)
+        html+=`<h3>رسالتنا</h3><p>${ws.about.mission}</p>`;
+      if(ws.about.vision)
+        html+=`<h3>رؤيتنا</h3><p>${ws.about.vision}</p>`;
+      if(html) ac.innerHTML=html;
+    }
+
+    if(ws.values){
+      const vg=document.getElementById('values-grid');
+      let html='';
+      ws.values.forEach(v=>{
+        html+=`
+          <div class="value-card">
+            <div class="value-icon">${v.icon}</div>
+            <div class="value-title">${v.title}</div>
+            <div class="value-desc">${v.desc}</div>
+          </div>
+        `;
+      });
+      vg.innerHTML=html;
+    }
+  });
+
+/* =========================
+   MEDIA (API)
+========================= */
+var mediaFilter='all';
+var mediaTabs=document.querySelectorAll('.media-tab');
+
+mediaTabs.forEach(tab=>{
+  tab.addEventListener('click',function(){
+    mediaTabs.forEach(t=>t.classList.remove('active'));
+    this.classList.add('active');
+    mediaFilter=this.dataset.filter;
+    loadMedia();
+  });
+});
+
+function loadMedia(){
+  fetch('/api/media.php')
+    .then(r=>r.json())
+    .then(res=>{
+      var grid=document.getElementById('media-grid');
+      var items=res.data||[];
+
+      if(mediaFilter!=='all')
+        items=items.filter(m=>m.type===mediaFilter);
+
+      if(!items.length){
+        grid.innerHTML=`
+          <div style="grid-column:1/-1;text-align:center;padding:60px 20px;color:#888">
+            لا توجد وسائط حالياً
+          </div>
+        `;
+        return;
+      }
+
+      var html='';
+      items.forEach(item=>{
+        html+=`
+          <div class="media-item">
+            ${item.type==='videos'
+              ? `<video controls><source src="${item.url}"></video>`
+              : `<img src="${item.url}" alt="">`
+            }
+            <div class="media-item-content">
+              <div class="media-item-title">${item.title||''}</div>
+            </div>
+          </div>
+        `;
+      });
+
+      grid.innerHTML=html;
+    });
+}
+
+loadMedia();
+
+})();
+</script>

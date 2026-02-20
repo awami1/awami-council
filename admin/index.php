@@ -13,6 +13,9 @@
   --shadow:0 4px 24px rgba(71,145,92,.10);--shadow-lg:0 8px 40px rgba(71,145,92,.16);
   --radius:16px;--radius-sm:10px;
 }
+  <script src="admin-db.js"></script>
+<script src="admin-overrides.js"></script>
+
 *{margin:0;padding:0;box-sizing:border-box;}
 body{font-family:'Cairo',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;overflow-x:hidden;}
 

@@ -45,6 +45,7 @@ function getPDO(): PDO
 $pdo = getPDO();
 
 $statements = [
+
 "CREATE TABLE IF NOT EXISTS `family_branches` (
   `id` VARCHAR(36) NOT NULL,
   `name` VARCHAR(200) NOT NULL,
@@ -52,6 +53,7 @@ $statements = [
   `count` INT NOT NULL DEFAULT 0,
   `color` VARCHAR(20) NOT NULL DEFAULT '#47915C',
   `notes` TEXT,
+  `members` JSON DEFAULT NULL,
   `created_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci",
@@ -181,7 +183,23 @@ $statements = [
   `data` JSON NOT NULL,
   `updated_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci"
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci",
+
+// ✅ جديد: جلسة المجلس القادمة
+"CREATE TABLE IF NOT EXISTS `next_meeting` (
+  `id` INT NOT NULL DEFAULT 1,
+  `date` DATETIME DEFAULT NULL,
+  `title` VARCHAR(300) NOT NULL DEFAULT 'الجلسة العمومية للمجلس',
+  `visible` TINYINT(1) NOT NULL DEFAULT 1,
+  `updated_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci",
+
+];
+
+// Migrations — إضافة أعمدة جديدة إن لم تكن موجودة
+$migrations = [
+    "ALTER TABLE `family_branches` ADD COLUMN IF NOT EXISTS `members` JSON DEFAULT NULL",
 ];
 
 $errors  = [];
@@ -197,9 +215,17 @@ foreach ($statements as $sql) {
     }
 }
 
+foreach ($migrations as $sql) {
+    try {
+        $pdo->exec($sql);
+    } catch (PDOException $e) {
+        // ADD COLUMN IF NOT EXISTS might not be supported in older MySQL — ignore
+    }
+}
+
 header('Content-Type: application/json; charset=utf-8');
 echo json_encode([
-    'status'  => empty($errors) ? 'SUCCESS - delete this file now' : 'PARTIAL - check errors',
-    'created' => $created,
+    'status'  => empty($errors) ? 'SUCCESS — delete this file now' : 'PARTIAL — check errors',
+    'tables'  => $created,
     'errors'  => $errors,
 ], JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT);

@@ -205,6 +205,31 @@ section,.full-section{padding:48px 20px}
 .tree-grid{grid-template-columns:1fr}
 .logo-text h1{font-size:16px}
 }
+
+/* DARK MODE */
+@media (prefers-color-scheme: dark) {
+body { background: #0f1a12; color: #e8f0ea; }
+.hero { background: linear-gradient(170deg,rgba(71,145,92,.08),rgba(27,52,86,.06) 50%,rgba(200,168,75,.05)); }
+.hero h2 { color: #7ec89a; }
+.hero p { color: #a8bfac; }
+.council-card, .committee-card, .value-card, .tree-branch, .eid-wrapper, .media-item { background: #1a2a1e; border-color: #2d4a35; }
+.council-card.president { background: linear-gradient(145deg,#2a2010,#1a2a1e); }
+.council-card.advisory { background: linear-gradient(145deg,#101828,#1a2a1e); }
+.council-role, .council-tasks, .committee-desc, .committee-members, .value-desc, .tree-branch-head, .tree-branch-label, .media-item-date, .section-subtitle, .about-content p, .eid-hint { color: #a8bfac; }
+.council-name, .committee-title, .value-title, .tree-branch-name, .media-item-title { color: #7ec89a; }
+.section-title, .about-content h3 { color: #7ec89a; }
+.section-badge { background: #1a3d28; color: #7ec89a; }
+.full-section { background: #111e14 !important; }
+.media-tab { background: #1a2a1e; border-color: #2d4a35; color: #e8f0ea; }
+.media-tab.active { background: #47915C; color: #fff; }
+.eid-input { background: #1a2a1e; border-color: #2d4a35; color: #e8f0ea; }
+.eid-label { color: #7ec89a; }
+.tree-branch-stat { background: #1a3d28; }
+.footer-year, .footer-copy { color: #a8bfac; }
+.scroll-top { background: #47915C; }
+.hero-meta .lbl { color: #a8bfac; }
+.about-content h3::after { background: #47915C; }
+}
 </style>
 
 </head>

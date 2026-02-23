@@ -5,14 +5,24 @@ require_once __DIR__ . '/config.php';
 $pdo = getPDO();
 
 // Ensure next_meeting table exists
-$pdo->exec("CREATE TABLE IF NOT EXISTS `next_meeting` (
-  `id` INT NOT NULL DEFAULT 1,
-  `date` DATETIME DEFAULT NULL,
-  `title` VARCHAR(300) NOT NULL DEFAULT 'الجلسة العمومية للمجلس',
-  `visible` TINYINT(1) NOT NULL DEFAULT 1,
-  `updated_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-  PRIMARY KEY (`id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci");
+if (isSQLite()) {
+    $pdo->exec("CREATE TABLE IF NOT EXISTS next_meeting (
+      id INTEGER NOT NULL DEFAULT 1 PRIMARY KEY,
+      date DATETIME DEFAULT NULL,
+      title VARCHAR(300) NOT NULL DEFAULT 'الجلسة العمومية للمجلس',
+      visible INTEGER NOT NULL DEFAULT 1,
+      updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+    )");
+} else {
+    $pdo->exec("CREATE TABLE IF NOT EXISTS `next_meeting` (
+      `id` INT NOT NULL DEFAULT 1,
+      `date` DATETIME DEFAULT NULL,
+      `title` VARCHAR(300) NOT NULL DEFAULT 'الجلسة العمومية للمجلس',
+      `visible` TINYINT(1) NOT NULL DEFAULT 1,
+      `updated_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+      PRIMARY KEY (`id`)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci");
+}
 
 $method = $_SERVER['REQUEST_METHOD'];
 

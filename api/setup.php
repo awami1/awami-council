@@ -1,50 +1,155 @@
 <?php
-// ONE-TIME SETUP — DELETE THIS FILE AFTER RUNNING
+// ONE-TIME SETUP — creates all database tables
+// Supports both MySQL (CranL) and SQLite (local)
 
 declare(strict_types=1);
-
-function getPDO(): PDO
-{
-    static $pdo = null;
-    if ($pdo !== null) return $pdo;
-
-    $host = getenv('DB_HOST') ?: ($_ENV['DB_HOST'] ?? '');
-    $name = getenv('DB_NAME') ?: ($_ENV['DB_NAME'] ?? '');
-    $user = getenv('DB_USER') ?: ($_ENV['DB_USER'] ?? '');
-    $pass = getenv('DB_PASS') ?: ($_ENV['DB_PASS'] ?? '');
-    $port = getenv('DB_PORT') ?: ($_ENV['DB_PORT'] ?? '3306');
-
-    if (!$host || !$name || !$user) {
-        http_response_code(500);
-        header('Content-Type: application/json; charset=utf-8');
-        echo json_encode(['error' => 'Database configuration missing.']);
-        exit;
-    }
-
-    try {
-        $pdo = new PDO(
-            "mysql:host={$host};port={$port};dbname={$name};charset=utf8mb4",
-            $user, $pass,
-            [
-                PDO::ATTR_ERRMODE            => PDO::ERRMODE_EXCEPTION,
-                PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
-                PDO::ATTR_EMULATE_PREPARES   => false,
-            ]
-        );
-        $pdo->exec("SET NAMES utf8mb4 COLLATE utf8mb4_unicode_ci");
-    } catch (PDOException $e) {
-        http_response_code(500);
-        header('Content-Type: application/json; charset=utf-8');
-        echo json_encode(['error' => 'Database connection failed.']);
-        exit;
-    }
-
-    return $pdo;
-}
+require_once __DIR__ . '/config.php';
 
 $pdo = getPDO();
+$sqlite = isSQLite();
 
-$statements = [
+// ---- Table definitions ----
+
+if ($sqlite) {
+    $statements = [
+
+"CREATE TABLE IF NOT EXISTS family_branches (
+  id VARCHAR(36) NOT NULL PRIMARY KEY,
+  name VARCHAR(200) NOT NULL,
+  head VARCHAR(200) DEFAULT NULL,
+  count INTEGER NOT NULL DEFAULT 0,
+  color VARCHAR(20) NOT NULL DEFAULT '#47915C',
+  notes TEXT,
+  members TEXT DEFAULT NULL,
+  created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+)",
+
+"CREATE TABLE IF NOT EXISTS members (
+  id VARCHAR(36) NOT NULL PRIMARY KEY,
+  name VARCHAR(200) NOT NULL,
+  family VARCHAR(200) NOT NULL DEFAULT '',
+  phone VARCHAR(20) DEFAULT NULL,
+  id_num VARCHAR(20) DEFAULT NULL,
+  join_date DATE DEFAULT NULL,
+  status TEXT NOT NULL DEFAULT 'نشط' CHECK(status IN ('نشط','معفي','غير نشط')),
+  notes TEXT,
+  branch_id VARCHAR(36) DEFAULT NULL,
+  created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+)",
+
+"CREATE UNIQUE INDEX IF NOT EXISTS uq_id_num ON members(id_num)",
+
+"CREATE TABLE IF NOT EXISTS periods (
+  id VARCHAR(36) NOT NULL PRIMARY KEY,
+  name VARCHAR(200) NOT NULL,
+  fee_amount DECIMAL(10,2) NOT NULL DEFAULT 0,
+  start_date DATE DEFAULT NULL,
+  end_date DATE DEFAULT NULL,
+  created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+)",
+
+"CREATE TABLE IF NOT EXISTS payments (
+  id VARCHAR(36) NOT NULL PRIMARY KEY,
+  member_id VARCHAR(36) NOT NULL,
+  period_id VARCHAR(36) NOT NULL,
+  amount DECIMAL(10,2) NOT NULL DEFAULT 0,
+  required DECIMAL(10,2) NOT NULL DEFAULT 0,
+  pay_date DATE DEFAULT NULL,
+  method VARCHAR(100) DEFAULT NULL,
+  status TEXT NOT NULL DEFAULT 'لم يدفع' CHECK(status IN ('مدفوع','لم يدفع','معفي')),
+  notes TEXT,
+  created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  UNIQUE(member_id, period_id),
+  FOREIGN KEY (member_id) REFERENCES members(id) ON DELETE CASCADE,
+  FOREIGN KEY (period_id) REFERENCES periods(id) ON DELETE CASCADE
+)",
+
+"CREATE TABLE IF NOT EXISTS transactions (
+  id VARCHAR(36) NOT NULL PRIMARY KEY,
+  type TEXT NOT NULL CHECK(type IN ('إيراد','مصروف')),
+  amount DECIMAL(10,2) NOT NULL DEFAULT 0,
+  category VARCHAR(100) DEFAULT NULL,
+  committee_id VARCHAR(36) DEFAULT NULL,
+  description VARCHAR(500) NOT NULL DEFAULT '',
+  tx_date DATE DEFAULT NULL,
+  member_id VARCHAR(36) DEFAULT NULL,
+  period_id VARCHAR(36) DEFAULT NULL,
+  created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+)",
+
+"CREATE TABLE IF NOT EXISTS events (
+  id VARCHAR(36) NOT NULL PRIMARY KEY,
+  name VARCHAR(200) NOT NULL,
+  committee_id VARCHAR(36) DEFAULT NULL,
+  status TEXT NOT NULL DEFAULT 'قادم' CHECK(status IN ('قادم','جاري','مكتمل','ملغي')),
+  event_date DATE DEFAULT NULL,
+  budget DECIMAL(10,2) NOT NULL DEFAULT 0,
+  participants INTEGER NOT NULL DEFAULT 0,
+  lead VARCHAR(200) DEFAULT NULL,
+  notes TEXT,
+  icon VARCHAR(10) DEFAULT '🎉',
+  images TEXT DEFAULT NULL,
+  created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+)",
+
+"CREATE TABLE IF NOT EXISTS polls (
+  id VARCHAR(36) NOT NULL PRIMARY KEY,
+  title VARCHAR(500) NOT NULL,
+  options TEXT DEFAULT NULL,
+  committee_id VARCHAR(36) NOT NULL DEFAULT '',
+  end_date DATE DEFAULT NULL,
+  is_active INTEGER NOT NULL DEFAULT 1,
+  created_date DATE NOT NULL DEFAULT (date('now')),
+  created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+)",
+
+"CREATE TABLE IF NOT EXISTS poll_options (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  poll_id VARCHAR(36) NOT NULL,
+  sort_order INTEGER NOT NULL DEFAULT 0,
+  text VARCHAR(500) NOT NULL,
+  created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (poll_id) REFERENCES polls(id) ON DELETE CASCADE
+)",
+
+"CREATE TABLE IF NOT EXISTS poll_votes (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  poll_id VARCHAR(36) NOT NULL,
+  option_id INTEGER NOT NULL,
+  user_id VARCHAR(100) NOT NULL DEFAULT 'user_default',
+  voted_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  UNIQUE(poll_id, user_id),
+  FOREIGN KEY (poll_id) REFERENCES polls(id) ON DELETE CASCADE,
+  FOREIGN KEY (option_id) REFERENCES poll_options(id) ON DELETE CASCADE
+)",
+
+"CREATE TABLE IF NOT EXISTS committee_members (
+  committee_id VARCHAR(36) NOT NULL,
+  member_id VARCHAR(36) NOT NULL,
+  created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (committee_id, member_id),
+  FOREIGN KEY (member_id) REFERENCES members(id) ON DELETE CASCADE
+)",
+
+"CREATE TABLE IF NOT EXISTS website_settings (
+  id INTEGER NOT NULL DEFAULT 1 PRIMARY KEY,
+  data TEXT NOT NULL,
+  updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+)",
+
+"CREATE TABLE IF NOT EXISTS next_meeting (
+  id INTEGER NOT NULL DEFAULT 1 PRIMARY KEY,
+  date DATETIME DEFAULT NULL,
+  title VARCHAR(300) NOT NULL DEFAULT 'الجلسة العمومية للمجلس',
+  visible INTEGER NOT NULL DEFAULT 1,
+  updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+)",
+
+    ]; // end SQLite
+} else {
+    $statements = [
 
 "CREATE TABLE IF NOT EXISTS `family_branches` (
   `id` VARCHAR(36) NOT NULL,
@@ -185,7 +290,6 @@ $statements = [
   PRIMARY KEY (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci",
 
-// ✅ جديد: جلسة المجلس القادمة
 "CREATE TABLE IF NOT EXISTS `next_meeting` (
   `id` INT NOT NULL DEFAULT 1,
   `date` DATETIME DEFAULT NULL,
@@ -195,37 +299,38 @@ $statements = [
   PRIMARY KEY (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci",
 
-];
+    ]; // end MySQL
+}
 
-// Migrations — إضافة أعمدة جديدة إن لم تكن موجودة
-$migrations = [
-    "ALTER TABLE `family_branches` ADD COLUMN IF NOT EXISTS `members` JSON DEFAULT NULL",
-];
-
+// ---- Execute ----
 $errors  = [];
 $created = [];
 
 foreach ($statements as $sql) {
     try {
         $pdo->exec($sql);
-        preg_match('/CREATE TABLE IF NOT EXISTS `(\w+)`/', $sql, $m);
-        $created[] = $m[1] ?? '?';
+        if (preg_match('/CREATE TABLE IF NOT EXISTS [`"]?(\w+)[`"]?/', $sql, $m)) {
+            $created[] = $m[1];
+        }
     } catch (PDOException $e) {
         $errors[] = $e->getMessage();
     }
 }
 
-foreach ($migrations as $sql) {
-    try {
-        $pdo->exec($sql);
-    } catch (PDOException $e) {
-        // ADD COLUMN IF NOT EXISTS might not be supported in older MySQL — ignore
+// Migrations (MySQL only)
+if (!$sqlite) {
+    $migrations = [
+        "ALTER TABLE `family_branches` ADD COLUMN IF NOT EXISTS `members` JSON DEFAULT NULL",
+    ];
+    foreach ($migrations as $sql) {
+        try { $pdo->exec($sql); } catch (PDOException $e) { /* ignore */ }
     }
 }
 
 header('Content-Type: application/json; charset=utf-8');
 echo json_encode([
-    'status'  => empty($errors) ? 'SUCCESS — delete this file now' : 'PARTIAL — check errors',
-    'tables'  => $created,
+    'status'  => empty($errors) ? 'SUCCESS' : 'PARTIAL — check errors',
+    'driver'  => $sqlite ? 'SQLite' : 'MySQL',
+    'tables'  => array_unique($created),
     'errors'  => $errors,
 ], JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT);

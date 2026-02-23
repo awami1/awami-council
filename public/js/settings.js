@@ -5,7 +5,6 @@ const r  = await SettingsAPI.get();
 const ws = r.settings;
 if (!ws) return;
 
-```
 // Header
 if (ws.header) {
   const h1 = document.querySelector('.logo-text h1');
@@ -76,7 +75,6 @@ if (ws.councilPositions && ws.councilPositions.length) {
     pg.querySelectorAll('.animate-in').forEach(el => obs.observe(el));
   }
 }
-```
 
-} catch (e) { console.warn(‘initSettings error:’, e); }
+} catch (e) { console.warn('initSettings error:', e); }
 }

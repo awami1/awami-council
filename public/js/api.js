@@ -8,7 +8,7 @@ const API_BASE = ‘/api’;
 async function apiFetch(url, options = {}) {
 const res = await fetch(url, {
 headers: { ‘Content-Type’: ‘application/json’ },
-…options,
+...options,
 });
 const json = await res.json().catch(() => ({}));
 if (!res.ok) throw new Error(json.error || `HTTP ${res.status}`);

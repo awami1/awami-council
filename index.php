@@ -275,7 +275,7 @@ body { background: #0f1a12; color: #e8f0ea; }
       <div><div class="num">١١</div><div class="lbl">لجنة متخصصة</div></div>
       <div><div class="num">١٠٠+</div><div class="lbl">عضو نشط</div></div>
     </div>
-    <div class="countdown-box">
+    <div class="countdown-box" id="countdown-section">
       <div class="countdown-title">&#9200; الجلسة العمومية القادمة</div>
       <div class="countdown-timer">
         <div class="countdown-item"><div class="countdown-num" id="cd-d">--</div><div class="countdown-label">يوم</div></div>
@@ -295,7 +295,7 @@ body { background: #0f1a12; color: #e8f0ea; }
     <h2 class="section-title">إدارة المجلس</h2>
     <p class="section-subtitle">الهيئة الإدارية لمجلس عائلة العوامي</p>
   </div>
-  <div class="council-grid">
+  <div class="council-grid" id="council-grid">
     <div class="council-card president animate-in">
       <div class="council-icon">&#x1F451;</div>
       <div class="council-role">الرئيس</div>

@@ -367,42 +367,5 @@ URL.revokeObjectURL(url);
 toast('تم تصدير البيانات 📥');
 }
 
-// –– تحميل بيانات الإعدادات في الـ UI ––
-function renderSettings() {
-document.getElementById('stats-members').textContent = DB.members.length;
-document.getElementById('stats-events').textContent  = DB.events.length;
-document.getElementById('stats-tx').textContent      = DB.transactions.length;
-document.getElementById('stats-size').textContent    = (new Blob([JSON.stringify(DB)]).size / 1024).toFixed(1);
-
-if (DB.nextMeeting) {
-    const dt = (DB.nextMeeting.date ?? '').split('T');
-    document.getElementById('meeting-date').value  = dt[0] ?? '';
-    document.getElementById('meeting-time').value  = dt[1] ? dt[1].slice(0, 5) : '10:00';
-    document.getElementById('meeting-title').value = DB.nextMeeting.title ?? 'الجلسة العمومية للمجلس';
-}
-}
-
-// –– countdown reads from DB.nextMeeting ––
-function updateCountdown() {
-const widget  = document.getElementById('countdown-widget');
-const display = document.getElementById('countdown-display');
-const dateEl  = document.getElementById('countdown-date');
-
-if (!DB.nextMeeting || DB.nextMeeting.visible === false) {
-    if (widget) widget.style.display = 'none';
-    return;
-}
-if (widget) widget.style.display = 'block';
-
-const target = new Date(DB.nextMeeting.date);
-const diff   = target - new Date();
-
-if (diff < 0) { display.textContent = 'انتهت'; dateEl.textContent = ''; return; }
-
-const days = Math.floor(diff / 864e5);
-const hrs  = Math.floor((diff % 864e5) / 36e5);
-const mins = Math.floor((diff % 36e5) / 6e4);
-display.textContent = `${days} يوم ${hrs} س ${mins} د`;
-dateEl.textContent  = target.toLocaleDateString('ar-SA', { weekday:'short', year:'numeric', month:'short', day:'numeric', hour:'2-digit', minute:'2-digit' });
-}
-setInterval(updateCountdown, 60000);
+// renderSettings() and updateCountdown() are kept in the inline script
+// so they retain the import handler setup and sidebar integration.

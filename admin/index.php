@@ -13,9 +13,6 @@
   --shadow:0 4px 24px rgba(71,145,92,.10);--shadow-lg:0 8px 40px rgba(71,145,92,.16);
   --radius:16px;--radius-sm:10px;
 }
-  <script src="admin-db.js"></script>
-<script src="admin-overrides.js"></script>
-
 *{margin:0;padding:0;box-sizing:border-box;}
 body{font-family:'Cairo',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;overflow-x:hidden;}
 
@@ -251,6 +248,8 @@ tr:hover td{background:#f8fbf8;}
 
 @media print{.sidebar,.topbar,.btn,.modal-overlay,.mobile-toggle{display:none!important;}.main{margin-right:0!important;}}
 </style>
+<script src="../public/js/api.js"></script>
+<script src="admin.db.js"></script>
 </head>
 <body>
 
@@ -1189,20 +1188,11 @@ const COMMITTEES_DATA = [
 
 // =================== DB ===================
 // ── State initialisation ──────────────────────────────────────────
-State.init(
-  JSON.parse(localStorage.getItem('awami_db_v4') || 'null'),
-  COMMITTEES_DATA,
-  COUNCIL_POSITIONS
-);
-// Bridge: gives old mutation functions access to the private DB object.
-// Property-level writes (DB.x = ...) propagate back into State because
-// objects are passed by reference. Replaced in Phase 3.
-// DB bridge removed — all access via State API
+State.init(null, COMMITTEES_DATA, COUNCIL_POSITIONS);
 
-function saveDB(){ 
-  localStorage.setItem('awami_db_v4', JSON.stringify(State.getDB())); 
-  // Auto-backup every save
-  autoBackup();
+// saveDB — kept for backup only; actual persistence is via API
+function saveDB(){
+  try { localStorage.setItem('awami_db_v4', JSON.stringify(State.getDB())); } catch(e) {}
 }
 
 // =================== BACKUP & RESTORE ===================
@@ -2988,9 +2978,9 @@ document.addEventListener('click',e=>{
   }
 });
 
-loadSampleData();
+// Load all data from API then render initial view
 (async function initApp() {
-  await MemberService.syncMembersFromAPI();
+  await loadAllData();
   updateSidebar();
   renderDashboard();
 })();
@@ -3129,9 +3119,6 @@ document.getElementById('excel-import-input').onchange=function(){
   }
 })();
 </script>
-<script src="core/state.js"></script>
-<script src="core/services/member.service.js"></script>
-<script src="core/services/finance.service.js"></script>
-<script src="core/services/poll.service.js"></script>
+<script src="admin-overrides.js"></script>
 </body>
 </html>

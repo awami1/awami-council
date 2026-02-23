@@ -34,6 +34,7 @@ eventsRes,
 pollsRes,
 branchesRes,
 meetingRes,
+mediaRes,
 ] = await Promise.all([
 SettingsAPI.get(),
 MembersAPI.getAll(),
@@ -44,6 +45,7 @@ EventsAPI.getAll(),
 PollsAPI.getAll(),
 BranchesAPI.getAll(),
 MeetingAPI.get(),
+MediaAPI.getAll(),
 ]);
 
     DB.settings     = settingsRes.settings  ?? {};
@@ -55,6 +57,7 @@ MeetingAPI.get(),
     DB.polls        = pollsRes.data          ?? [];
     DB.branches     = branchesRes.branches   ?? [];
     DB.nextMeeting  = meetingRes.nextMeeting ?? null;
+    DB.media        = mediaRes.media         ?? [];
 
     // بناء خريطة أعضاء اللجان
     buildCommitteeMembersMap();
@@ -504,20 +507,82 @@ if (el) el.innerHTML = `<div style="background:#fff;padding:24px 36px;border-rad
 // ============================================================
 // Compatibility: State-like interface so existing code works
 // ============================================================
+let _committees = [];
+let _positions  = [];
+let _activity   = [];
+
 const State = {
-getMembers:     getMembers,
-getPeriods:     getPeriods,
-getPayments:    getPayments,
-getTransactions:getTransactions,
-getEvents:      getEvents,
-getPolls:       getPolls,
-getFamilyBranches: getBranches,
-getMedia:       getMedia,
+// ── Getters (read from DB cache) ──
+getMembers:         getMembers,
+getPeriods:         getPeriods,
+getPayments:        getPayments,
+getTransactions:    getTransactions,
+getEvents:          getEvents,
+getPolls:           getPolls,
+getFamilyBranches:  getBranches,
+getMedia:           getMedia,
 getWebsiteSettings: getSettings,
-getNextMeeting: getNextMeeting,
-getCommitteeMembers: getCommitteeMembersMap,
-getActivity:    () => [],
-getDB:          () => DB,
+getNextMeeting:     getNextMeeting,
+getCommitteeMembers:getCommitteeMembersMap,
+getActivity:        () => _activity,
+getDB:              () => DB,
+getCommittees:      () => _committees,
+getPositions:       () => _positions,
+getBudget:          () => DB.transactions,
+
+// ── Init: stores committees/positions, kicks off API load ──
+init(data, committees, positions) {
+    _committees = committees || [];
+    _positions  = positions  || [];
+    // Ignore localStorage data — loadAllData() will fetch from API
+},
+
+// ── Setters (mutate the in-memory cache) ──
+ensureMedia()              { if (!DB.media) DB.media = []; },
+setMedia(arr)              { DB.media = arr; },
+setNextMeetingObj(obj)     { DB.nextMeeting = obj; },
+clearNextMeeting()         { DB.nextMeeting = null; },
+setEvents(arr)             { DB.events = arr; },
+setFamilyBranches(arr)     { DB.branches = arr; },
+setCommitteeMembers(map)   { DB.committeeMembersMap = map; },
+setPeriods(arr)            { DB.periods = arr; },
+setPayments(arr)           { DB.payments = arr; },
+setTransactions(arr)       { DB.transactions = arr; },
+setPolls(arr)              { DB.polls = arr; },
+
+// ── Bulk replace (for import) ──
+replaceDB(data, committees) {
+    if (data.members)        DB.members      = data.members;
+    if (data.periods)        DB.periods      = data.periods;
+    if (data.payments)       DB.payments     = data.payments;
+    if (data.transactions)   DB.transactions = data.transactions;
+    if (data.events)         DB.events       = data.events;
+    if (data.polls)          DB.polls        = data.polls;
+    if (data.branches || data.familyBranches)
+        DB.branches = data.branches || data.familyBranches;
+    if (data.media)          DB.media    = data.media;
+    if (data.settings)       DB.settings = data.settings;
+    if (data.nextMeeting !== undefined) DB.nextMeeting = data.nextMeeting;
+    if (data.committeeMembersMap) DB.committeeMembersMap = data.committeeMembersMap;
+    if (committees) _committees = committees;
+},
+
+// ── Reset (clear all data) ──
+resetDB(committees) {
+    DB.members      = [];
+    DB.periods      = [];
+    DB.payments     = [];
+    DB.transactions = [];
+    DB.events       = [];
+    DB.polls        = [];
+    DB.branches     = [];
+    DB.media        = [];
+    DB.settings     = {};
+    DB.nextMeeting  = null;
+    DB.committeeMembersMap = {};
+    _activity = [];
+    if (committees) _committees = committees;
+},
 };
 
 // Services compatibility

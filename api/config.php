@@ -1,5 +1,6 @@
 <?php
 // config.php — الإعدادات المشتركة لجميع API endpoints
+// يدعم MySQL (على CranL) و SQLite (للتطوير المحلي)
 
 declare(strict_types=1);
 
@@ -14,24 +15,38 @@ function getPDO(): PDO
     $pass = getenv('DB_PASS') ?: ($_ENV['DB_PASS'] ?? '');
     $port = getenv('DB_PORT') ?: ($_ENV['DB_PORT'] ?? '3306');
 
-    if (!$host || !$name || !$user) {
-        http_response_code(500);
-        header('Content-Type: application/json; charset=utf-8');
-        echo json_encode(['error' => 'Database configuration missing.']);
-        exit;
-    }
-
     try {
-        $pdo = new PDO(
-            "mysql:host={$host};port={$port};dbname={$name};charset=utf8mb4",
-            $user, $pass,
-            [
-                PDO::ATTR_ERRMODE            => PDO::ERRMODE_EXCEPTION,
-                PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
-                PDO::ATTR_EMULATE_PREPARES   => false,
-            ]
-        );
-        $pdo->exec("SET NAMES utf8mb4 COLLATE utf8mb4_unicode_ci");
+        if ($host && $name && $user) {
+            // MySQL mode (production — CranL)
+            $pdo = new PDO(
+                "mysql:host={$host};port={$port};dbname={$name};charset=utf8mb4",
+                $user, $pass,
+                [
+                    PDO::ATTR_ERRMODE            => PDO::ERRMODE_EXCEPTION,
+                    PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
+                    PDO::ATTR_EMULATE_PREPARES   => false,
+                ]
+            );
+            $pdo->exec("SET NAMES utf8mb4 COLLATE utf8mb4_unicode_ci");
+        } else {
+            // SQLite mode (local development)
+            $dbPath = __DIR__ . '/../data/awami.db';
+            $dbDir  = dirname($dbPath);
+            if (!is_dir($dbDir)) {
+                mkdir($dbDir, 0755, true);
+            }
+            $pdo = new PDO(
+                "sqlite:{$dbPath}",
+                null, null,
+                [
+                    PDO::ATTR_ERRMODE            => PDO::ERRMODE_EXCEPTION,
+                    PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
+                    PDO::ATTR_EMULATE_PREPARES   => false,
+                ]
+            );
+            $pdo->exec("PRAGMA journal_mode=WAL");
+            $pdo->exec("PRAGMA foreign_keys=ON");
+        }
     } catch (PDOException $e) {
         http_response_code(500);
         header('Content-Type: application/json; charset=utf-8');
@@ -40,6 +55,12 @@ function getPDO(): PDO
     }
 
     return $pdo;
+}
+
+/** Check if running on SQLite */
+function isSQLite(): bool
+{
+    return getPDO()->getAttribute(PDO::ATTR_DRIVER_NAME) === 'sqlite';
 }
 
 // ---- JSON response ----
@@ -55,7 +76,7 @@ function respond(int $code, array $body): never
 }
 
 // ---- Handle CORS preflight ----
-if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
+if (($_SERVER['REQUEST_METHOD'] ?? '') === 'OPTIONS') {
     header('Access-Control-Allow-Origin: *');
     header('Access-Control-Allow-Methods: GET, POST, PUT, DELETE, OPTIONS');
     header('Access-Control-Allow-Headers: Content-Type');

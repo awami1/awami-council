@@ -14,25 +14,42 @@ if (isset($_GET['setup'])) {
 
     $pdo = getPDO();
 
-    $tables = [
-
-        "CREATE TABLE IF NOT EXISTS `members` (
-            `id` VARCHAR(36) NOT NULL,
-            `name` VARCHAR(200) NOT NULL,
-            `family` VARCHAR(200) NOT NULL DEFAULT '',
-            `phone` VARCHAR(20) DEFAULT NULL,
-            `id_num` VARCHAR(20) DEFAULT NULL,
-            `join_date` DATE DEFAULT NULL,
-            `status` ENUM('نشط','معفي','غير نشط') NOT NULL DEFAULT 'نشط',
-            `notes` TEXT,
-            `branch_id` VARCHAR(36) DEFAULT NULL,
-            `created_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-            `updated_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-            PRIMARY KEY (`id`),
-            UNIQUE KEY `uq_id_num` (`id_num`)
-        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci",
-
-    ];
+    if (isSQLite()) {
+        $tables = [
+            "CREATE TABLE IF NOT EXISTS members (
+                id VARCHAR(36) NOT NULL PRIMARY KEY,
+                name VARCHAR(200) NOT NULL,
+                family VARCHAR(200) NOT NULL DEFAULT '',
+                phone VARCHAR(20) DEFAULT NULL,
+                id_num VARCHAR(20) DEFAULT NULL,
+                join_date DATE DEFAULT NULL,
+                status TEXT NOT NULL DEFAULT 'نشط' CHECK(status IN ('نشط','معفي','غير نشط')),
+                notes TEXT,
+                branch_id VARCHAR(36) DEFAULT NULL,
+                created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+            )",
+            "CREATE UNIQUE INDEX IF NOT EXISTS uq_id_num ON members(id_num)",
+        ];
+    } else {
+        $tables = [
+            "CREATE TABLE IF NOT EXISTS `members` (
+                `id` VARCHAR(36) NOT NULL,
+                `name` VARCHAR(200) NOT NULL,
+                `family` VARCHAR(200) NOT NULL DEFAULT '',
+                `phone` VARCHAR(20) DEFAULT NULL,
+                `id_num` VARCHAR(20) DEFAULT NULL,
+                `join_date` DATE DEFAULT NULL,
+                `status` ENUM('نشط','معفي','غير نشط') NOT NULL DEFAULT 'نشط',
+                `notes` TEXT,
+                `branch_id` VARCHAR(36) DEFAULT NULL,
+                `created_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                `updated_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+                PRIMARY KEY (`id`),
+                UNIQUE KEY `uq_id_num` (`id_num`)
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci",
+        ];
+    }
 
     $errors = [];
     $created = [];

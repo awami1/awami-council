@@ -1,15 +1,14 @@
 // Media gallery — /api/media.php
-let _mediaFilter = ‘all’;
+let _mediaFilter = 'all';
 
 async function renderMedia(obs) {
-const grid = document.getElementById(‘media-grid’);
+const grid = document.getElementById('media-grid');
 if (!grid) return;
 
 try {
 let items = await loadMedia(); // array
-if (_mediaFilter !== ‘all’) items = items.filter(m => m.type === _mediaFilter);
+if (_mediaFilter !== 'all') items = items.filter(m => m.type === _mediaFilter);
 
-```
 if (!items.length) {
   grid.innerHTML = `<div style="grid-column:1/-1;text-align:center;padding:60px 20px;color:var(--text-muted)">
     <div style="font-size:52px;margin-bottom:12px;opacity:.4">📷</div>
@@ -32,19 +31,18 @@ grid.innerHTML = items.map(item => `
   </div>`).join('');
 
 grid.querySelectorAll('.animate-in').forEach(el => obs.observe(el));
-```
 
 } catch (e) {
-grid.innerHTML = ‘<div style="grid-column:1/-1;text-align:center;padding:60px;color:#999"><p>لا توجد وسائط</p></div>’;
+grid.innerHTML = '<div style="grid-column:1/-1;text-align:center;padding:60px;color:#999"><p>لا توجد وسائط</p></div>';
 }
 }
 
 function initMedia(obs) {
-document.querySelectorAll(’.media-tab’).forEach(tab => {
-tab.addEventListener(‘click’, function () {
-document.querySelectorAll(’.media-tab’).forEach(t => t.classList.remove(‘active’));
-this.classList.add(‘active’);
-_mediaFilter = this.getAttribute(‘data-filter’);
+document.querySelectorAll('.media-tab').forEach(tab => {
+tab.addEventListener('click', function () {
+document.querySelectorAll('.media-tab').forEach(t => t.classList.remove('active'));
+this.classList.add('active');
+_mediaFilter = this.getAttribute('data-filter');
 renderMedia(obs);
 });
 });

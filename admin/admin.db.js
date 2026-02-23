@@ -14,7 +14,7 @@ events:      [],
 polls:       [],
 branches:    [],
 media:       [],
-committeeMembersMap: {}, // { committeeId: [memberId, …] }
+committeeMembersMap: {}, // { committeeId: [memberId, ...] }
 nextMeeting: null,
 };
 
@@ -46,7 +46,6 @@ BranchesAPI.getAll(),
 MeetingAPI.get(),
 ]);
 
-```
     DB.settings     = settingsRes.settings  ?? {};
     DB.members      = membersRes.data        ?? [];
     DB.periods      = periodsRes.data        ?? [];
@@ -73,8 +72,6 @@ MeetingAPI.get(),
 } finally {
     showGlobalLoading(false);
 }
-```
-
 }
 
 // –– Normalizers: تحويل بيانات API للصيغة الداخلية ––
@@ -82,13 +79,13 @@ function normalizeMemeber(m) {
 return {
 id:       m.id,
 name:     m.name,
-family:   m.family ?? ‘’,
-phone:    m.phone  ?? ‘’,
-idNum:    m.id_num ?? m.idNum ?? ‘’,
-joinDate: m.join_date ?? m.joinDate ?? ‘’,
-status:   m.status ?? ‘نشط’,
-notes:    m.notes  ?? ‘’,
-branchId: m.branch_id ?? ‘’,
+family:   m.family ?? '',
+phone:    m.phone  ?? '',
+idNum:    m.id_num ?? m.idNum ?? '',
+joinDate: m.join_date ?? m.joinDate ?? '',
+status:   m.status ?? 'نشط',
+notes:    m.notes  ?? '',
+branchId: m.branch_id ?? '',
 };
 }
 function normalizePayment(p) {
@@ -98,10 +95,10 @@ memberId: p.member_id ?? p.memberId,
 periodId: p.period_id ?? p.periodId,
 amount:   parseFloat(p.amount ?? 0),
 required: parseFloat(p.required ?? 0),
-date:     p.pay_date ?? p.date ?? ‘’,
-method:   p.method   ?? ‘’,
-status:   p.status   ?? ‘لم يدفع’,
-notes:    p.notes    ?? ‘’,
+date:     p.pay_date ?? p.date ?? '',
+method:   p.method   ?? '',
+status:   p.status   ?? 'لم يدفع',
+notes:    p.notes    ?? '',
 };
 }
 function normalizeTx(t) {
@@ -109,24 +106,24 @@ return {
 id:          t.id,
 type:        t.type,
 amount:      parseFloat(t.amount ?? 0),
-category:    t.category    ?? ‘’,
-committee:   t.committee_id ?? t.committee ?? ‘’,
-desc:        t.description ?? t.desc ?? ‘’,
-date:        t.tx_date    ?? t.date ?? ‘’,
+category:    t.category    ?? '',
+committee:   t.committee_id ?? t.committee ?? '',
+desc:        t.description ?? t.desc ?? '',
+date:        t.tx_date    ?? t.date ?? '',
 };
 }
 function normalizeEvent(e) {
 return {
 id:           e.id,
 name:         e.name,
-committeeId:  e.committeeId ?? e.committee_id ?? ‘’,
+committeeId:  e.committeeId ?? e.committee_id ?? '',
 status:       e.status,
-date:         e.date ?? e.event_date ?? ‘’,
+date:         e.date ?? e.event_date ?? '',
 budget:       parseFloat(e.budget ?? 0),
 participants: parseInt(e.participants ?? 0),
-lead:         e.lead ?? ‘’,
-notes:        e.notes ?? ‘’,
-icon:         e.icon ?? ‘🎉’,
+lead:         e.lead ?? '',
+notes:        e.notes ?? '',
+icon:         e.icon ?? '🎉',
 images:       e.images ?? [],
 };
 }
@@ -135,10 +132,10 @@ return {
 id:          p.id,
 title:       p.title,
 options:     p.options ?? [],
-committee:   p.committee_id ?? p.committee ?? ‘’,
-end:         p.end_date ?? p.end ?? ‘’,
+committee:   p.committee_id ?? p.committee ?? '',
+end:         p.end_date ?? p.end ?? '',
 active:      p.is_active !== undefined ? Boolean(p.is_active) : (p.active ?? true),
-created:     p.created_date ?? p.created ?? ‘’,
+created:     p.created_date ?? p.created ?? '',
 };
 }
 
@@ -161,18 +158,18 @@ const AdminMember = {
 async save(id, data) {
 const payload = {
 name:      data.name,
-family:    data.family   ?? ‘’,
-phone:     data.phone    ?? ‘’,
-id_num:    data.idNum    ?? ‘’,
+family:    data.family   ?? '',
+phone:     data.phone    ?? '',
+id_num:    data.idNum    ?? '',
 join_date: data.joinDate ?? null,
-status:    data.status   ?? ‘نشط’,
-notes:     data.notes    ?? ‘’,
+status:    data.status   ?? 'نشط',
+notes:     data.notes    ?? '',
 };
 let result;
 if (id) {
 result = await MembersAPI.update(id, payload);
 const idx = DB.members.findIndex(m => m.id === id);
-if (idx >= 0) DB.members[idx] = normalizeMemeber(result.data ?? { id, …payload });
+if (idx >= 0) DB.members[idx] = normalizeMemeber(result.data ?? { id, ...payload });
 } else {
 result = await MembersAPI.create(payload);
 DB.members.push(normalizeMemeber(result.data));
@@ -180,7 +177,6 @@ DB.members.push(normalizeMemeber(result.data));
 return result;
 },
 
-```
 async delete(id) {
     await MembersAPI.delete(id);
     DB.members = DB.members.filter(m => m.id !== id);
@@ -198,8 +194,6 @@ async removeFromCommittee(committeeId, memberId) {
     await MembersAPI.removeFromCommittee(committeeId, memberId);
     DB.committeeMembersMap[committeeId] = (DB.committeeMembersMap[committeeId] ?? []).filter(id => id !== memberId);
 },
-```
-
 };
 
 // ============================================================
@@ -211,7 +205,6 @@ const p = curPeriod();
 if (!p) return;
 const existing = DB.payments.find(x => x.memberId === memberId && x.periodId === p.id);
 
-```
     const payload = {
         member_id:  memberId,
         period_id:  p.id,
@@ -252,8 +245,6 @@ const existing = DB.payments.find(x => x.memberId === memberId && x.periodId ===
         }
     }
 },
-```
-
 };
 
 // ============================================================
@@ -271,7 +262,6 @@ const r = await PeriodsAPI.create(payload);
 const period = { id: r.data?.id ?? uid(), name: data.name, feeAmount: data.feeAmount, start: data.start, end: data.end };
 DB.periods.push(period);
 
-```
     // أنشئ سجلات دفع لكل الأعضاء النشطين
     const activeMembers = DB.members.filter(m => m.status === 'نشط');
     for (const m of activeMembers) {
@@ -293,8 +283,6 @@ DB.periods.push(period);
 
     return period;
 },
-```
-
 };
 
 // ============================================================
@@ -305,22 +293,19 @@ async create(data) {
 const payload = {
 type:         data.type,
 amount:       data.amount,
-category:     data.category   ?? ‘’,
-committee_id: data.committee  ?? ‘’,
+category:     data.category   ?? '',
+committee_id: data.committee  ?? '',
 description:  data.desc,
 tx_date:      data.date ?? today(),
 };
 const r = await TransactionsAPI.create(payload);
-DB.transactions.push(normalizeTx(r.data ?? { …payload, id: uid() }));
+DB.transactions.push(normalizeTx(r.data ?? { ...payload, id: uid() }));
 },
 
-```
 async delete(id) {
     await TransactionsAPI.delete(id);
     DB.transactions = DB.transactions.filter(t => t.id !== id);
 },
-```
-
 };
 
 // ============================================================
@@ -330,27 +315,24 @@ const AdminEvent = {
 async create(data) {
 const payload = {
 name:         data.name,
-committee_id: data.committeeId ?? ‘’,
+committee_id: data.committeeId ?? '',
 status:       data.status,
 event_date:   data.date || null,
 budget:       data.budget       ?? 0,
 participants: data.participants ?? 0,
-lead:         data.lead         ?? ‘’,
-notes:        data.notes        ?? ‘’,
-icon:         data.icon         ?? ‘🎉’,
+lead:         data.lead         ?? '',
+notes:        data.notes        ?? '',
+icon:         data.icon         ?? '🎉',
 images:       data.images       ?? [],
 };
 const r = await EventsAPI.create(payload);
-DB.events.push(normalizeEvent(r.data ?? { …payload, id: uid() }));
+DB.events.push(normalizeEvent(r.data ?? { ...payload, id: uid() }));
 },
 
-```
 async delete(id) {
     await EventsAPI.delete(id);
     DB.events = DB.events.filter(e => e.id !== id);
 },
-```
-
 };
 
 // ============================================================
@@ -361,14 +343,13 @@ async create(data) {
 const payload = {
 title:        data.title,
 options:      data.options,
-committee_id: data.committee ?? ‘’,
+committee_id: data.committee ?? '',
 end_date:     data.end || null,
 };
 const r = await PollsAPI.create(payload);
-DB.polls.unshift(normalizePoll(r.data ?? { …payload, id: uid(), is_active: true }));
+DB.polls.unshift(normalizePoll(r.data ?? { ...payload, id: uid(), is_active: true }));
 },
 
-```
 async vote(pollId, optIdx) {
     const r = await PollsAPI.vote(pollId, optIdx);
     const idx = DB.polls.findIndex(p => p.id === pollId);
@@ -385,8 +366,6 @@ async delete(pollId) {
     await PollsAPI.delete(pollId);
     DB.polls = DB.polls.filter(p => p.id !== pollId);
 },
-```
-
 };
 
 // ============================================================
@@ -402,13 +381,10 @@ else DB.branches.push(branch);
 return branch;
 },
 
-```
 async delete(id) {
     await BranchesAPI.delete(id);
     DB.branches = DB.branches.filter(b => b.id !== id);
 },
-```
-
 };
 
 // ============================================================
@@ -423,7 +399,6 @@ updateCountdown();
 return r.nextMeeting;
 },
 
-```
 async hide() {
     if (!DB.nextMeeting) return;
     const newVis = !DB.nextMeeting.visible;
@@ -437,8 +412,6 @@ async delete() {
     DB.nextMeeting = null;
     updateCountdown();
 },
-```
-
 };
 
 // ============================================================
@@ -446,31 +419,31 @@ async delete() {
 // ============================================================
 const AdminSettings = {
 async saveHeader(title, subtitle) {
-const r = await SettingsAPI.saveSection(‘header’, { title, subtitle });
+const r = await SettingsAPI.saveSection('header', { title, subtitle });
 DB.settings.header = r.settings.header;
 },
 async saveHero(title, description) {
-const r = await SettingsAPI.saveSection(‘hero’, { title, description });
+const r = await SettingsAPI.saveSection('hero', { title, description });
 DB.settings.hero = r.settings.hero;
 },
 async saveStats(years, committees, members) {
-const r = await SettingsAPI.saveSection(‘stats’, { years, committees, members });
+const r = await SettingsAPI.saveSection('stats', { years, committees, members });
 DB.settings.stats = r.settings.stats;
 },
 async saveAbout(mission, vision) {
-const r = await SettingsAPI.saveSection(‘about’, { mission, vision });
+const r = await SettingsAPI.saveSection('about', { mission, vision });
 DB.settings.about = r.settings.about;
 },
 async savePositions(positions) {
-const r = await SettingsAPI.saveSection(‘councilPositions’, positions);
+const r = await SettingsAPI.saveSection('councilPositions', positions);
 DB.settings.councilPositions = positions;
 },
 async saveValues(values) {
-const r = await SettingsAPI.saveSection(‘values’, values);
+const r = await SettingsAPI.saveSection('values', values);
 DB.settings.values = values;
 },
 async saveLogo(logoData) {
-const r = await SettingsAPI.saveSection(‘logo’, logoData);
+const r = await SettingsAPI.saveSection('logo', logoData);
 DB.settings.logo = logoData;
 },
 };
@@ -512,19 +485,19 @@ function curPeriod() { return DB.periods[DB.periods.length - 1] ?? null; }
 // UI helpers
 // ============================================================
 function showGlobalLoading(show) {
-let el = document.getElementById(‘global-loading’);
+let el = document.getElementById('global-loading');
 if (!el) {
-el = document.createElement(‘div’);
-el.id = ‘global-loading’;
-el.style.cssText = ‘position:fixed;inset:0;background:rgba(0,0,0,.3);z-index:9999;display:flex;align-items:center;justify-content:center;’;
-el.innerHTML = ‘<div style="background:#fff;padding:24px 36px;border-radius:16px;font-family:Cairo;font-size:15px;font-weight:700;color:#2d6b40">⏳ جاري التحميل…</div>’;
+el = document.createElement('div');
+el.id = 'global-loading';
+el.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.3);z-index:9999;display:flex;align-items:center;justify-content:center;';
+el.innerHTML = '<div style="background:#fff;padding:24px 36px;border-radius:16px;font-family:Cairo;font-size:15px;font-weight:700;color:#2d6b40">⏳ جاري التحميل…</div>';
 document.body.appendChild(el);
 }
-el.style.display = show ? ‘flex’ : ‘none’;
+el.style.display = show ? 'flex' : 'none';
 }
 
 function showError(msg) {
-const el = document.getElementById(‘global-loading’);
+const el = document.getElementById('global-loading');
 if (el) el.innerHTML = `<div style="background:#fff;padding:24px 36px;border-radius:16px;font-family:Cairo;font-size:13px;color:#c0392b;max-width:400px;text-align:center">${msg}<br><br><button onclick="location.reload()" style="background:#c0392b;color:#fff;border:none;padding:8px 20px;border-radius:8px;cursor:pointer;font-family:Cairo;font-weight:700">إعادة المحاولة</button></div>`;
 }
 
@@ -549,23 +522,23 @@ getDB:          () => DB,
 
 // Services compatibility
 const MemberService = {
-saveMember: (id, data) => AdminMember.save(id, data).then(() => { closeModal(‘modal-member’); toast(‘تم الحفظ ✅’); renderMembers(); updateSidebar(); }),
-deleteMember: (id) => { confirm2(‘هل تريد حذف هذا العضو؟’, async () => { await AdminMember.delete(id); toast(‘تم الحذف’); renderMembers(); updateSidebar(); }); },
-addMemberToCommittee: (cid, mid) => AdminMember.addToCommittee(cid, mid).then(() => { toast(‘تمت الإضافة ✅’); showCommitteeDetail(cid); }),
-removeMemberFromCommittee: (cid, mid) => AdminMember.removeFromCommittee(cid, mid).then(() => { toast(‘تم الإزالة’); showCommitteeDetail(cid); }),
+saveMember: (id, data) => AdminMember.save(id, data).then(() => { closeModal('modal-member'); toast('تم الحفظ ✅'); renderMembers(); updateSidebar(); }),
+deleteMember: (id) => { confirm2('هل تريد حذف هذا العضو؟', async () => { await AdminMember.delete(id); toast('تم الحذف'); renderMembers(); updateSidebar(); }); },
+addMemberToCommittee: (cid, mid) => AdminMember.addToCommittee(cid, mid).then(() => { toast('تمت الإضافة ✅'); showCommitteeDetail(cid); }),
+removeMemberFromCommittee: (cid, mid) => AdminMember.removeFromCommittee(cid, mid).then(() => { toast('تم الإزالة'); showCommitteeDetail(cid); }),
 syncMembersFromAPI: async () => { /* already loaded in loadAllData */ },
 };
 
 const FinanceService = {
-createPeriod: async (data) => { await AdminPeriod.create(data); closeModal(‘modal-period’); toast(‘تم إنشاء الدورة ✅’); renderFees(); renderDashboard(); updateSidebar(); },
-savePayment:  async (memberId, data) => { await AdminPayment.save(memberId, data); closeModal(‘modal-pay’); toast(‘تم التسجيل ✅’); renderFees(); renderDashboard(); },
-addTransaction: async (data) => { await AdminTransaction.create(data); closeModal(‘modal-tx’); toast(‘تمت الإضافة ✅’); renderBudget(); renderDashboard(); updateSidebar(); },
-deleteTx:     async (id) => { confirm2(‘حذف المعاملة؟’, async () => { await AdminTransaction.delete(id); toast(‘تم الحذف’); renderBudget(); renderDashboard(); }); },
+createPeriod: async (data) => { await AdminPeriod.create(data); closeModal('modal-period'); toast('تم إنشاء الدورة ✅'); renderFees(); renderDashboard(); updateSidebar(); },
+savePayment:  async (memberId, data) => { await AdminPayment.save(memberId, data); closeModal('modal-pay'); toast('تم التسجيل ✅'); renderFees(); renderDashboard(); },
+addTransaction: async (data) => { await AdminTransaction.create(data); closeModal('modal-tx'); toast('تمت الإضافة ✅'); renderBudget(); renderDashboard(); updateSidebar(); },
+deleteTx:     async (id) => { confirm2('حذف المعاملة؟', async () => { await AdminTransaction.delete(id); toast('تم الحذف'); renderBudget(); renderDashboard(); }); },
 };
 
 const PollService = {
-createPoll: async (data) => { await AdminPoll.create(data); toast(‘تم إنشاء التصويت ✅’); renderVoting(); },
+createPoll: async (data) => { await AdminPoll.create(data); toast('تم إنشاء التصويت ✅'); renderVoting(); },
 vote:       async (pollId, optIdx) => { await AdminPoll.vote(pollId, optIdx); renderVoting(); },
-closePoll:  async (id) => { await AdminPoll.close(id); toast(‘تم إغلاق التصويت’); renderVoting(); },
-deletePoll: async (id) => { confirm2(‘حذف التصويت؟’, async () => { await AdminPoll.delete(id); toast(‘تم الحذف’); renderVoting(); }); },
+closePoll:  async (id) => { await AdminPoll.close(id); toast('تم إغلاق التصويت'); renderVoting(); },
+deletePoll: async (id) => { confirm2('حذف التصويت؟', async () => { await AdminPoll.delete(id); toast('تم الحذف'); renderVoting(); }); },
 };

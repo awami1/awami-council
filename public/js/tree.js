@@ -4,7 +4,6 @@ try {
 const branches = await loadBranches(); // array
 if (!branches || !branches.length) return;
 
-```
 const tg = document.getElementById('tree-grid');
 if (!tg) return;
 
@@ -23,7 +22,6 @@ tg.innerHTML = branches.map(b => {
 }).join('');
 
 tg.querySelectorAll('.animate-in').forEach(el => obs.observe(el));
-```
 
-} catch (e) { console.warn(‘initFamilyTree error:’, e); }
+} catch (e) { console.warn('initFamilyTree error:', e); }
 }

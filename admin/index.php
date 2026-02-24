@@ -248,7 +248,7 @@ tr:hover td{background:#f8fbf8;}
 
 @media print{.sidebar,.topbar,.btn,.modal-overlay,.mobile-toggle{display:none!important;}.main{margin-right:0!important;}}
 </style>
-<script src="../public/js/api.js"></script>
+<script><?php readfile(dirname(__DIR__) . '/public/js/api.js'); ?></script>
 <script src="admin.db.js"></script>
 </head>
 <body>

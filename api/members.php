@@ -173,6 +173,62 @@ function handleDelete(string $id): void
     respond(200, ['message' => 'Member deleted successfully.']);
 }
 
+function handleAddToCommittee(): void
+{
+    $pdo  = getPDO();
+    $data = bodyJson();
+
+    $committeeId = $data['committeeId'] ?? ($data['committee_id'] ?? '');
+    $memberId    = $data['memberId']    ?? ($data['member_id'] ?? '');
+
+    if (!$committeeId || !$memberId) {
+        respond(422, ['error' => 'committeeId and memberId are required.']);
+    }
+
+    // Ensure committee_members table exists
+    if (isSQLite()) {
+        $pdo->exec("CREATE TABLE IF NOT EXISTS committee_members (
+            committee_id VARCHAR(36) NOT NULL,
+            member_id VARCHAR(36) NOT NULL,
+            created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            PRIMARY KEY (committee_id, member_id),
+            FOREIGN KEY (member_id) REFERENCES members(id) ON DELETE CASCADE
+        )");
+    }
+
+    // Upsert (ignore if already exists)
+    if (isSQLite()) {
+        $pdo->prepare(
+            'INSERT OR IGNORE INTO committee_members (committee_id, member_id) VALUES (:cid, :mid)'
+        )->execute([':cid' => $committeeId, ':mid' => $memberId]);
+    } else {
+        $pdo->prepare(
+            'INSERT IGNORE INTO committee_members (committee_id, member_id) VALUES (:cid, :mid)'
+        )->execute([':cid' => $committeeId, ':mid' => $memberId]);
+    }
+
+    respond(200, ['ok' => true]);
+}
+
+function handleRemoveFromCommittee(): void
+{
+    $pdo  = getPDO();
+    $data = bodyJson();
+
+    $committeeId = $data['committeeId'] ?? ($data['committee_id'] ?? '');
+    $memberId    = $data['memberId']    ?? ($data['member_id'] ?? '');
+
+    if (!$committeeId || !$memberId) {
+        respond(422, ['error' => 'committeeId and memberId are required.']);
+    }
+
+    $pdo->prepare(
+        'DELETE FROM committee_members WHERE committee_id = :cid AND member_id = :mid'
+    )->execute([':cid' => $committeeId, ':mid' => $memberId]);
+
+    respond(200, ['ok' => true]);
+}
+
 /*
 |--------------------------------------------------------------------------
 | ROUTER
@@ -181,9 +237,12 @@ function handleDelete(string $id): void
 
 $method = $_SERVER['REQUEST_METHOD'];
 $id     = $_GET['id'] ?? null;
+$action = $_GET['action'] ?? '';
 
 match (true) {
 
+    $method === 'POST' && $action === 'add_committee'    => handleAddToCommittee(),
+    $method === 'POST' && $action === 'remove_committee' => handleRemoveFromCommittee(),
     $method === 'GET'    && $id === null => handleGetAll(),
     $method === 'GET'    && $id !== null => handleGetOne($id),
     $method === 'POST'                   => handlePost(),

@@ -2,10 +2,9 @@
 
 > Crafting elegant code, learning every day, and shipping delightful experiences.
 
-[![Website](https://img.shields.io/badge/website-portfolio-blue)](#)
-[![Twitter](https://img.shields.io/badge/twitter-@yourhandle-1DA1F2)](#)
-[![LinkedIn](https://img.shields.io/badge/linkedin-your-name-0A66C2)](#)
-[![Email](https://img.shields.io/badge/email-you%40example.com-D14836)](#)
+
+[![Twitter](https://img.shields.io/badge/twitter-@BL4UE-1DA1F2)](#)
+[![Email](https://img.shields.io/badge/email-alawamiabdul@gmail.com-D14836)](#)
 
 ---
 

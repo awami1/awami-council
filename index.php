@@ -1,10 +1,44 @@
+<?php
+// ── قراءة إعدادات الموقع مباشرة من قاعدة البيانات ──
+require_once __DIR__ . '/api/config.php';
+
+function getWS(): array {
+    static $ws = null;
+    if ($ws !== null) return $ws;
+    $defaults = [
+        'header'           => ['title' => 'مجلس عائلة العوامي', 'subtitle' => 'AL AWAMI • ١٤١٣ - ١٩٩٢'],
+        'hero'             => ['title' => 'مرحباً بكم في مجلس عائلة العوامي', 'description' => 'منذ عام ١٩٩٢م - ١٤١٣هـ، نعمل على تعزيز الترابط الأسري وخدمة أفراد العائلة من خلال الأنشطة والفعاليات المتنوعة التي تُنظّم بروح الأُلفة والتعاون والمسؤولية'],
+        'stats'            => ['years' => 32, 'committees' => 11, 'members' => '+100'],
+        'about'            => ['mission' => 'تعزيز الترابط الأسري والتواصل بين أفراد عائلة العوامي من خلال تنظيم الأنشطة والفعاليات الدينية والاجتماعية والترفيهية التي تحقق المصلحة العامة وتُرسّخ القيم الأصيلة.', 'vision' => 'أن نكون مجلساً عائلياً نموذجياً يُحتذى به في التنظيم والتطوير والخدمة، ونسعى لبناء جيل واعٍ ومتماسك يفخر بانتمائه لعائلة العوامي.'],
+        'councilPositions' => [],
+        'values'           => [],
+        'logo'             => null,
+    ];
+    try {
+        $pdo = getPDO();
+        $row = $pdo->query("SELECT data FROM website_settings WHERE id=1 LIMIT 1")->fetch();
+        if ($row) {
+            $saved = json_decode($row['data'], true) ?: [];
+            $ws = array_replace_recursive($defaults, $saved);
+        } else {
+            $ws = $defaults;
+        }
+    } catch (Throwable $e) {
+        $ws = $defaults;
+    }
+    return $ws;
+}
+
+$ws = getWS();
+function esc(string $s): string { return htmlspecialchars($s, ENT_QUOTES, 'UTF-8'); }
+?>
 <!DOCTYPE html>
 
 <html lang="ar" dir="rtl">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1.0">
-<title>مجلس عائلة العوامي</title>
+<title><?= esc($ws['header']['title']) ?></title>
 <link href="https://fonts.googleapis.com/css2?family=Amiri:wght@400;700&family=Cairo:wght@300;400;600;700;900&family=Tajawal:wght@400;500;700;800&display=swap" rel="stylesheet">
 <style>
 :root{
@@ -241,15 +275,19 @@ body { background: #0f1a12; color: #e8f0ea; }
   <div class="header-content">
     <div class="logo-section">
       <div class="logo-img">
-        <svg class="logo-svg" viewBox="0 0 80 80" fill="none">
-          <path d="M55 12 C58 8,65 10,64 18 C63 26,54 30,50 38 C46 46,48 56,42 62 C36 68,26 66,24 58 C22 50,30 44,32 36" stroke="#47915C" stroke-width="6" stroke-linecap="round" fill="none"/>
-          <path d="M32 36 C28 44,20 46,20 54 C20 62,28 66,34 62" stroke="#47915C" stroke-width="5" stroke-linecap="round" fill="none"/>
-          <circle cx="34" cy="62" r="5" fill="#47915C"/>
-        </svg>
+        <?php if (!empty($ws['logo'])): ?>
+          <img src="<?= esc($ws['logo']) ?>" class="logo-svg" style="width:40px;height:40px;border-radius:8px" alt="Logo">
+        <?php else: ?>
+          <svg class="logo-svg" viewBox="0 0 80 80" fill="none">
+            <path d="M55 12 C58 8,65 10,64 18 C63 26,54 30,50 38 C46 46,48 56,42 62 C36 68,26 66,24 58 C22 50,30 44,32 36" stroke="#47915C" stroke-width="6" stroke-linecap="round" fill="none"/>
+            <path d="M32 36 C28 44,20 46,20 54 C20 62,28 66,34 62" stroke="#47915C" stroke-width="5" stroke-linecap="round" fill="none"/>
+            <circle cx="34" cy="62" r="5" fill="#47915C"/>
+          </svg>
+        <?php endif; ?>
       </div>
       <div class="logo-text">
-        <h1>مجلس عائلة العوامي</h1>
-        <p>AL AWAMI &bull; ١٤١٣ - ١٩٩٢</p>
+        <h1><?= esc($ws['header']['title']) ?></h1>
+        <p><?= esc($ws['header']['subtitle']) ?></p>
       </div>
     </div>
     <button class="menu-toggle" id="menuBtn" aria-label="القائمة">&#9776;</button>
@@ -268,12 +306,12 @@ body { background: #0f1a12; color: #e8f0ea; }
 
 <div class="hero">
   <div class="hero-content">
-    <h2>مرحباً بكم في مجلس عائلة العوامي</h2>
-    <p>منذ عام ١٩٩٢م - ١٤١٣هـ، نعمل على تعزيز الترابط الأسري وخدمة أفراد العائلة من خلال الأنشطة والفعاليات المتنوعة التي تُنظّم بروح الأُلفة والتعاون والمسؤولية</p>
+    <h2><?= esc($ws['hero']['title']) ?></h2>
+    <p><?= esc($ws['hero']['description']) ?></p>
     <div class="hero-meta">
-      <div><div class="num">٣٢</div><div class="lbl">عاماً من العطاء</div></div>
-      <div><div class="num">١١</div><div class="lbl">لجنة متخصصة</div></div>
-      <div><div class="num">١٠٠+</div><div class="lbl">عضو نشط</div></div>
+      <div><div class="num"><?= esc((string)$ws['stats']['years']) ?></div><div class="lbl">عاماً من العطاء</div></div>
+      <div><div class="num"><?= esc((string)$ws['stats']['committees']) ?></div><div class="lbl">لجنة متخصصة</div></div>
+      <div><div class="num"><?= esc((string)$ws['stats']['members']) ?></div><div class="lbl">عضو نشط</div></div>
     </div>
     <div class="countdown-box" id="countdown-section">
       <div class="countdown-title">&#9200; الجلسة العمومية القادمة</div>
@@ -296,6 +334,27 @@ body { background: #0f1a12; color: #e8f0ea; }
     <p class="section-subtitle">الهيئة الإدارية لمجلس عائلة العوامي</p>
   </div>
   <div class="council-grid" id="council-grid">
+    <?php if (!empty($ws['councilPositions'])): ?>
+      <?php foreach ($ws['councilPositions'] as $pos): ?>
+        <?php
+          $cardClass = 'council-card animate-in';
+          if (($pos['type'] ?? '') === 'president') $cardClass .= ' president';
+          if (($pos['type'] ?? '') === 'advisory')  $cardClass .= ' advisory';
+        ?>
+        <div class="<?= $cardClass ?>">
+          <div class="council-icon"><?= esc($pos['icon'] ?? '👤') ?></div>
+          <div class="council-role"><?= esc($pos['role']) ?></div>
+          <div class="council-name"><?= esc($pos['name']) ?></div>
+          <?php if (!empty($pos['tasks'])): ?>
+            <ul class="council-tasks">
+              <?php foreach ($pos['tasks'] as $task): ?>
+                <li><?= esc($task) ?></li>
+              <?php endforeach; ?>
+            </ul>
+          <?php endif; ?>
+        </div>
+      <?php endforeach; ?>
+    <?php else: ?>
     <div class="council-card president animate-in">
       <div class="council-icon">&#x1F451;</div>
       <div class="council-role">الرئيس</div>
@@ -332,6 +391,7 @@ body { background: #0f1a12; color: #e8f0ea; }
       <div class="council-name">علي العوامي (أبو حيدر) - فخري العوامي - حسين علي سلمان</div>
       <ul class="council-tasks"><li>تقديم المشورة والتوجيه</li><li>وضع رؤية عامة للمجلس</li></ul>
     </div>
+    <?php endif; ?>
   </div>
 </section>
 
@@ -431,10 +491,18 @@ body { background: #0f1a12; color: #e8f0ea; }
   </div>
   <div class="about-grid">
     <div class="about-content animate-in">
-      <h3>رسالتنا</h3>
-      <p>تعزيز الترابط الأسري والتواصل بين أفراد عائلة العوامي من خلال تنظيم الأنشطة والفعاليات الدينية والاجتماعية والترفيهية التي تحقق المصلحة العامة وتُرسّخ القيم الأصيلة.</p>
-      <h3>رؤيتنا</h3>
-      <p>أن نكون مجلساً عائلياً نموذجياً يُحتذى به في التنظيم والتطوير والخدمة، ونسعى لبناء جيل واعٍ ومتماسك يفخر بانتمائه لعائلة العوامي.</p>
+      <?php if (!empty($ws['about']['mission'])): ?>
+        <h3>رسالتنا</h3><p><?= esc($ws['about']['mission']) ?></p>
+      <?php endif; ?>
+      <?php if (!empty($ws['about']['vision'])): ?>
+        <h3>رؤيتنا</h3><p><?= esc($ws['about']['vision']) ?></p>
+      <?php endif; ?>
+      <?php if (empty($ws['about']['mission']) && empty($ws['about']['vision'])): ?>
+        <h3>رسالتنا</h3>
+        <p>تعزيز الترابط الأسري والتواصل بين أفراد عائلة العوامي من خلال تنظيم الأنشطة والفعاليات الدينية والاجتماعية والترفيهية التي تحقق المصلحة العامة وتُرسّخ القيم الأصيلة.</p>
+        <h3>رؤيتنا</h3>
+        <p>أن نكون مجلساً عائلياً نموذجياً يُحتذى به في التنظيم والتطوير والخدمة، ونسعى لبناء جيل واعٍ ومتماسك يفخر بانتمائه لعائلة العوامي.</p>
+      <?php endif; ?>
     </div>
     <div class="about-visual animate-in">
       <svg viewBox="0 0 200 200" fill="none">
@@ -457,9 +525,19 @@ body { background: #0f1a12; color: #e8f0ea; }
     <p class="section-subtitle">المبادئ التي نعمل بها</p>
   </div>
   <div class="values-grid" id="values-grid" style="max-width:1200px;margin:0 auto">
-    <div class="value-card animate-in"><div class="value-icon">&#x1F91D;</div><div class="value-title">الترابط الأسري</div><div class="value-desc">نؤمن بأهمية التواصل والتآزر بين أفراد العائلة</div></div>
-    <div class="value-card animate-in"><div class="value-icon">&#x2696;&#xFE0F;</div><div class="value-title">الشفافية والنزاهة</div><div class="value-desc">نلتزم بالشفافية في جميع أعمالنا المالية والإدارية</div></div>
-    <div class="value-card animate-in"><div class="value-icon">&#x1F31F;</div><div class="value-title">التطوير المستمر</div><div class="value-desc">نسعى دائماً لتحسين خدماتنا وتطوير أنشطتنا</div></div>
+    <?php if (!empty($ws['values'])): ?>
+      <?php foreach ($ws['values'] as $val): ?>
+        <div class="value-card animate-in">
+          <div class="value-icon"><?= esc($val['icon'] ?? '') ?></div>
+          <div class="value-title"><?= esc($val['title'] ?? '') ?></div>
+          <div class="value-desc"><?= esc($val['desc'] ?? '') ?></div>
+        </div>
+      <?php endforeach; ?>
+    <?php else: ?>
+      <div class="value-card animate-in"><div class="value-icon">&#x1F91D;</div><div class="value-title">الترابط الأسري</div><div class="value-desc">نؤمن بأهمية التواصل والتآزر بين أفراد العائلة</div></div>
+      <div class="value-card animate-in"><div class="value-icon">&#x2696;&#xFE0F;</div><div class="value-title">الشفافية والنزاهة</div><div class="value-desc">نلتزم بالشفافية في جميع أعمالنا المالية والإدارية</div></div>
+      <div class="value-card animate-in"><div class="value-icon">&#x1F31F;</div><div class="value-title">التطوير المستمر</div><div class="value-desc">نسعى دائماً لتحسين خدماتنا وتطوير أنشطتنا</div></div>
+    <?php endif; ?>
   </div>
 </section>
 

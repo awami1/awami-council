@@ -11,7 +11,7 @@
 ## About Me
 I’m Abdullah — a passionate developer who loves turning ideas into products. I focus on building reliable, maintainable software with an emphasis on clarity, performance, and delightful user experiences.
 
-- 🔭 I’m currently working on: **[A family Council Platform — full-stack administrative system]** — short one-line description.
+- 🔭 I’m currently working on: **[A family Council Platform — full-stack administrative system]**
 - 🌱 🌱 Currently improving: **[Backend architecture, API security, and system design]**
 - 👯 I’m open to collaborating on interesting open-source projects
 - ⚡ Interested in: scalable systems, clean architecture, automation

@@ -13,6 +13,7 @@ function getWS(): array {
         'councilPositions' => [],
         'values'           => [],
         'logo'             => null,
+        'media'            => [],
     ];
     try {
         $pdo = getPDO();
@@ -31,6 +32,25 @@ function getWS(): array {
 
 $ws = getWS();
 function esc(string $s): string { return htmlspecialchars($s, ENT_QUOTES, 'UTF-8'); }
+
+function getMeeting(): ?array {
+    try {
+        $pdo = getPDO();
+        $row = $pdo->query("SELECT * FROM next_meeting WHERE id=1 LIMIT 1")->fetch();
+        if (!$row || !$row['visible'] || !$row['date']) return null;
+        return ['date' => $row['date'], 'title' => $row['title'], 'visible' => true];
+    } catch (Throwable $e) { return null; }
+}
+
+function getBranches(): array {
+    try {
+        $pdo = getPDO();
+        return $pdo->query("SELECT * FROM family_branches ORDER BY name ASC")->fetchAll();
+    } catch (Throwable $e) { return []; }
+}
+
+$meeting  = getMeeting();
+$branches = getBranches();
 ?>
 <!DOCTYPE html>
 
@@ -313,12 +333,23 @@ body { background: #0f1a12; color: #e8f0ea; }
       <div><div class="num"><?= esc((string)$ws['stats']['committees']) ?></div><div class="lbl">لجنة متخصصة</div></div>
       <div><div class="num"><?= esc((string)$ws['stats']['members']) ?></div><div class="lbl">عضو نشط</div></div>
     </div>
-    <div class="countdown-box" id="countdown-section">
-      <div class="countdown-title">&#9200; الجلسة العمومية القادمة</div>
+    <?php
+      $cdDays  = '--';
+      $cdHours = '--';
+      $cdMins  = '--';
+      if ($meeting && $meeting['date']) {
+          $diff    = max(0, strtotime($meeting['date']) - time());
+          $cdDays  = (string)floor($diff / 86400);
+          $cdHours = (string)floor(($diff % 86400) / 3600);
+          $cdMins  = (string)floor(($diff % 3600) / 60);
+      }
+    ?>
+    <div class="countdown-box" id="countdown-section"<?= $meeting ? '' : ' style="display:none"' ?>>
+      <div class="countdown-title">&#9200; <?= esc($meeting['title'] ?? 'الجلسة العمومية القادمة') ?></div>
       <div class="countdown-timer">
-        <div class="countdown-item"><div class="countdown-num" id="cd-d">--</div><div class="countdown-label">يوم</div></div>
-        <div class="countdown-item"><div class="countdown-num" id="cd-h">--</div><div class="countdown-label">ساعة</div></div>
-        <div class="countdown-item"><div class="countdown-num" id="cd-m">--</div><div class="countdown-label">دقيقة</div></div>
+        <div class="countdown-item"><div class="countdown-num" id="cd-d"><?= esc($cdDays) ?></div><div class="countdown-label">يوم</div></div>
+        <div class="countdown-item"><div class="countdown-num" id="cd-h"><?= esc($cdHours) ?></div><div class="countdown-label">ساعة</div></div>
+        <div class="countdown-item"><div class="countdown-num" id="cd-m"><?= esc($cdMins) ?></div><div class="countdown-label">دقيقة</div></div>
       </div>
       <div id="cd-date" style="font-size:12px;opacity:.65;margin-top:14px;font-weight:600"></div>
     </div>
@@ -432,10 +463,33 @@ body { background: #0f1a12; color: #e8f0ea; }
     </div>
   </div>
   <div class="tree-grid" id="tree-grid">
-    <div style="grid-column:1/-1;text-align:center;padding:60px 20px;color:#6b7c6e">
-      <div style="font-size:52px;margin-bottom:12px;opacity:.4">&#x1F333;</div>
-      <p>جاري تحميل شجرة العائلة...</p>
-    </div>
+    <?php if (empty($branches)): ?>
+      <div style="grid-column:1/-1;text-align:center;padding:60px 20px;color:#6b7c6e">
+        <div style="font-size:52px;margin-bottom:12px;opacity:.4">&#x1F333;</div>
+        <p>لم تُضف أفرع عائلية بعد</p>
+      </div>
+    <?php else: ?>
+      <?php foreach ($branches as $b): ?>
+        <?php
+          $bMembers = $b['members'] ?? null;
+          if (is_string($bMembers)) $bMembers = json_decode($bMembers, true) ?: [];
+          $bCount = is_array($bMembers) ? count($bMembers) : 0;
+          if ($bCount === 0) $bCount = (int)($b['count'] ?? 0);
+          $bCol = esc($b['color'] ?? '#47915C');
+        ?>
+        <div class="tree-branch animate-in" style="border-color:<?= $bCol ?>">
+          <div style="font-size:28px;margin-bottom:10px">&#x1F33F;</div>
+          <div class="tree-branch-name"><?= esc($b['name']) ?></div>
+          <?php if (!empty($b['head'])): ?>
+            <div class="tree-branch-head"><?= esc($b['head']) ?></div>
+          <?php endif; ?>
+          <div class="tree-branch-stat">
+            <div class="tree-branch-num" style="color:<?= $bCol ?>"><?= $bCount ?></div>
+            <div class="tree-branch-label">فرد</div>
+          </div>
+        </div>
+      <?php endforeach; ?>
+    <?php endif; ?>
   </div>
 </section>
 
@@ -453,7 +507,35 @@ body { background: #0f1a12; color: #e8f0ea; }
     <button class="media-tab" data-filter="videos">&#x1F3AC; الفيديوهات</button>
     <button class="media-tab" data-filter="events">&#x1F389; الفعاليات</button>
   </div>
-  <div class="media-grid" id="media-grid"></div>
+  <div class="media-grid" id="media-grid">
+    <?php $mediaItems = $ws['media'] ?? []; ?>
+    <?php if (empty($mediaItems)): ?>
+      <div style="grid-column:1/-1;text-align:center;padding:60px 20px;color:var(--text-muted)">
+        <div style="font-size:52px;margin-bottom:12px;opacity:.4">&#x1F4F7;</div>
+        <p>لا توجد وسائط حالياً</p>
+        <p style="font-size:12px;margin-top:8px">يمكن إضافة الوسائط من لوحة التحكم</p>
+      </div>
+    <?php else: ?>
+      <?php foreach ($mediaItems as $item): ?>
+        <div class="media-item animate-in" data-type="<?= esc($item['type'] ?? 'images') ?>">
+          <?php if (($item['type'] ?? '') === 'videos'): ?>
+            <video controls preload="metadata"><source src="<?= esc($item['url'] ?? '') ?>"></video>
+          <?php else: ?>
+            <img src="<?= esc($item['url'] ?? '') ?>" alt="<?= esc($item['title'] ?? '') ?>" loading="lazy">
+          <?php endif; ?>
+          <div class="media-item-content">
+            <div class="media-item-title"><?= esc($item['title'] ?? '') ?></div>
+            <?php if (!empty($item['date'])): ?>
+              <div class="media-item-date" data-date="<?= esc($item['date']) ?>"></div>
+            <?php endif; ?>
+            <?php foreach ($item['tags'] ?? [] as $tag): ?>
+              <span class="media-item-tag"><?= esc($tag) ?></span>
+            <?php endforeach; ?>
+          </div>
+        </div>
+      <?php endforeach; ?>
+    <?php endif; ?>
+  </div>
 </section>
 
 <!-- EID -->
@@ -566,11 +648,7 @@ body { background: #0f1a12; color: #e8f0ea; }
 
 <script src="public/js/countdown.js"></script>
 
-<script src="public/js/tree.js"></script>
-
 <script src="public/js/media.js"></script>
-
-<script src="public/js/settings.js"></script>
 
 <script src="public/js/eid.js"></script>
 
@@ -600,11 +678,9 @@ body { background: #0f1a12; color: #e8f0ea; }
   }, { threshold: 0.1, rootMargin: '0px 0px -40px 0px' });
   document.querySelectorAll('.animate-in').forEach(el => obs.observe(el));
 
-  // Init all modules
-  initCountdown();
-  initFamilyTree(obs);
+  // Init modules — countdown & media use PHP-preloaded data; no extra API calls needed
+  initCountdown(<?= json_encode($meeting) ?>);
   initMedia(obs);
-  initSettings(obs);
   initEid();
 })();
 </script>

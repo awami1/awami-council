@@ -1390,13 +1390,13 @@ function renderCommitteesList(){
   `).join('');
 }
 
-function saveAboutSettings(){
-  if(!State.getWebsiteSettings().about) State.getWebsiteSettings().about = {};
-  State.getWebsiteSettings().about = {
-    mission: document.getElementById('ws-about-mission').value.trim(),
-    vision: document.getElementById('ws-about-vision').value.trim()
-  };
-  saveDB(); toast('تم حفظ "عن المجلس" ✅'); log('تحديث عن المجلس','📖');
+async function saveAboutSettings(){
+  const mission = document.getElementById('ws-about-mission').value.trim();
+  const vision  = document.getElementById('ws-about-vision').value.trim();
+  try {
+    await AdminSettings.saveAbout(mission, vision);
+    toast('تم حفظ "عن المجلس" ✅'); log('تحديث عن المجلس','📖');
+  } catch(e) { toast('خطأ في الحفظ: ' + e.message, 'error'); }
 }
 
 function renderLogoPreview(){
@@ -1426,20 +1426,20 @@ function renderLogoPreview(){
   }
 }
 
-function saveLogo(){
+async function saveLogo(){
   const preview = document.getElementById('logo-preview-img').src;
   if(!preview || preview === window.location.href){
     toast('لم يتم اختيار شعار','error');
     return;
   }
-  
-  State.getWebsiteSettings().logo = preview;
-  saveDB();
-  toast('تم حفظ الشعار ✅');
-  log('تحديث الشعار','🎨');
-  document.getElementById('current-logo-preview').innerHTML = `<img src="${preview}" style="max-width:44px;max-height:44px">`;
-  document.getElementById('logo-preview-container').style.display = 'none';
-  document.getElementById('logo-upload').value = '';
+  try {
+    await AdminSettings.saveLogo(preview);
+    toast('تم حفظ الشعار ✅');
+    log('تحديث الشعار','🎨');
+    document.getElementById('current-logo-preview').innerHTML = `<img src="${preview}" style="max-width:44px;max-height:44px">`;
+    document.getElementById('logo-preview-container').style.display = 'none';
+    document.getElementById('logo-upload').value = '';
+  } catch(e) { toast('خطأ في الحفظ: ' + e.message, 'error'); }
 }
 
 function clearLogo(){
@@ -1469,29 +1469,32 @@ function switchWSTab(id,el){
   el.classList.add('active');
 }
 
-function saveHeaderSettings(){
-  State.getWebsiteSettings().header = {
-    title: document.getElementById('ws-header-title').value,
-    subtitle: document.getElementById('ws-header-subtitle').value
-  };
-  saveDB(); toast('تم حفظ إعدادات الهيدر ✅'); log('تحديث الهيدر','📌');
+async function saveHeaderSettings(){
+  const title    = document.getElementById('ws-header-title').value;
+  const subtitle = document.getElementById('ws-header-subtitle').value;
+  try {
+    await AdminSettings.saveHeader(title, subtitle);
+    toast('تم حفظ إعدادات الهيدر ✅'); log('تحديث الهيدر','📌');
+  } catch(e) { toast('خطأ في الحفظ: ' + e.message, 'error'); }
 }
 
-function saveHeroSettings(){
-  State.getWebsiteSettings().hero = {
-    title: document.getElementById('ws-hero-title').value,
-    description: document.getElementById('ws-hero-desc').value
-  };
-  saveDB(); toast('تم حفظ إعدادات البانر ✅'); log('تحديث البانر','🎯');
+async function saveHeroSettings(){
+  const title       = document.getElementById('ws-hero-title').value;
+  const description = document.getElementById('ws-hero-desc').value;
+  try {
+    await AdminSettings.saveHero(title, description);
+    toast('تم حفظ إعدادات البانر ✅'); log('تحديث البانر','🎯');
+  } catch(e) { toast('خطأ في الحفظ: ' + e.message, 'error'); }
 }
 
-function saveStatsSettings(){
-  State.getWebsiteSettings().stats = {
-    years: parseInt(document.getElementById('ws-stats-years').value) || 0,
-    committees: parseInt(document.getElementById('ws-stats-committees').value) || 0,
-    members: document.getElementById('ws-stats-members').value
-  };
-  saveDB(); toast('تم حفظ الإحصائيات ✅'); log('تحديث الإحصائيات','📊');
+async function saveStatsSettings(){
+  const years      = parseInt(document.getElementById('ws-stats-years').value) || 0;
+  const committees = parseInt(document.getElementById('ws-stats-committees').value) || 0;
+  const members    = document.getElementById('ws-stats-members').value;
+  try {
+    await AdminSettings.saveStats(years, committees, members);
+    toast('تم حفظ الإحصائيات ✅'); log('تحديث الإحصائيات','📊');
+  } catch(e) { toast('خطأ في الحفظ: ' + e.message, 'error'); }
 }
 
 // Positions
@@ -1534,11 +1537,11 @@ function editPosition(idx){
   openModal('modal-position');
 }
 
-function savePosition(){
+async function savePosition(){
   const role = document.getElementById('position-role').value.trim();
   const name = document.getElementById('position-name').value.trim();
   if(!role || !name){toast('المنصب والاسم مطلوبان','error');return;}
-  
+
   const tasksText = document.getElementById('position-tasks').value.trim();
   const data = {
     role, name,
@@ -1546,7 +1549,7 @@ function savePosition(){
     type: document.getElementById('position-type').value,
     tasks: tasksText ? tasksText.split('\n').map(t=>t.trim()).filter(Boolean) : []
   };
-  
+
   const idx = document.getElementById('position-index').value;
   if(idx !== ''){
     State.getWebsiteSettings().councilPositions[idx] = data;
@@ -1556,16 +1559,22 @@ function savePosition(){
     State.getWebsiteSettings().councilPositions.push(data);
     log(`إضافة منصب: ${role}`,'👑');
   }
-  
-  saveDB(); closeModal('modal-position'); toast(idx!==''?'تم التحديث':'تم الإضافة'); renderPositionsList();
+
+  try {
+    await AdminSettings.savePositions(State.getWebsiteSettings().councilPositions);
+    closeModal('modal-position'); toast(idx!==''?'تم التحديث':'تم الإضافة'); renderPositionsList();
+  } catch(e) { toast('خطأ في الحفظ: ' + e.message, 'error'); }
 }
 
 function deletePosition(){
   const idx = document.getElementById('position-index').value;
   const p = State.getWebsiteSettings().councilPositions[idx];
-  confirm2(`حذف منصب "${p.role}"؟`,()=>{
+  confirm2(`حذف منصب "${p.role}"؟`, async ()=>{
     State.getWebsiteSettings().councilPositions.splice(idx,1);
-    saveDB(); closeModal('modal-position'); toast('تم الحذف'); renderPositionsList(); log(`حذف منصب: ${p.role}`,'🗑️');
+    try {
+      await AdminSettings.savePositions(State.getWebsiteSettings().councilPositions);
+      closeModal('modal-position'); toast('تم الحذف'); renderPositionsList(); log(`حذف منصب: ${p.role}`,'🗑️');
+    } catch(e) { toast('خطأ في الحفظ: ' + e.message, 'error'); }
   });
 }
 
@@ -1604,14 +1613,14 @@ function editValue(idx){
   openModal('modal-value');
 }
 
-function saveValue(){
+async function saveValue(){
   const icon = document.getElementById('value-icon').value.trim();
   const title = document.getElementById('value-title').value.trim();
   if(!icon || !title){toast('الأيقونة والعنوان مطلوبان','error');return;}
-  
+
   const data = {icon, title, desc: document.getElementById('value-desc').value.trim()};
   const idx = document.getElementById('value-index').value;
-  
+
   if(idx !== ''){
     State.getWebsiteSettings().values[idx] = data;
     log(`تعديل قيمة: ${title}`,'✏️');
@@ -1620,16 +1629,22 @@ function saveValue(){
     State.getWebsiteSettings().values.push(data);
     log(`إضافة قيمة: ${title}`,'💎');
   }
-  
-  saveDB(); closeModal('modal-value'); toast(idx!==''?'تم التحديث':'تم الإضافة'); renderValuesList();
+
+  try {
+    await AdminSettings.saveValues(State.getWebsiteSettings().values);
+    closeModal('modal-value'); toast(idx!==''?'تم التحديث':'تم الإضافة'); renderValuesList();
+  } catch(e) { toast('خطأ في الحفظ: ' + e.message, 'error'); }
 }
 
 function deleteValue(){
   const idx = document.getElementById('value-index').value;
   const v = State.getWebsiteSettings().values[idx];
-  confirm2(`حذف قيمة "${v.title}"؟`,()=>{
+  confirm2(`حذف قيمة "${v.title}"؟`, async ()=>{
     State.getWebsiteSettings().values.splice(idx,1);
-    saveDB(); closeModal('modal-value'); toast('تم الحذف'); renderValuesList(); log(`حذف قيمة: ${v.title}`,'🗑️');
+    try {
+      await AdminSettings.saveValues(State.getWebsiteSettings().values);
+      closeModal('modal-value'); toast('تم الحذف'); renderValuesList(); log(`حذف قيمة: ${v.title}`,'🗑️');
+    } catch(e) { toast('خطأ في الحفظ: ' + e.message, 'error'); }
   });
 }
 
@@ -1643,32 +1658,30 @@ function openAddMedia(){
   openModal('modal-add-media');
 }
 
-function saveMedia(){
+async function saveMedia(){
   var title=document.getElementById('media-title').value.trim();
   var type=document.getElementById('media-type').value;
   var url=document.getElementById('media-url').value.trim();
-  
+
   if(!title||!url){toast('الرجاء ملء العنوان والرابط','error');return;}
-  
+
   var tags=document.getElementById('media-tags').value.split(',').map(function(t){return t.trim();}).filter(function(t){return t;});
-  
+
   var mediaItem={
-    id:uid(),
     title:title,
     type:type,
     url:url,
     date:document.getElementById('media-date').value||today(),
     tags:tags,
-    createdAt:new Date().toISOString()
   };
-  
-  State.ensureMedia();
-  State.getMedia().push(mediaItem);
-  saveDB();
-  log('إضافة ميديا: '+title,'📷');
-  toast('تم إضافة الميديا ✅');
-  closeModal('modal-add-media');
-  renderMediaList();
+
+  try {
+    await AdminMedia.create(mediaItem);
+    log('إضافة ميديا: '+title,'📷');
+    toast('تم إضافة الميديا ✅');
+    closeModal('modal-add-media');
+    renderMediaList();
+  } catch(e) { toast('خطأ في الحفظ: ' + e.message, 'error'); }
 }
 
 function renderMediaList(){
@@ -1706,12 +1719,13 @@ function renderMediaList(){
   container.innerHTML=html;
 }
 
-function deleteMedia(id){
+async function deleteMedia(id){
   if(!confirm('حذف هذه الميديا؟'))return;
-  State.setMedia(State.getMedia().filter(function(m){return m.id!==id;}));
-  saveDB();
-  toast('تم الحذف');
-  renderMediaList();
+  try {
+    await AdminMedia.delete(id);
+    toast('تم الحذف');
+    renderMediaList();
+  } catch(e) { toast('خطأ في الحذف: ' + e.message, 'error'); }
 }
 
 // =================== SETTINGS ===================

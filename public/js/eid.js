@@ -129,7 +129,8 @@ const h = canvas.height;
 
 // حجم الخط يتناسب مع عرض البطاقة
 let fontSize = Math.round(w * 0.065);
-if (fontSize > 85) fontSize = 85;
+if (useTemplate && fontSize > 55) fontSize = 55;
+if (!useTemplate && fontSize > 85) fontSize = 85;
 if (fontSize < 36) fontSize = 36;
 
 // تقليص الخط للأسماء الطويلة
@@ -141,43 +142,27 @@ while (measured > w * 0.85 && fontSize > 24) {
   measured = ctx.measureText(name).width;
 }
 
-// موقع الاسم
-const nameY = useTemplate ? h - Math.round(h * 0.13) : h - 180;
+// موقع الاسم — في الشريط الأخضر فوق الكرات الزخرفية (82% من الارتفاع)
+const nameY = useTemplate ? Math.round(h * 0.82) : h - 180;
 
 ctx.textAlign = 'center';
 ctx.textBaseline = 'middle';
 
-// ظل خلف الاسم لوضوح القراءة
+// شريط ذهبي عرض كامل خلف الاسم
 if (useTemplate) {
   ctx.save();
-  ctx.fillStyle = 'rgba(0,0,0,0.35)';
-  ctx.filter = 'blur(0px)';
-  const pad = fontSize * 0.6;
-  const rx = w / 2 - measured / 2 - pad;
-  const ry = nameY - fontSize * 0.55;
-  const rw = measured + pad * 2;
-  const rh = fontSize * 1.3;
-  const radius = 12;
-  ctx.beginPath();
-  ctx.moveTo(rx + radius, ry);
-  ctx.lineTo(rx + rw - radius, ry);
-  ctx.quadraticCurveTo(rx + rw, ry, rx + rw, ry + radius);
-  ctx.lineTo(rx + rw, ry + rh - radius);
-  ctx.quadraticCurveTo(rx + rw, ry + rh, rx + rw - radius, ry + rh);
-  ctx.lineTo(rx + radius, ry + rh);
-  ctx.quadraticCurveTo(rx, ry + rh, rx, ry + rh - radius);
-  ctx.lineTo(rx, ry + radius);
-  ctx.quadraticCurveTo(rx, ry, rx + radius, ry);
-  ctx.closePath();
-  ctx.fill();
+  const bannerH = Math.round(fontSize * 1.6);
+  const bannerY = nameY - Math.round(bannerH / 2);
+  ctx.fillStyle = 'rgba(180, 130, 10, 0.82)';
+  ctx.fillRect(0, bannerY, w, bannerH);
   ctx.restore();
 }
 
 // رسم الاسم
 ctx.fillStyle = '#fff';
-ctx.shadowColor = 'rgba(0,0,0,0.6)';
-ctx.shadowBlur = 12;
-ctx.shadowOffsetX = 2;
+ctx.shadowColor = 'rgba(0,0,0,0.55)';
+ctx.shadowBlur = 10;
+ctx.shadowOffsetX = 1;
 ctx.shadowOffsetY = 2;
 ctx.fillText(name, w / 2, nameY);
 

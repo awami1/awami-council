@@ -369,3 +369,11 @@ toast('تم تصدير البيانات 📥');
 
 // renderSettings() and updateCountdown() are kept in the inline script
 // so they retain the import handler setup and sidebar integration.
+
+// ── تسجيل الخروج ──
+async function adminLogout() {
+    try {
+        await fetch('/api/auth.php?action=logout', { method: 'POST' });
+    } catch (_) { /* تجاهل أخطاء الشبكة */ }
+    window.location.href = '/admin/login.php';
+}

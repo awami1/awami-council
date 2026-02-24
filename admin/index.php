@@ -1,3 +1,10 @@
+<?php
+require_once __DIR__ . '/../api/auth_guard.php';
+if (!isAuthenticated()) {
+    header('Location: /admin/login.php');
+    exit;
+}
+?>
 <!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
@@ -249,6 +256,25 @@ tr:hover td{background:#f8fbf8;}
 @media print{.sidebar,.topbar,.btn,.modal-overlay,.mobile-toggle{display:none!important;}.main{margin-right:0!important;}}
 </style>
 <script><?php readfile(dirname(__DIR__) . '/public/js/api.js'); ?></script>
+<script>
+// ── معالج 401: انتهاء الجلسة → إعادة توجيه لصفحة الدخول ──
+(function () {
+    const _orig = apiFetch;
+    apiFetch = async function (url, options) {
+        const res = await fetch(url, {
+            headers: { 'Content-Type': 'application/json' },
+            ...(options || {}),
+        });
+        if (res.status === 401) {
+            window.location.href = '/admin/login.php?expired=1';
+            return new Promise(() => {});
+        }
+        const json = await res.json().catch(() => ({}));
+        if (!res.ok) throw new Error(json.error || 'HTTP ' + res.status);
+        return json;
+    };
+})();
+</script>
 <script src="admin.db.js"></script>
 </head>
 <body>
@@ -315,7 +341,11 @@ tr:hover td{background:#f8fbf8;}
 <main class="main">
   <div class="topbar">
     <div class="page-title" id="topbar-title">لوحة التحكم <span>مجلس عائلة العوامي</span></div>
-    <div class="topbar-actions" id="topbar-action"></div>
+    <div style="display:flex;gap:8px;align-items:center;">
+      <div class="topbar-actions" id="topbar-action"></div>
+      <button class="btn btn-outline btn-sm" onclick="adminLogout()" title="تسجيل الخروج"
+              style="border-color:#fca5a5;color:#b91c1c;">🚪 خروج</button>
+    </div>
   </div>
   <div class="content">
 

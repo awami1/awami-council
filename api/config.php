@@ -4,6 +4,25 @@
 
 declare(strict_types=1);
 
+// Load .env file if it exists (PHP doesn't read .env automatically)
+(function () {
+    $envFile = __DIR__ . '/../.env';
+    if (!is_file($envFile)) return;
+    foreach (file($envFile, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES) as $line) {
+        $line = trim($line);
+        if ($line === '' || $line[0] === '#') continue;
+        if (str_contains($line, '=')) {
+            [$key, $val] = explode('=', $line, 2);
+            $key = trim($key);
+            $val = trim($val);
+            if (!getenv($key)) {
+                putenv("{$key}={$val}");
+                $_ENV[$key] = $val;
+            }
+        }
+    }
+})();
+
 function getPDO(): PDO
 {
     static $pdo = null;

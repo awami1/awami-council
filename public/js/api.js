@@ -79,8 +79,8 @@ delete: (id)        => api.del(‘events.php’, id),
 const PollsAPI = {
 getAll: ()           => api.get(‘polls.php’),
 create: (data)       => api.post(‘polls.php’, data),
-vote:   (id, optIdx) => api.put(‘polls.php’, { vote: optIdx }, id),
-close:  (id)         => api.put(‘polls.php’, { close: true  }, id),
+vote:   (pollId, optIdx) => api.post(‘polls.php?action=vote’, { poll_id: pollId, option_index: optIdx }),
+close:  (id)         => apiFetch(`${API_BASE}/polls.php?action=close&id=${id}`, { method: ‘PUT’ }),
 delete: (id)         => api.del(‘polls.php’, id),
 };
 

@@ -207,7 +207,11 @@ function renderWebsiteSettings(){
     document.getElementById('ws-about-mission').value = ws.about.mission || '';
     document.getElementById('ws-about-vision').value = ws.about.vision || '';
   }
-  
+
+  if(ws.contact){
+    document.getElementById('ws-contact-whatsapp').value = ws.contact.whatsapp || '';
+  }
+
   renderPositionsList();
   renderCommitteesList();
   renderValuesList();
@@ -236,6 +240,14 @@ async function saveAboutSettings(){
   try {
     await AdminSettings.saveAbout(mission, vision);
     toast('تم حفظ "عن المجلس" ✅'); log('تحديث عن المجلس','📖');
+  } catch(e) { toast('خطأ في الحفظ: ' + e.message, 'error'); }
+}
+
+async function saveContactSettings(){
+  const whatsapp = document.getElementById('ws-contact-whatsapp').value.trim();
+  try {
+    await AdminSettings.saveContact(whatsapp);
+    toast('تم حفظ معلومات التواصل ✅'); log('تحديث معلومات التواصل','📞');
   } catch(e) { toast('خطأ في الحفظ: ' + e.message, 'error'); }
 }
 

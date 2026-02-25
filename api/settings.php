@@ -30,6 +30,7 @@ function defaultSettings(): array {
         'values'           => [],
         'logo'             => null,
         'media'            => [],
+        'contact'          => ['whatsapp' => ''],
     ];
 }
 

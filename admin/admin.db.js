@@ -468,6 +468,10 @@ async saveLogo(logoData) {
 const r = await SettingsAPI.saveSection('logo', logoData);
 DB.settings.logo = logoData;
 },
+async saveContact(whatsapp) {
+const r = await SettingsAPI.saveSection('contact', { whatsapp });
+DB.settings.contact = r.settings.contact;
+},
 };
 
 // ============================================================

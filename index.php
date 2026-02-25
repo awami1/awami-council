@@ -98,6 +98,8 @@ $upcomingEvents = getUpcomingEvents();
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Amiri:wght@400;700&family=Cairo:wght@300;400;600;700;900&family=Readex+Pro:wght@400;700&family=Tajawal:wght@400;500;700;800&display=swap" rel="stylesheet">
 <style>
+@font-face{font-family:'Saudi';src:url('public/fonts/saudi-normal.ttf') format('truetype');font-weight:normal;font-display:swap}
+@font-face{font-family:'Saudi';src:url('public/fonts/saudi-bold.ttf') format('truetype');font-weight:bold;font-display:swap}
 :root{
   --primary:#1B3456;--green:#47915C;--green-dark:#2d6b40;--green-light:#e8f5ec;
   --accent:#c8a84b;--bg:#fafbf9;--text:#1a2a1e;--text-muted:#6b7c6e;--border:#d4ddd6;
@@ -254,19 +256,25 @@ section{max-width:1200px;margin:0 auto;padding:70px 24px}
 .eid-section{max-width:800px;margin:0 auto}
 .eid-wrapper{background:#fff;border-radius:24px;padding:40px;box-shadow:0 8px 32px rgba(0,0,0,.08);border:1px solid #d4ddd6}
 .eid-label{display:block;font-weight:800;margin-bottom:10px;font-size:16px;color:#2d6b40}
-.eid-input{width:100%;padding:16px 20px;border:2px solid #d4ddd6;border-radius:12px;font-size:18px;font-family:‘Tajawal’,sans-serif;transition:all .25s;background:#fafbf9;margin-bottom:20px}
+.eid-input{width:100%;padding:16px 20px;border:2px solid #d4ddd6;border-radius:12px;font-size:18px;font-family:’Saudi’,’Tajawal’,sans-serif;transition:all .25s;background:#fafbf9;margin-bottom:8px}
 .eid-input:focus{outline:none;border-color:#47915C;box-shadow:0 0 0 4px rgba(71,145,92,.1)}
-.eid-btn{width:100%;padding:16px;background:linear-gradient(135deg,#47915C,#2d6b40);color:#fff;border:none;border-radius:12px;font-size:18px;font-weight:800;cursor:pointer;transition:all .3s;font-family:‘Cairo’,sans-serif;box-shadow:0 4px 16px rgba(45,107,64,.3)}
+.eid-font-preview{display:inline-block;padding:10px 20px;background:#f0f5f2;border-radius:10px;margin:8px 0 20px;font-size:22px;font-family:’Saudi’,sans-serif;color:#2d6b40;min-width:180px;text-align:center;transition:all .2s}
+.eid-controls{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:20px}
+.eid-controls .eid-input{margin-bottom:0;font-size:15px;padding:12px 16px;cursor:pointer}
+.eid-range{width:100%;cursor:pointer;accent-color:#47915C;margin:8px 0 4px}
+.eid-range-labels{display:flex;justify-content:space-between;font-size:11px;color:#6b7c6e;margin-bottom:4px}
+.eid-btn{width:100%;padding:16px;background:linear-gradient(135deg,#47915C,#2d6b40);color:#fff;border:none;border-radius:12px;font-size:18px;font-weight:800;cursor:pointer;transition:all .3s;font-family:’Saudi’,’Cairo’,sans-serif;box-shadow:0 4px 16px rgba(45,107,64,.3)}
 .eid-btn:hover{transform:translateY(-2px);box-shadow:0 8px 24px rgba(45,107,64,.4)}
 .eid-preview{display:none;margin-top:24px}
 .eid-canvas-wrap{border-radius:18px;overflow:hidden;box-shadow:0 12px 40px rgba(0,0,0,.2)}
 .eid-canvas-wrap canvas{width:100%;display:block}
 .eid-actions{margin-top:20px;display:flex;gap:12px;justify-content:center;flex-wrap:wrap}
-.eid-action-btn{padding:14px 28px;border:none;border-radius:12px;font-size:15px;font-weight:700;cursor:pointer;transition:all .25s;font-family:‘Cairo’,sans-serif}
+.eid-action-btn{padding:14px 28px;border:none;border-radius:12px;font-size:15px;font-weight:700;cursor:pointer;transition:all .25s;font-family:’Saudi’,’Cairo’,sans-serif}
 .eid-action-btn:hover{transform:translateY(-2px)}
 .eid-dl{background:#47915C;color:#fff;box-shadow:0 4px 12px rgba(71,145,92,.3)}
 .eid-sh{background:#25D366;color:#fff;box-shadow:0 4px 12px rgba(37,211,102,.3)}
 .eid-hint{margin-top:24px;text-align:center;color:#6b7c6e;font-size:13px}
+@media(max-width:600px){.eid-controls{grid-template-columns:1fr}}
 
 /* FOOTER */
 footer{background:linear-gradient(135deg,#2d6b40,#1a3d28 50%,#1B3456);color:#fff;padding:48px 24px;position:relative}
@@ -377,6 +385,7 @@ body { background: #0f1a12; color: #e8f0ea; }
 .media-tab.active { background: #47915C; color: #fff; }
 .eid-input { background: #1a2a1e; border-color: #2d4a35; color: #e8f0ea; }
 .eid-label { color: #7ec89a; }
+.eid-font-preview { background: #1a3d28; color: #7ec89a; }
 .tree-branch-stat { background: #1a3d28; }
 .footer-year, .footer-copy { color: #a8bfac; }
 .scroll-top { background: #47915C; }
@@ -702,8 +711,25 @@ body { background: #0f1a12; color: #e8f0ea; }
   </div>
   <div class="eid-section">
     <div class="eid-wrapper">
-      <label class="eid-label">اكتب اسمك هنا:</label>
+      <label class="eid-label">&#x270D;&#xFE0F; اكتب اسمك:</label>
       <input type="text" id="eid-name" class="eid-input" placeholder="مثال: أحمد محمد العوامي">
+      <div class="eid-font-preview" id="eid-name-preview">مثال على الخط</div>
+
+      <div class="eid-controls">
+        <div>
+          <label class="eid-label">&#x1F3A8; نوع الخط:</label>
+          <select id="eid-font-weight" class="eid-input">
+            <option value="normal">السعودي — عادي</option>
+            <option value="bold" selected>السعودي — عريض (Bold)</option>
+          </select>
+        </div>
+        <div>
+          <label class="eid-label">&#x1F4CF; حجم الخط: <span id="eid-font-size-label">70</span>px</label>
+          <input type="range" id="eid-font-size" class="eid-range" min="40" max="120" value="70">
+          <div class="eid-range-labels"><span>كبير</span><span>متوسط</span><span>صغير</span></div>
+        </div>
+      </div>
+
       <button class="eid-btn" id="eid-gen">&#x2728; إنشاء البطاقة</button>
       <div class="eid-preview" id="eid-preview">
         <div class="eid-canvas-wrap"><canvas id="eid-canvas"></canvas></div>

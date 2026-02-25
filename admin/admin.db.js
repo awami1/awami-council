@@ -14,6 +14,7 @@ events:      [],
 polls:       [],
 branches:    [],
 media:       [],
+committees:  [],
 committeeMembersMap: {}, // { committeeId: [memberId, ...] }
 nextMeeting: null,
 };
@@ -35,6 +36,7 @@ pollsRes,
 branchesRes,
 meetingRes,
 mediaRes,
+committeesRes,
 ] = await Promise.all([
 SettingsAPI.get(),
 MembersAPI.getAll(),
@@ -46,6 +48,7 @@ PollsAPI.getAll(),
 BranchesAPI.getAll(),
 MeetingAPI.get(),
 MediaAPI.getAll(),
+CommitteesAPI.getAll(),
 ]);
 
     DB.settings     = settingsRes.settings  ?? {};
@@ -58,6 +61,7 @@ MediaAPI.getAll(),
     DB.branches     = branchesRes.branches   ?? [];
     DB.nextMeeting  = meetingRes.nextMeeting ?? null;
     DB.media        = mediaRes.media         ?? [];
+    DB.committees   = (committeesRes.data    ?? []).map(normalizeCommittee);
 
     // بناء خريطة أعضاء اللجان
     buildCommitteeMembersMap();
@@ -139,6 +143,21 @@ committee:   p.committee_id ?? p.committee ?? '',
 end:         p.end_date ?? p.end ?? '',
 active:      p.is_active !== undefined ? Boolean(p.is_active) : (p.active ?? true),
 created:     p.created_date ?? p.created ?? '',
+};
+}
+
+function normalizeCommittee(c) {
+return {
+id:          c.id,
+name:        c.name,
+icon:        c.icon        ?? '🏛️',
+color:       c.color       ?? 'linear-gradient(135deg,#47915C,#2d6b40)',
+desc:        c.description ?? c.desc ?? '',
+advisory:    Boolean(c.advisory),
+sortOrder:   parseInt(c.sort_order ?? c.sortOrder ?? 0),
+memberCount: parseInt(c.member_count ?? 0),
+eventCount:  parseInt(c.event_count ?? 0),
+members:     c.members     ?? [],
 };
 }
 
@@ -468,6 +487,28 @@ DB.media = (DB.media ?? []).filter(m => m.id !== id);
 };
 
 // ============================================================
+// COMMITTEES (DB-backed CRUD)
+// ============================================================
+const AdminCommittee = {
+async create(data) {
+    const r = await CommitteesAPI.create(data);
+    DB.committees.push(normalizeCommittee(r.data));
+    return r.data;
+},
+async update(id, data) {
+    const r = await CommitteesAPI.update(id, data);
+    const idx = DB.committees.findIndex(c => c.id === id);
+    if (idx >= 0) DB.committees[idx] = normalizeCommittee(r.data);
+    return r.data;
+},
+async delete(id) {
+    await CommitteesAPI.delete(id);
+    DB.committees = DB.committees.filter(c => c.id !== id);
+    delete DB.committeeMembersMap[id];
+},
+};
+
+// ============================================================
 // Helpers لقراءة البيانات المحلية (من cache)
 // ============================================================
 function getMembers()      { return DB.members; }
@@ -526,7 +567,7 @@ getNextMeeting:     getNextMeeting,
 getCommitteeMembers:getCommitteeMembersMap,
 getActivity:        () => _activity,
 getDB:              () => DB,
-getCommittees:      () => _committees,
+getCommittees:      () => DB.committees ?? _committees,
 getPositions:       () => _positions,
 getBudget:          () => DB.transactions,
 
@@ -561,6 +602,7 @@ replaceDB(data, committees) {
     if (data.branches || data.familyBranches)
         DB.branches = data.branches || data.familyBranches;
     if (data.media)          DB.media    = data.media;
+    if (data.committees)     DB.committees = data.committees;
     if (data.settings)       DB.settings = data.settings;
     if (data.nextMeeting !== undefined) DB.nextMeeting = data.nextMeeting;
     if (data.committeeMembersMap) DB.committeeMembersMap = data.committeeMembersMap;
@@ -577,6 +619,7 @@ resetDB(committees) {
     DB.polls        = [];
     DB.branches     = [];
     DB.media        = [];
+    DB.committees   = [];
     DB.settings     = {};
     DB.nextMeeting  = null;
     DB.committeeMembersMap = {};
@@ -599,6 +642,12 @@ createPeriod: async (data) => { await AdminPeriod.create(data); closeModal('moda
 savePayment:  async (memberId, data) => { await AdminPayment.save(memberId, data); closeModal('modal-pay'); toast('تم التسجيل ✅'); renderFees(); renderDashboard(); },
 addTransaction: async (data) => { await AdminTransaction.create(data); closeModal('modal-tx'); toast('تمت الإضافة ✅'); renderBudget(); renderDashboard(); updateSidebar(); },
 deleteTx:     async (id) => { confirm2('حذف المعاملة؟', async () => { await AdminTransaction.delete(id); toast('تم الحذف'); renderBudget(); renderDashboard(); }); },
+};
+
+const CommitteeService = {
+create: async (data) => { await AdminCommittee.create(data); closeModal('modal-add-committee'); toast('تم إنشاء اللجنة ✅'); renderCommittees(); renderOrgChart(); renderDashboard(); updateSidebar(); },
+update: async (id, data) => { await AdminCommittee.update(id, data); closeModal('modal-add-committee'); toast('تم التحديث ✅'); renderCommittees(); renderOrgChart(); },
+delete: async (id) => { confirm2('هل تريد حذف هذه اللجنة؟', async () => { await AdminCommittee.delete(id); toast('تم حذف اللجنة'); renderCommittees(); renderOrgChart(); renderDashboard(); updateSidebar(); }); },
 };
 
 const PollService = {

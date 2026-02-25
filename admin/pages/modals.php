@@ -253,3 +253,29 @@
     </div>
   </div>
 </div>
+
+<!-- COMMITTEE ADD/EDIT MODAL -->
+<div class="modal-overlay" id="modal-add-committee">
+  <div class="modal">
+    <div class="modal-header"><div class="modal-title" id="committee-modal-title">🏛️ إضافة لجنة</div><button class="modal-close" onclick="closeModal('modal-add-committee')">✕</button></div>
+    <div class="modal-body">
+      <input type="hidden" id="cm-id">
+      <div class="form-grid">
+        <div class="form-group"><label class="form-label">اسم اللجنة *</label><input class="form-control" id="cm-name" placeholder="مثال: لجنة الرحلات"></div>
+        <div class="form-group"><label class="form-label">الأيقونة</label><input class="form-control" id="cm-icon" placeholder="🏛️" style="font-size:20px;text-align:center"></div>
+        <div class="form-group"><label class="form-label">اللون</label><input class="form-control" id="cm-color1" type="color" value="#47915C"></div>
+        <div class="form-group"><label class="form-label">اللون الثاني</label><input class="form-control" id="cm-color2" type="color" value="#2d6b40"></div>
+      </div>
+      <div class="form-group"><label class="form-label">الوصف</label><textarea class="form-control" id="cm-desc" rows="2" placeholder="وصف مختصر لعمل اللجنة"></textarea></div>
+      <div class="form-group" style="display:flex;align-items:center;gap:10px">
+        <input type="checkbox" id="cm-advisory">
+        <label class="form-label" for="cm-advisory" style="margin:0">لجنة استشارية</label>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-outline" onclick="closeModal('modal-add-committee')">إلغاء</button>
+      <button class="btn btn-danger" id="cm-delete-btn" onclick="deleteCommitteeFromModal()" style="display:none">🗑 حذف</button>
+      <button class="btn btn-primary" onclick="saveCommittee()">💾 حفظ</button>
+    </div>
+  </div>
+</div>

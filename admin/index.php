@@ -62,6 +62,7 @@ if (!isAuthenticated()) {
     <div class="nav-item" onclick="showPage('council',this)"><span class="icon">👑</span>مناصب المجلس</div>
     <div class="nav-item" onclick="showPage('members',this)"><span class="icon">👥</span>الأعضاء</div>
     <div class="nav-item" onclick="showPage('fees',this)"><span class="icon">💳</span>الرسوم والمدفوعات</div>
+    <div class="nav-item" onclick="showPage('reminders',this)"><span class="icon">🔔</span>التذكيرات</div>
     <div class="nav-section">التنظيم</div>
     <div class="nav-item" onclick="showPage('committees',this)"><span class="icon">🏛️</span>اللجان</div>
     <div class="nav-item" onclick="showPage('orgchart',this)"><span class="icon">🗂️</span>الهيكل التنظيمي</div>
@@ -195,8 +196,36 @@ if (!isAuthenticated()) {
       </div>
     </div>
 
+    <!-- REMINDERS -->
+    <div class="page" id="page-reminders">
+      <div class="card" style="margin-bottom:16px">
+        <div class="card-header">
+          <div class="card-title">🔔 تذكيرات الأعضاء غير الدافعين</div>
+          <div style="display:flex;gap:8px;align-items:center">
+            <span id="rem-period-lbl" class="badge badge-info">--</span>
+            <button class="btn btn-whatsapp btn-sm" onclick="sendBulkReminder('whatsapp')">📱 واتساب جماعي</button>
+            <button class="btn btn-primary btn-sm" onclick="sendBulkReminder('sms')">💬 SMS جماعي</button>
+          </div>
+        </div>
+        <div class="card-body">
+          <div id="rem-stats" style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:14px"></div>
+          <div id="rem-list"></div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title">📋 سجل التذكيرات المرسلة</div>
+        </div>
+        <div class="table-wrap"><table><thead><tr><th>التاريخ</th><th>العضو</th><th>القناة</th><th>المُرسِل</th></tr></thead><tbody id="rem-history-tbody"></tbody></table></div>
+        <div id="rem-history-pagination" style="display:flex;gap:4px;justify-content:center;padding:10px"></div>
+      </div>
+    </div>
+
     <!-- COMMITTEES -->
     <div class="page" id="page-committees">
+      <div style="display:flex;justify-content:flex-end;margin-bottom:14px">
+        <button class="btn btn-primary btn-sm" onclick="openAddCommitteeModal()">+ إضافة لجنة</button>
+      </div>
       <div id="committees-grid" style="display:grid;grid-template-columns:repeat(3,1fr);gap:14px"></div>
     </div>
 
@@ -845,7 +874,7 @@ if (!isAuthenticated()) {
 
 <div id="toast"></div>
 
-<button class="mobile-toggle" onclick="document.querySelector('.sidebar').classList.toggle('open')" aria-label="القائمة">☰</button>
+<button class="mobile-toggle" aria-label="القائمة">☰</button>
 
 <script src="js/admin-app.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>

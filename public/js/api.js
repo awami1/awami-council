@@ -98,6 +98,31 @@ create: (data) => api.post('media.php', data),
 delete: (id)   => api.del('media.php', id),
 };
 
+// –– Committees (DB-backed CRUD) ––
+const CommitteesAPI = {
+getAll: ()          => api.get('committees.php'),
+get:    (id)        => apiFetch(`${API_BASE}/committees.php?id=${id}`),
+create: (data)      => api.post('committees.php', data),
+update: (id, data)  => api.put('committees.php', data, id),
+delete: (id)        => api.del('committees.php', id),
+};
+
+// –– Reminders ––
+const RemindersAPI = {
+getUnpaid: (periodId) => {
+    const qs = periodId ? '?period_id=' + periodId : '';
+    return api.get('reminders.php' + qs);
+},
+getHistory: (params = {}) => {
+    const qs = new URLSearchParams({ history: 1, ...params }).toString();
+    return api.get('reminders.php?' + qs);
+},
+logSingle: (memberId, periodId, channel) =>
+    api.post('reminders.php', { member_id: memberId, period_id: periodId, channel }),
+logBulk: (periodId, channel) =>
+    api.post('reminders.php', { period_id: periodId, channel, bulk: true }),
+};
+
 // –– Audit Log ––
 const AuditAPI = {
 getAll: (params = {}) => {

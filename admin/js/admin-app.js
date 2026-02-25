@@ -179,15 +179,15 @@ function showPage(name,el){
   
   // Close mobile menu
   if(window.innerWidth<=768){
-    document.querySelector('.sidebar').classList.remove('open');
+    closeMobileSidebar();
   }
   
-  const T={dashboard:'لوحة التحكم|مجلس عائلة العوامي',council:'مناصب المجلس|الهيئة الإدارية',members:'الأعضاء|إدارة الأعضاء',fees:'الرسوم|متابعة المدفوعات',committees:'اللجان|اللجان الفرعية للمجلس',orgchart:'الهيكل التنظيمي|مجلس عائلة العوامي',budget:'الميزانية|السجل المالي',events:'الفعاليات|الأنشطة',calendar:'التقويم|عرض تقويمي',familytree:'شجرة العائلة|الأفرع العائلية',voting:'التصويت|استطلاعات الرأي',portal:'بوابة العضو|الملف الشخصي','smart-reports':'التقارير الذكية|تحليل مدعوم بالذكاء الاصطناعي',reports:'التقارير|إحصائيات',audit:'سجل التدقيق|من غيّر ماذا ومتى','export':'تصدير البيانات|Excel و CSV',websettings:'الموقع العام|إدارة المحتوى',settings:'النسخ الاحتياطي|إدارة البيانات'};
+  const T={dashboard:'لوحة التحكم|مجلس عائلة العوامي',council:'مناصب المجلس|الهيئة الإدارية',members:'الأعضاء|إدارة الأعضاء',fees:'الرسوم|متابعة المدفوعات',reminders:'التذكيرات|تذكيرات الأعضاء غير الدافعين',committees:'اللجان|اللجان الفرعية للمجلس',orgchart:'الهيكل التنظيمي|مجلس عائلة العوامي',budget:'الميزانية|السجل المالي',events:'الفعاليات|الأنشطة',calendar:'التقويم|عرض تقويمي',familytree:'شجرة العائلة|الأفرع العائلية',voting:'التصويت|استطلاعات الرأي',portal:'بوابة العضو|الملف الشخصي','smart-reports':'التقارير الذكية|تحليل مدعوم بالذكاء الاصطناعي',reports:'التقارير|إحصائيات',audit:'سجل التدقيق|من غيّر ماذا ومتى','export':'تصدير البيانات|Excel و CSV',websettings:'الموقع العام|إدارة المحتوى',settings:'النسخ الاحتياطي|إدارة البيانات'};
   const [t,s]=(T[name]||'--|--').split('|');
   document.getElementById('topbar-title').innerHTML=t+` <span>${s}</span>`;
   const A={members:`<button class="btn btn-primary" onclick="openAddMember()">+ إضافة عضو</button>`,budget:`<button class="btn btn-primary" onclick="openModal('modal-tx')">+ معاملة</button>`,events:`<button class="btn btn-primary" onclick="openAddEvent()">+ فعالية</button>`};
   document.getElementById('topbar-action').innerHTML=A[name]||'';
-  const renderers={dashboard:renderDashboard,council:renderCouncil,members:renderMembers,fees:renderFees,committees:renderCommittees,orgchart:renderOrgChart,budget:renderBudget,events:renderEvents,calendar:renderCalendar,familytree:renderFamilyTree,voting:renderVoting,portal:renderPortalSelect,'smart-reports':function(){},reports:renderReports,audit:renderAuditLog,'export':function(){},websettings:renderWebsiteSettings,settings:renderSettings};
+  const renderers={dashboard:renderDashboard,council:renderCouncil,members:renderMembers,fees:renderFees,reminders:renderReminders,committees:renderCommittees,orgchart:renderOrgChart,budget:renderBudget,events:renderEvents,calendar:renderCalendar,familytree:renderFamilyTree,voting:renderVoting,portal:renderPortalSelect,'smart-reports':function(){},reports:renderReports,audit:renderAuditLog,'export':function(){},websettings:renderWebsiteSettings,settings:renderSettings};
   if(renderers[name]) renderers[name]();
   updateSidebar();
 }
@@ -836,7 +836,9 @@ function renderCommittees(){
     const mems=(State.getCommitteeMembers()[c.id]||c.members||[]).length;
     const evs=State.getEvents().filter(e=>e.committeeId===c.id).length;
     return `<div class="committee-card" onclick="showCommitteeDetail('${c.id}')">
-      <div class="committee-banner" style="background:${c.color}">${c.icon}</div>
+      <div class="committee-banner" style="background:${c.color}">${c.icon}
+        <button class="btn btn-xs" style="position:absolute;top:8px;left:8px;background:rgba(255,255,255,.9);color:#333;border:none;font-size:11px" onclick="event.stopPropagation();openEditCommitteeModal('${c.id}')">✏️</button>
+      </div>
       <div class="committee-body"><div class="committee-title">${c.name}</div><div class="committee-meta">${c.desc||''}</div>${c.advisory?'<div style="margin-top:5px"><span class="badge badge-purple">🎓 استشارية</span></div>':''}</div>
       <div class="committee-footer"><span style="font-size:11px;color:var(--text-muted)">👥 ${mems} عضو  •  🗓️ ${evs} فعالية</span><button class="btn btn-outline btn-xs" onclick="event.stopPropagation();showCommitteeDetail('${c.id}')">تفاصيل</button></div>
     </div>`;
@@ -1352,6 +1354,185 @@ function loadPortal(){
     ${coms.length?`<div class="card" style="margin-bottom:12px"><div class="card-header"><div class="card-title">🏛️ اللجان</div></div><div class="card-body"><div style="display:flex;flex-wrap:wrap;gap:6px">${coms.map(c=>`<span style="background:${c.color};color:#fff;padding:5px 12px;border-radius:20px;font-size:12px">${c.icon} ${c.name}</span>`).join('')}</div></div></div>`:''}
     <div class="card"><div class="card-header"><div class="card-title">سجل المدفوعات</div></div><div class="table-wrap"><table><thead><tr><th>الدورة</th><th>المطلوب</th><th>المدفوع</th><th>التاريخ</th><th>الحالة</th></tr></thead><tbody>${allPays.map(pay=>{ const p=State.getPeriods().find(x=>x.id===pay.periodId); return `<tr><td>${p?.name||'—'}</td><td>${fmt(pay.required||0)} ريال</td><td style="font-weight:700">${pay.status==='مدفوع'?fmt(pay.amount)+' ريال':'—'}</td><td style="font-size:11px">${pay.date||'—'}</td><td><span class="badge ${pay.status==='مدفوع'?'badge-success':pay.status==='معفي'?'badge-purple':'badge-warning'}">${pay.status}</span></td></tr>`; }).join('')}</tbody></table></div></div>
   `;
+}
+
+// =================== REMINDERS ===================
+let _remHistoryPage = 1;
+
+async function renderReminders() {
+  const p = curPeriod();
+  document.getElementById('rem-period-lbl').textContent = p ? p.name : 'لا توجد دورة';
+  if (!p) {
+    document.getElementById('rem-stats').innerHTML = '<div style="grid-column:1/-1;text-align:center;color:var(--text-muted);padding:16px">أنشئ دورة أولاً</div>';
+    document.getElementById('rem-list').innerHTML = '';
+    return;
+  }
+
+  try {
+    const res = await RemindersAPI.getUnpaid(p.id);
+    const unpaid = res.data || [];
+    const total = res.total || 0;
+
+    // Stats
+    const withPhone = unpaid.filter(m => m.phone && m.phone.trim());
+    const alreadyReminded = unpaid.filter(m => m.reminder_count > 0);
+    document.getElementById('rem-stats').innerHTML = `
+      <div style="background:#fee2e2;border-radius:10px;padding:12px;text-align:center"><div style="font-size:20px;font-weight:900;color:#991b1b">${total}</div><div style="font-size:11px;color:#991b1b">لم يدفعوا</div></div>
+      <div style="background:#dbeafe;border-radius:10px;padding:12px;text-align:center"><div style="font-size:20px;font-weight:900;color:#1e40af">${withPhone.length}</div><div style="font-size:11px;color:#1e40af">لديهم رقم جوال</div></div>
+      <div style="background:#fef9c3;border-radius:10px;padding:12px;text-align:center"><div style="font-size:20px;font-weight:900;color:#854d0e">${alreadyReminded.length}</div><div style="font-size:11px;color:#854d0e">تم تذكيرهم سابقاً</div></div>`;
+
+    // Member list
+    if (!unpaid.length) {
+      document.getElementById('rem-list').innerHTML = '<div class="empty-state"><div class="empty-icon">🎉</div><p>جميع الأعضاء دفعوا!</p></div>';
+    } else {
+      document.getElementById('rem-list').innerHTML = unpaid.map(m => {
+        const phone = m.phone ? m.phone.replace(/^0/, '966') : '';
+        const msg = encodeURIComponent(`السلام عليكم ${m.name} 👋\n\nنذكركم بسداد رسوم مجلس عائلة العوامي للدورة "${p.name}"\nالمبلغ المطلوب: ${fmt(m.required)} ريال\n\nشكراً لكم 🙏`);
+        const lastRem = m.last_reminder ? new Date(m.last_reminder).toLocaleDateString('ar-SA', {month:'short',day:'numeric'}) : null;
+        return `<div style="display:flex;align-items:center;gap:10px;padding:10px;border-bottom:1px solid #f0ebe0">
+          <div class="avatar" style="background:${avColor(m.name)}">${avInit(m.name)}</div>
+          <div style="flex:1">
+            <div style="font-weight:600">${m.name}</div>
+            <div style="font-size:11px;color:var(--text-muted)">${m.phone || 'لا يوجد رقم'} ${m.family ? '• ' + m.family : ''}</div>
+            ${m.reminder_count > 0 ? `<div style="font-size:10px;color:#854d0e;margin-top:2px">🔔 ذُكِّر ${m.reminder_count} مرة ${lastRem ? '(آخر: ' + lastRem + ')' : ''}</div>` : ''}
+          </div>
+          <div style="display:flex;gap:6px;flex-wrap:wrap">
+            ${phone ? `<a href="https://wa.me/${phone}?text=${msg}" target="_blank" class="btn btn-whatsapp btn-xs" onclick="logReminder('${m.id}','${p.id}','whatsapp')">📱 واتساب</a>` : '<span class="badge badge-gray" style="font-size:10px">بدون رقم</span>'}
+            ${phone ? `<button class="btn btn-outline btn-xs" onclick="logReminder('${m.id}','${p.id}','sms')">💬 SMS</button>` : ''}
+          </div>
+        </div>`;
+      }).join('');
+    }
+
+    // Load history
+    loadReminderHistory(p.id);
+  } catch (e) {
+    console.error('Reminders error:', e);
+    document.getElementById('rem-list').innerHTML = '<div style="text-align:center;padding:20px;color:var(--danger)">فشل تحميل البيانات</div>';
+  }
+}
+
+async function logReminder(memberId, periodId, channel) {
+  try {
+    await RemindersAPI.logSingle(memberId, periodId, channel);
+    toast('تم تسجيل التذكير ✅');
+    // Don't re-render immediately to not interrupt the user
+  } catch (e) {
+    console.error('Log reminder error:', e);
+  }
+}
+
+async function sendBulkReminder(channel) {
+  const p = curPeriod();
+  if (!p) { toast('لا توجد دورة مفعّلة', 'error'); return; }
+
+  if (channel === 'whatsapp') {
+    // Open the WhatsApp modal with all unpaid members
+    sendWhatsappReminders();
+    // Log bulk
+    try { await RemindersAPI.logBulk(p.id, 'whatsapp'); } catch(e) {}
+  } else {
+    toast('تم تسجيل التذكير الجماعي عبر SMS ✅');
+    try { await RemindersAPI.logBulk(p.id, 'sms'); } catch(e) {}
+  }
+  // Reload after a delay
+  setTimeout(() => renderReminders(), 1000);
+}
+
+async function loadReminderHistory(periodId) {
+  try {
+    const res = await RemindersAPI.getHistory({ period_id: periodId, page: _remHistoryPage, limit: 20 });
+    const rows = res.data || [];
+    const tbody = document.getElementById('rem-history-tbody');
+
+    if (!rows.length) {
+      tbody.innerHTML = '<tr><td colspan="4" style="text-align:center;padding:20px;color:var(--text-muted)">لا توجد تذكيرات مرسلة بعد</td></tr>';
+    } else {
+      tbody.innerHTML = rows.map(r => {
+        const dt = r.sent_at ? new Date(r.sent_at).toLocaleDateString('ar-SA', {year:'numeric', month:'short', day:'numeric', hour:'2-digit', minute:'2-digit'}) : '';
+        const chIcon = r.channel === 'whatsapp' ? '📱' : r.channel === 'sms' ? '💬' : '📝';
+        // Get member name from local cache
+        const m = State.getMembers().find(x => x.id === r.member_id);
+        return `<tr><td style="font-size:11px">${dt}</td><td>${m ? m.name : r.member_id}</td><td><span class="badge badge-info">${chIcon} ${r.channel}</span></td><td style="font-size:11px">${r.sent_by || 'admin'}</td></tr>`;
+      }).join('');
+    }
+
+    // Pagination
+    const pag = document.getElementById('rem-history-pagination');
+    const pages = res.pages || 1;
+    if (pages <= 1) { pag.innerHTML = ''; return; }
+    let html = '';
+    if (_remHistoryPage > 1) html += `<button class="btn btn-outline btn-xs" onclick="_remHistoryPage=${_remHistoryPage-1};loadReminderHistory('${periodId}')">❮</button>`;
+    for (let i = Math.max(1, _remHistoryPage-2); i <= Math.min(pages, _remHistoryPage+2); i++) {
+      html += `<button class="btn ${i===_remHistoryPage?'btn-primary':'btn-outline'} btn-xs" onclick="_remHistoryPage=${i};loadReminderHistory('${periodId}')">${i}</button>`;
+    }
+    if (_remHistoryPage < pages) html += `<button class="btn btn-outline btn-xs" onclick="_remHistoryPage=${_remHistoryPage+1};loadReminderHistory('${periodId}')">❯</button>`;
+    pag.innerHTML = html;
+  } catch(e) {
+    console.error('Reminder history error:', e);
+  }
+}
+
+// =================== COMMITTEE CRUD ===================
+function openAddCommitteeModal() {
+  document.getElementById('committee-modal-title').textContent = '🏛️ إضافة لجنة';
+  document.getElementById('cm-id').value = '';
+  document.getElementById('cm-name').value = '';
+  document.getElementById('cm-icon').value = '🏛️';
+  document.getElementById('cm-color1').value = '#47915C';
+  document.getElementById('cm-color2').value = '#2d6b40';
+  document.getElementById('cm-desc').value = '';
+  document.getElementById('cm-advisory').checked = false;
+  document.getElementById('cm-delete-btn').style.display = 'none';
+  openModal('modal-add-committee');
+}
+
+function openEditCommitteeModal(cid) {
+  const c = State.getCommittees().find(x => x.id === cid);
+  if (!c) return;
+  document.getElementById('committee-modal-title').textContent = '✏️ تعديل اللجنة';
+  document.getElementById('cm-id').value = c.id;
+  document.getElementById('cm-name').value = c.name;
+  document.getElementById('cm-icon').value = c.icon || '🏛️';
+
+  // Parse color gradient
+  const colorMatch = (c.color || '').match(/#[0-9a-fA-F]{6}/g);
+  document.getElementById('cm-color1').value = colorMatch ? colorMatch[0] : '#47915C';
+  document.getElementById('cm-color2').value = colorMatch && colorMatch[1] ? colorMatch[1] : '#2d6b40';
+
+  document.getElementById('cm-desc').value = c.desc || '';
+  document.getElementById('cm-advisory').checked = Boolean(c.advisory);
+  document.getElementById('cm-delete-btn').style.display = 'inline-block';
+  openModal('modal-add-committee');
+}
+
+async function saveCommittee() {
+  const id = document.getElementById('cm-id').value;
+  const name = document.getElementById('cm-name').value.trim();
+  if (!name) { toast('اسم اللجنة مطلوب', 'error'); return; }
+
+  const c1 = document.getElementById('cm-color1').value;
+  const c2 = document.getElementById('cm-color2').value;
+  const data = {
+    name,
+    icon: document.getElementById('cm-icon').value || '🏛️',
+    color: `linear-gradient(135deg,${c1},${c2})`,
+    description: document.getElementById('cm-desc').value,
+    advisory: document.getElementById('cm-advisory').checked,
+  };
+
+  if (id) {
+    await CommitteeService.update(id, data);
+  } else {
+    await CommitteeService.create(data);
+  }
+}
+
+function deleteCommitteeFromModal() {
+  const id = document.getElementById('cm-id').value;
+  if (!id) return;
+  closeModal('modal-add-committee');
+  CommitteeService.delete(id);
 }
 
 // =================== WHATSAPP ===================
@@ -1931,14 +2112,93 @@ function loadSampleData(){
 // =================== INIT ===================
 document.querySelectorAll('.modal-overlay').forEach(ov=>ov.addEventListener('click',e=>{ if(e.target===ov) ov.classList.remove('open'); }));
 
-// Close mobile sidebar when clicking outside
-document.addEventListener('click',e=>{
-  const sidebar=document.querySelector('.sidebar');
-  const toggle=document.querySelector('.mobile-toggle');
-  if(window.innerWidth<=768 && sidebar.classList.contains('open')){
-    if(!sidebar.contains(e.target) && !toggle.contains(e.target)){
-      sidebar.classList.remove('open');
+// =================== MOBILE ENHANCEMENTS ===================
+// Backdrop for sidebar
+(function initMobileBackdrop() {
+  const backdrop = document.createElement('div');
+  backdrop.className = 'sidebar-backdrop';
+  document.body.appendChild(backdrop);
+  backdrop.addEventListener('click', () => closeMobileSidebar());
+})();
+
+function openMobileSidebar() {
+  document.querySelector('.sidebar').classList.add('open');
+  document.querySelector('.sidebar-backdrop').classList.add('active');
+  document.body.style.overflow = 'hidden';
+}
+
+function closeMobileSidebar() {
+  document.querySelector('.sidebar').classList.remove('open');
+  document.querySelector('.sidebar-backdrop').classList.remove('active');
+  document.body.style.overflow = '';
+}
+
+// Update mobile toggle to use backdrop
+document.querySelector('.mobile-toggle').onclick = function(e) {
+  e.stopPropagation();
+  const sidebar = document.querySelector('.sidebar');
+  if (sidebar.classList.contains('open')) {
+    closeMobileSidebar();
+  } else {
+    openMobileSidebar();
+  }
+};
+
+// Close sidebar on nav click (mobile)
+document.querySelectorAll('.nav-item').forEach(item => {
+  item.addEventListener('click', () => {
+    if (window.innerWidth <= 768) closeMobileSidebar();
+  });
+});
+
+// Swipe to open/close sidebar
+(function initSwipeGesture() {
+  let touchStartX = 0;
+  let touchStartY = 0;
+  let swiping = false;
+
+  document.addEventListener('touchstart', e => {
+    touchStartX = e.touches[0].clientX;
+    touchStartY = e.touches[0].clientY;
+    swiping = false;
+  }, { passive: true });
+
+  document.addEventListener('touchmove', e => {
+    if (swiping) return;
+    const dx = e.touches[0].clientX - touchStartX;
+    const dy = e.touches[0].clientY - touchStartY;
+    if (Math.abs(dx) > Math.abs(dy) && Math.abs(dx) > 30) {
+      swiping = true;
+      const sidebar = document.querySelector('.sidebar');
+      // Swipe left from right edge → open sidebar (RTL)
+      if (dx < -50 && touchStartX > window.innerWidth - 40 && !sidebar.classList.contains('open') && window.innerWidth <= 768) {
+        openMobileSidebar();
+      }
+      // Swipe right → close sidebar (RTL)
+      if (dx > 50 && sidebar.classList.contains('open') && window.innerWidth <= 768) {
+        closeMobileSidebar();
+      }
     }
+  }, { passive: true });
+})();
+
+// Close mobile sidebar when clicking outside (fallback)
+document.addEventListener('click', e => {
+  const sidebar = document.querySelector('.sidebar');
+  const toggle = document.querySelector('.mobile-toggle');
+  if (window.innerWidth <= 768 && sidebar.classList.contains('open')) {
+    if (!sidebar.contains(e.target) && !toggle.contains(e.target)) {
+      closeMobileSidebar();
+    }
+  }
+});
+
+// Handle orientation change
+window.addEventListener('resize', () => {
+  if (window.innerWidth > 768) {
+    document.querySelector('.sidebar').classList.remove('open');
+    document.querySelector('.sidebar-backdrop').classList.remove('active');
+    document.body.style.overflow = '';
   }
 });
 

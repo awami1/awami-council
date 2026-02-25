@@ -142,20 +142,35 @@ switch ($type) {
         break;
 
     case 'committees':
-        $headers = ['اللجنة', 'عدد الأعضاء', 'الأعضاء'];
-        // Committee names come from the app's constants, but we can list committee_members
-        $stmt = $pdo->query(
-            'SELECT cm.committee_id, GROUP_CONCAT(m.name) AS member_names, COUNT(*) AS cnt
-             FROM committee_members cm
-             LEFT JOIN members m ON m.id = cm.member_id
-             GROUP BY cm.committee_id'
-        );
-        while ($r = $stmt->fetch()) {
-            $rows[] = [
-                $r['committee_id'],
-                $r['cnt'],
-                str_replace(',', '، ', $r['member_names'] ?? ''),
-            ];
+        $headers = ['اللجنة', 'الوصف', 'عدد الأعضاء', 'الأعضاء'];
+        // Try committees table first
+        try {
+            $stmt = $pdo->query(
+                'SELECT c.name, c.description,
+                        (SELECT COUNT(*) FROM committee_members cm WHERE cm.committee_id = c.id) AS cnt,
+                        (SELECT GROUP_CONCAT(m.name) FROM committee_members cm LEFT JOIN members m ON m.id = cm.member_id WHERE cm.committee_id = c.id) AS member_names
+                 FROM committees c
+                 ORDER BY c.sort_order ASC'
+            );
+            while ($r = $stmt->fetch()) {
+                $rows[] = [
+                    $r['name'],
+                    $r['description'] ?? '',
+                    $r['cnt'],
+                    str_replace(',', '، ', $r['member_names'] ?? ''),
+                ];
+            }
+        } catch (PDOException $e) {
+            // Fallback to old method
+            $stmt = $pdo->query(
+                'SELECT cm.committee_id, GROUP_CONCAT(m.name) AS member_names, COUNT(*) AS cnt
+                 FROM committee_members cm
+                 LEFT JOIN members m ON m.id = cm.member_id
+                 GROUP BY cm.committee_id'
+            );
+            while ($r = $stmt->fetch()) {
+                $rows[] = [$r['committee_id'], '', $r['cnt'], str_replace(',', '، ', $r['member_names'] ?? '')];
+            }
         }
         break;
 

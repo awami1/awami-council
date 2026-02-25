@@ -7,6 +7,22 @@ requireAuth();
 $pdo    = getPDO();
 $method = $_SERVER['REQUEST_METHOD'];
 
+// Ensure website_settings table exists
+if (isSQLite()) {
+    $pdo->exec("CREATE TABLE IF NOT EXISTS website_settings (
+      id INTEGER NOT NULL DEFAULT 1 PRIMARY KEY,
+      data TEXT NOT NULL,
+      updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+    )");
+} else {
+    $pdo->exec("CREATE TABLE IF NOT EXISTS `website_settings` (
+      `id` INT NOT NULL DEFAULT 1,
+      `data` MEDIUMTEXT NOT NULL,
+      `updated_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+      PRIMARY KEY (`id`)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci");
+}
+
 function getSettings(PDO $pdo): array {
     $row = $pdo->query("SELECT data FROM website_settings WHERE id=1 LIMIT 1")->fetch();
     return $row ? (json_decode($row['data'], true) ?: []) : [];

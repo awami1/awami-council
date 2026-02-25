@@ -7,6 +7,22 @@ requireAuth();
 $pdo    = getPDO();
 $method = $_SERVER['REQUEST_METHOD'];
 
+// Ensure website_settings table exists (same pattern as meeting.php)
+if (isSQLite()) {
+    $pdo->exec("CREATE TABLE IF NOT EXISTS website_settings (
+      id INTEGER NOT NULL DEFAULT 1 PRIMARY KEY,
+      data TEXT NOT NULL,
+      updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+    )");
+} else {
+    $pdo->exec("CREATE TABLE IF NOT EXISTS `website_settings` (
+      `id` INT NOT NULL DEFAULT 1,
+      `data` MEDIUMTEXT NOT NULL,
+      `updated_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+      PRIMARY KEY (`id`)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci");
+}
+
 function defaultSettings(): array {
     return [
         'header' => [
@@ -35,36 +51,44 @@ function defaultSettings(): array {
 }
 
 if ($method === 'GET') {
-    $row = $pdo->query("SELECT data FROM website_settings WHERE id = 1 LIMIT 1")->fetch();
-    if (!$row) {
-        respond(200, ['settings' => defaultSettings()]);
+    try {
+        $row = $pdo->query("SELECT data FROM website_settings WHERE id = 1 LIMIT 1")->fetch();
+        if (!$row) {
+            respond(200, ['settings' => defaultSettings()]);
+        }
+        $settings = json_decode($row['data'], true) ?: defaultSettings();
+        $settings = array_replace_recursive(defaultSettings(), $settings);
+        respond(200, ['settings' => $settings]);
+    } catch (Exception $e) {
+        respond(500, ['error' => 'خطأ في القراءة: ' . $e->getMessage()]);
     }
-    $settings = json_decode($row['data'], true) ?: defaultSettings();
-    $settings = array_replace_recursive(defaultSettings(), $settings);
-    respond(200, ['settings' => $settings]);
 }
 
 if ($method === 'POST') {
-    $data    = bodyJson();
-    $row     = $pdo->query("SELECT data FROM website_settings WHERE id = 1 LIMIT 1")->fetch();
-    $current = $row ? (json_decode($row['data'], true) ?: defaultSettings()) : defaultSettings();
+    try {
+        $data    = bodyJson();
+        $row     = $pdo->query("SELECT data FROM website_settings WHERE id = 1 LIMIT 1")->fetch();
+        $current = $row ? (json_decode($row['data'], true) ?: defaultSettings()) : defaultSettings();
 
-    // Merge section or full
-    if (isset($data['section']) && isset($data['data'])) {
-        $current[$data['section']] = $data['data'];
-    } else {
-        $current = array_replace_recursive($current, $data);
+        // Merge section or full
+        if (isset($data['section']) && isset($data['data'])) {
+            $current[$data['section']] = $data['data'];
+        } else {
+            $current = array_replace_recursive($current, $data);
+        }
+
+        $json = json_encode($current, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+
+        if ($row) {
+            $pdo->prepare("UPDATE website_settings SET data=:d WHERE id=1")->execute([':d' => $json]);
+        } else {
+            $pdo->prepare("INSERT INTO website_settings (id, data) VALUES (1, :d)")->execute([':d' => $json]);
+        }
+
+        respond(200, ['ok' => true, 'settings' => $current]);
+    } catch (Exception $e) {
+        respond(500, ['error' => 'خطأ في الحفظ: ' . $e->getMessage()]);
     }
-
-    $json = json_encode($current, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
-
-    if ($row) {
-        $pdo->prepare("UPDATE website_settings SET data=:d WHERE id=1")->execute([':d' => $json]);
-    } else {
-        $pdo->prepare("INSERT INTO website_settings (id, data) VALUES (1, :d)")->execute([':d' => $json]);
-    }
-
-    respond(200, ['ok' => true, 'settings' => $current]);
 }
 
 respond(405, ['error' => 'Method not allowed']);

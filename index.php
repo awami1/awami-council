@@ -14,6 +14,7 @@ function getWS(): array {
         'values'           => [],
         'logo'             => null,
         'media'            => [],
+        'contact'          => ['whatsapp' => ''],
     ];
     try {
         $pdo = getPDO();
@@ -49,8 +50,23 @@ function getBranches(): array {
     } catch (Throwable $e) { return []; }
 }
 
-$meeting  = getMeeting();
-$branches = getBranches();
+function getUpcomingEvents(): array {
+    try {
+        $pdo = getPDO();
+        return $pdo->query("
+            SELECT id, name, icon, event_date, lead
+            FROM events
+            WHERE status = 'قادم'
+              AND (event_date IS NULL OR event_date >= DATE('now'))
+            ORDER BY event_date ASC
+            LIMIT 6
+        ")->fetchAll();
+    } catch (Throwable $e) { return []; }
+}
+
+$meeting        = getMeeting();
+$branches       = getBranches();
+$upcomingEvents = getUpcomingEvents();
 ?>
 <!DOCTYPE html>
 
@@ -59,6 +75,27 @@ $branches = getBranches();
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1.0">
 <title><?= esc($ws['header']['title']) ?></title>
+<?php
+  $siteTitle = esc($ws['header']['title']);
+  $siteDesc  = esc($ws['hero']['description']);
+?>
+<!-- SEO -->
+<meta name="description" content="<?= $siteDesc ?>">
+<meta name="robots" content="index, follow">
+<!-- Open Graph -->
+<meta property="og:type" content="website">
+<meta property="og:title" content="<?= $siteTitle ?>">
+<meta property="og:description" content="<?= $siteDesc ?>">
+<meta property="og:locale" content="ar_SA">
+<!-- Twitter Card -->
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="<?= $siteTitle ?>">
+<meta name="twitter:description" content="<?= $siteDesc ?>">
+<!-- Favicon -->
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 80 80'%3E%3Crect width='80' height='80' rx='16' fill='%232d6b40'/%3E%3Cpath d='M55 12 C58 8,65 10,64 18 C63 26,54 30,50 38 C46 46,48 56,42 62 C36 68,26 66,24 58 C22 50,30 44,32 36' stroke='%23fff' stroke-width='6' stroke-linecap='round' fill='none'/%3E%3Cpath d='M32 36 C28 44,20 46,20 54 C20 62,28 66,34 62' stroke='%23fff' stroke-width='5' stroke-linecap='round' fill='none'/%3E%3Ccircle cx='34' cy='62' r='5' fill='%23fff'/%3E%3C/svg%3E">
+<!-- Preconnect for fonts -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Amiri:wght@400;700&family=Cairo:wght@300;400;600;700;900&family=Readex+Pro:wght@400;700&family=Tajawal:wght@400;500;700;800&display=swap" rel="stylesheet">
 <style>
 :root{
@@ -260,6 +297,50 @@ section,.full-section{padding:48px 20px}
 .logo-text h1{font-size:16px}
 }
 
+/* SKIP LINK */
+.skip-link{position:absolute;top:-100%;left:50%;transform:translateX(-50%);background:#47915C;color:#fff;padding:8px 20px;border-radius:0 0 8px 8px;z-index:9999;font-weight:700;font-size:14px;text-decoration:none}
+.skip-link:focus{top:0}
+
+/* HERO CTA */
+.hero-cta{display:flex;gap:16px;justify-content:center;flex-wrap:wrap;margin-top:24px;animation:fadeInUp .8s ease-out .45s both}
+.cta-btn{padding:14px 32px;border-radius:12px;font-weight:800;font-size:15px;text-decoration:none;transition:all .3s;font-family:'Cairo',sans-serif;display:inline-flex;align-items:center;gap:8px}
+.cta-primary{background:#47915C;color:#fff;box-shadow:0 4px 16px rgba(45,107,64,.35)}
+.cta-primary:hover{background:#2d6b40;transform:translateY(-2px);box-shadow:0 8px 24px rgba(45,107,64,.45)}
+.cta-secondary{background:rgba(255,255,255,.12);color:#fff;border:2px solid rgba(255,255,255,.3)}
+.cta-secondary:hover{background:rgba(255,255,255,.22);transform:translateY(-2px)}
+
+/* EVENTS */
+.events-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:18px;max-width:1200px;margin:0 auto}
+.event-card{background:#fff;border-radius:16px;padding:22px;border:1px solid #d4ddd6;transition:all .35s cubic-bezier(.22,1,.36,1);display:flex;gap:16px;align-items:flex-start}
+.event-card:hover{border-color:#47915C;box-shadow:0 8px 28px rgba(71,145,92,.16);transform:translateY(-4px)}
+.event-icon{font-size:32px;flex-shrink:0;width:52px;height:52px;background:#e8f5ec;border-radius:12px;display:flex;align-items:center;justify-content:center}
+.event-info{flex:1;min-width:0}
+.event-name{font-size:15px;font-weight:800;color:#2d6b40;margin-bottom:6px;line-height:1.4}
+.event-date{font-size:12px;color:#6b7c6e;font-weight:600;margin-bottom:4px}
+.event-lead{font-size:12px;color:#6b7c6e}
+
+/* FOOTER LINKS */
+.footer-links{display:flex;justify-content:center;gap:20px;flex-wrap:wrap;margin:20px 0 8px}
+.footer-links a{color:rgba(255,255,255,.7);text-decoration:none;font-size:13px;font-weight:600;transition:color .2s}
+.footer-links a:hover{color:#fff}
+.footer-whatsapp{margin-top:14px}
+.footer-whatsapp a{display:inline-flex;align-items:center;gap:8px;background:#25D366;color:#fff;padding:10px 24px;border-radius:10px;text-decoration:none;font-size:13px;font-weight:700;transition:all .25s;box-shadow:0 4px 12px rgba(37,211,102,.3)}
+.footer-whatsapp a:hover{background:#1ebe5d;transform:translateY(-2px)}
+
+/* REDUCED MOTION */
+@media (prefers-reduced-motion: reduce) {
+  *,.animate-in{transition:none !important;animation:none !important}
+  html{scroll-behavior:auto}
+  .animate-in{opacity:1;transform:none}
+}
+
+/* RESPONSIVE — EVENTS */
+@media(max-width:768px){
+.events-grid{grid-template-columns:1fr}
+.hero-cta{flex-direction:column;align-items:center}
+.cta-btn{width:100%;max-width:320px;justify-content:center}
+}
+
 /* DARK MODE */
 @media (prefers-color-scheme: dark) {
 body { background: #0f1a12; color: #e8f0ea; }
@@ -283,11 +364,18 @@ body { background: #0f1a12; color: #e8f0ea; }
 .scroll-top { background: #47915C; }
 .hero-meta .lbl { color: #a8bfac; }
 .about-content h3::after { background: #47915C; }
+.event-card { background: #1a2a1e; border-color: #2d4a35; }
+.event-icon { background: #1a3d28; }
+.event-name { color: #7ec89a; }
+.event-date, .event-lead { color: #a8bfac; }
+.cta-secondary { border-color: rgba(255,255,255,.25); }
 }
 </style>
 
 </head>
 <body>
+
+<a href="#main-content" class="skip-link">تخطَّ إلى المحتوى الرئيسي</a>
 
 <!-- HEADER -->
 
@@ -310,10 +398,11 @@ body { background: #0f1a12; color: #e8f0ea; }
         <p><?= esc($ws['header']['subtitle']) ?></p>
       </div>
     </div>
-    <button class="menu-toggle" id="menuBtn" aria-label="القائمة">&#9776;</button>
+    <button class="menu-toggle" id="menuBtn" aria-label="القائمة" aria-expanded="false" aria-controls="mainNav">&#9776;</button>
     <nav id="mainNav">
       <a href="#council">المجلس</a>
       <a href="#committees">اللجان</a>
+      <a href="#events">الفعاليات</a>
       <a href="#tree">شجرة العائلة</a>
       <a href="#media">الميديا</a>
       <a href="#eid-greeting">&#127769; تهنئة العيد</a>
@@ -324,10 +413,16 @@ body { background: #0f1a12; color: #e8f0ea; }
 
 <!-- HERO -->
 
-<div class="hero">
+<div class="hero" id="main-content">
   <div class="hero-content">
     <h2><?= esc($ws['hero']['title']) ?></h2>
     <p><?= esc($ws['hero']['description']) ?></p>
+    <div class="hero-cta">
+      <a href="#about" class="cta-btn cta-primary">تعرف على المجلس</a>
+      <?php if (!empty($ws['contact']['whatsapp'])): ?>
+        <a href="https://wa.me/<?= esc(preg_replace('/\D/', '', $ws['contact']['whatsapp'])) ?>" target="_blank" rel="noopener" class="cta-btn cta-secondary">&#128241; تواصل معنا</a>
+      <?php endif; ?>
+    </div>
     <div class="hero-meta">
       <div><div class="num"><?= esc((string)$ws['stats']['years']) ?></div><div class="lbl">عاماً من العطاء</div></div>
       <div><div class="num"><?= esc((string)$ws['stats']['committees']) ?></div><div class="lbl">لجنة متخصصة</div></div>
@@ -425,6 +520,34 @@ body { background: #0f1a12; color: #e8f0ea; }
     <?php endif; ?>
   </div>
 </section>
+
+<!-- EVENTS -->
+
+<?php if (!empty($upcomingEvents)): ?>
+<section id="events" class="full-section" style="background:#f5f9f6">
+  <div class="section-header">
+    <div class="section-badge">الفعاليات القادمة</div>
+    <h2 class="section-title">فعاليات المجلس</h2>
+    <p class="section-subtitle">أبرز الفعاليات والأنشطة القادمة</p>
+  </div>
+  <div class="events-grid">
+    <?php foreach ($upcomingEvents as $ev): ?>
+      <div class="event-card animate-in">
+        <div class="event-icon"><?= esc($ev['icon'] ?? '📅') ?></div>
+        <div class="event-info">
+          <div class="event-name"><?= esc($ev['name']) ?></div>
+          <?php if (!empty($ev['event_date'])): ?>
+            <div class="event-date">&#128197; <?= esc(date('d/m/Y', strtotime($ev['event_date']))) ?></div>
+          <?php endif; ?>
+          <?php if (!empty($ev['lead'])): ?>
+            <div class="event-lead">&#128100; <?= esc($ev['lead']) ?></div>
+          <?php endif; ?>
+        </div>
+      </div>
+    <?php endforeach; ?>
+  </div>
+</section>
+<?php endif; ?>
 
 <!-- COMMITTEES -->
 
@@ -636,7 +759,21 @@ body { background: #0f1a12; color: #e8f0ea; }
     </div>
     <p class="footer-name">مجلس عائلة العوامي</p>
     <p class="footer-year">تأسس عام ١٩٩٢م - ١٤١٣هـ</p>
-    <p class="footer-copy">جميع الحقوق محفوظة &copy; ٢٠٢٥ مجلس عائلة العوامي</p>
+    <nav class="footer-links" aria-label="روابط سريعة">
+      <a href="#council">المجلس</a>
+      <a href="#committees">اللجان</a>
+      <a href="#tree">شجرة العائلة</a>
+      <a href="#media">الميديا</a>
+      <a href="#about">عن المجلس</a>
+    </nav>
+    <?php if (!empty($ws['contact']['whatsapp'])): ?>
+    <div class="footer-whatsapp">
+      <a href="https://wa.me/<?= esc(preg_replace('/\D/', '', $ws['contact']['whatsapp'])) ?>" target="_blank" rel="noopener">
+        &#128241; تواصل معنا عبر واتساب
+      </a>
+    </div>
+    <?php endif; ?>
+    <p class="footer-copy">جميع الحقوق محفوظة &copy; <?= date('Y') ?> مجلس عائلة العوامي</p>
   </div>
 </footer>
 
@@ -656,8 +793,15 @@ body { background: #0f1a12; color: #e8f0ea; }
 (function () {
   // Menu
   const nav = document.getElementById('mainNav');
-  document.getElementById('menuBtn').addEventListener('click', () => nav.classList.toggle('open'));
-  nav.querySelectorAll('a').forEach(a => a.addEventListener('click', () => nav.classList.remove('open')));
+  const menuBtn = document.getElementById('menuBtn');
+  menuBtn.addEventListener('click', () => {
+    const isOpen = nav.classList.toggle('open');
+    menuBtn.setAttribute('aria-expanded', isOpen ? 'true' : 'false');
+  });
+  nav.querySelectorAll('a').forEach(a => a.addEventListener('click', () => {
+    nav.classList.remove('open');
+    menuBtn.setAttribute('aria-expanded', 'false');
+  }));
 
   // Active nav + scroll top
   const secs = document.querySelectorAll('section[id]');

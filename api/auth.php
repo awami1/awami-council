@@ -16,6 +16,7 @@ declare(strict_types=1);
 
 require_once __DIR__ . '/config.php';
 require_once __DIR__ . '/auth_guard.php';
+require_once __DIR__ . '/audit_helper.php';
 
 startAdminSession();
 
@@ -52,7 +53,9 @@ if ($method === 'POST' && $action === 'login') {
     if ($valid) {
         session_regenerate_id(true);
         $_SESSION['awami_admin']      = true;
+        $_SESSION['awami_user']       = $username;
         $_SESSION['awami_login_time'] = time();
+        logAudit('دخول', 'auth', '', $username);
         respond(200, ['success' => true]);
     }
 
@@ -63,6 +66,7 @@ if ($method === 'POST' && $action === 'login') {
 
 // ── تسجيل الخروج ──
 if ($method === 'POST' && $action === 'logout') {
+    logAudit('خروج', 'auth', '', $_SESSION['awami_user'] ?? 'admin');
     $_SESSION = [];
     if (ini_get('session.use_cookies')) {
         $p = session_get_cookie_params();

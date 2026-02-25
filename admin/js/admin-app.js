@@ -182,12 +182,12 @@ function showPage(name,el){
     document.querySelector('.sidebar').classList.remove('open');
   }
   
-  const T={dashboard:'لوحة التحكم|مجلس عائلة العوامي',council:'مناصب المجلس|الهيئة الإدارية',members:'الأعضاء|إدارة الأعضاء',fees:'الرسوم|متابعة المدفوعات',committees:'اللجان|اللجان الفرعية للمجلس',orgchart:'الهيكل التنظيمي|مجلس عائلة العوامي',budget:'الميزانية|السجل المالي',events:'الفعاليات|الأنشطة',calendar:'التقويم|عرض تقويمي',familytree:'شجرة العائلة|الأفرع العائلية',voting:'التصويت|استطلاعات الرأي',portal:'بوابة العضو|الملف الشخصي','smart-reports':'التقارير الذكية|تحليل مدعوم بالذكاء الاصطناعي',reports:'التقارير|إحصائيات',websettings:'الموقع العام|إدارة المحتوى',settings:'النسخ الاحتياطي|إدارة البيانات'};
+  const T={dashboard:'لوحة التحكم|مجلس عائلة العوامي',council:'مناصب المجلس|الهيئة الإدارية',members:'الأعضاء|إدارة الأعضاء',fees:'الرسوم|متابعة المدفوعات',committees:'اللجان|اللجان الفرعية للمجلس',orgchart:'الهيكل التنظيمي|مجلس عائلة العوامي',budget:'الميزانية|السجل المالي',events:'الفعاليات|الأنشطة',calendar:'التقويم|عرض تقويمي',familytree:'شجرة العائلة|الأفرع العائلية',voting:'التصويت|استطلاعات الرأي',portal:'بوابة العضو|الملف الشخصي','smart-reports':'التقارير الذكية|تحليل مدعوم بالذكاء الاصطناعي',reports:'التقارير|إحصائيات',audit:'سجل التدقيق|من غيّر ماذا ومتى','export':'تصدير البيانات|Excel و CSV',websettings:'الموقع العام|إدارة المحتوى',settings:'النسخ الاحتياطي|إدارة البيانات'};
   const [t,s]=(T[name]||'--|--').split('|');
   document.getElementById('topbar-title').innerHTML=t+` <span>${s}</span>`;
   const A={members:`<button class="btn btn-primary" onclick="openAddMember()">+ إضافة عضو</button>`,budget:`<button class="btn btn-primary" onclick="openModal('modal-tx')">+ معاملة</button>`,events:`<button class="btn btn-primary" onclick="openAddEvent()">+ فعالية</button>`};
   document.getElementById('topbar-action').innerHTML=A[name]||'';
-  const renderers={dashboard:renderDashboard,council:renderCouncil,members:renderMembers,fees:renderFees,committees:renderCommittees,orgchart:renderOrgChart,budget:renderBudget,events:renderEvents,calendar:renderCalendar,familytree:renderFamilyTree,voting:renderVoting,portal:renderPortalSelect,'smart-reports':function(){},reports:renderReports,websettings:renderWebsiteSettings,settings:renderSettings};
+  const renderers={dashboard:renderDashboard,council:renderCouncil,members:renderMembers,fees:renderFees,committees:renderCommittees,orgchart:renderOrgChart,budget:renderBudget,events:renderEvents,calendar:renderCalendar,familytree:renderFamilyTree,voting:renderVoting,portal:renderPortalSelect,'smart-reports':function(){},reports:renderReports,audit:renderAuditLog,'export':function(){},websettings:renderWebsiteSettings,settings:renderSettings};
   if(renderers[name]) renderers[name]();
   updateSidebar();
 }
@@ -1369,6 +1369,116 @@ function exportToCSV(headers,rows,filename){ const bom='\uFEFF'; const csv=bom+[
 function exportMembersExcel(){ exportToCSV(['الاسم','الجوال','رقم الهوية','الفرع','تاريخ الانضمام','الحالة'],State.getMembers().map(m=>[m.name,m.phone||'',m.idNum||'',m.family,m.joinDate||'',m.status]),'أعضاء_عائلة_العوامي'); toast('تم تصدير الملف 📊'); }
 function exportFeesExcel(){ const p=curPeriod(); if(!p){toast('لا توجد دورة','error');return;} const pays=State.getPayments().filter(x=>x.periodId===p.id); exportToCSV(['الاسم','المطلوب','المدفوع','التاريخ','الطريقة','الحالة'],pays.map(pay=>{ const m=State.getMembers().find(x=>x.id===pay.memberId)||{}; return [m.name||'',pay.required||p.feeAmount,pay.amount||0,pay.date||'',pay.method||'',pay.status]; }),`رسوم_${p.name}`); toast('تم التصدير 📊'); }
 function exportBudgetExcel(){ exportToCSV(['التاريخ','الوصف','الفئة','اللجنة','النوع','المبلغ'],State.getTransactions().map(t=>{ const c=State.getCommittees().find(x=>x.id===t.committee); return [t.date,t.desc,t.category,c?c.name:'عام',t.type,t.amount]; }),'المعاملات_المالية'); toast('تم التصدير 📊'); }
+
+// =================== SERVER-SIDE EXPORT (CSV) ===================
+function downloadExport(type, extraParams) {
+  const params = {};
+  if (extraParams) {
+    Object.keys(extraParams).forEach(k => {
+      if (extraParams[k]) params[k] = extraParams[k];
+    });
+  }
+  const url = ExportAPI.url(type, params);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = '';
+  a.click();
+  toast('جاري تحميل التصدير... 📥');
+}
+
+// =================== AUDIT LOG ===================
+let _auditPage = 1;
+let _auditDebounceTimer = null;
+
+function renderAuditDebounced() {
+  clearTimeout(_auditDebounceTimer);
+  _auditDebounceTimer = setTimeout(() => renderAuditLog(), 300);
+}
+
+async function renderAuditLog(page) {
+  if (page) _auditPage = page;
+  const params = { page: _auditPage, limit: 30 };
+
+  const search = (document.getElementById('audit-search') || {}).value;
+  const eType  = (document.getElementById('audit-flt-type') || {}).value;
+  const action = (document.getElementById('audit-flt-action') || {}).value;
+  const from   = (document.getElementById('audit-from') || {}).value;
+  const to     = (document.getElementById('audit-to') || {}).value;
+
+  if (search) params.search = search;
+  if (eType)  params.entity_type = eType;
+  if (action) params.action = action;
+  if (from)   params.from = from;
+  if (to)     params.to = to;
+
+  try {
+    const res = await AuditAPI.getAll(params);
+    const rows = res.data || [];
+    const total = res.total || 0;
+    const pages = res.pages || 1;
+
+    const actionIcons = {
+      'إضافة': '➕', 'تعديل': '✏️', 'حذف': '🗑️',
+      'تصدير': '📥', 'دخول': '🔑', 'خروج': '🚪',
+    };
+    const actionColors = {
+      'إضافة': '#dcfce7', 'تعديل': '#fef9c3', 'حذف': '#fee2e2',
+      'تصدير': '#e0f2fe', 'دخول': '#f3e8ff', 'خروج': '#fce7f3',
+    };
+    const typeIcons = {
+      'عضو': '👤', 'دفعة': '💳', 'معاملة': '💰', 'فعالية': '🗓️',
+      'تصويت': '🗳️', 'إعدادات': '⚙️', 'فرع': '🌳', 'ميديا': '📷',
+      'members': '👤', 'payments': '💳', 'transactions': '💰',
+      'events': '🗓️', 'polls': '🗳️', 'settings': '⚙️',
+      'branches': '🌳', 'media': '📷', 'auth': '🔑',
+    };
+
+    const tbody = document.getElementById('audit-tbody');
+    if (!rows.length) {
+      tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;padding:40px;color:var(--text-muted)">لا توجد سجلات تدقيق بعد</td></tr>';
+    } else {
+      tbody.innerHTML = rows.map(r => {
+        const icon = actionIcons[r.action] || '📝';
+        const bg   = actionColors[r.action] || '#f4f7f4';
+        const tIcon = typeIcons[r.entity_type] || '📄';
+        const dt = r.created_at ? new Date(r.created_at) : null;
+        const dateStr = dt ? dt.toLocaleDateString('ar-SA',{year:'numeric',month:'short',day:'numeric'}) + ' ' + dt.toLocaleTimeString('ar-SA',{hour:'2-digit',minute:'2-digit'}) : '';
+        const detailStr = r.details && Object.keys(r.details).length
+          ? '<div style="font-size:10px;color:var(--text-muted);max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' + JSON.stringify(r.details).substring(0,80) + '</div>'
+          : '<span style="color:var(--text-muted);font-size:11px">—</span>';
+        return `<tr>
+          <td style="font-size:11px;white-space:nowrap">${dateStr}</td>
+          <td style="font-size:12px">${r.user || 'admin'}</td>
+          <td><span style="background:${bg};padding:3px 10px;border-radius:6px;font-size:11px;font-weight:600">${icon} ${r.action}</span></td>
+          <td style="font-size:12px">${tIcon} ${r.entity_type}</td>
+          <td style="font-size:12px;max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${r.entity_name || '—'}</td>
+          <td>${detailStr}</td>
+        </tr>`;
+      }).join('');
+    }
+
+    document.getElementById('audit-count').textContent = total + ' سجل';
+
+    // Pagination
+    const pag = document.getElementById('audit-pagination');
+    if (pages <= 1) {
+      pag.innerHTML = '';
+    } else {
+      let html = '';
+      if (_auditPage > 1) html += `<button class="btn btn-outline btn-xs" onclick="renderAuditLog(${_auditPage-1})">❮</button>`;
+      const start = Math.max(1, _auditPage - 2);
+      const end   = Math.min(pages, _auditPage + 2);
+      for (let i = start; i <= end; i++) {
+        html += `<button class="btn ${i===_auditPage?'btn-primary':'btn-outline'} btn-xs" onclick="renderAuditLog(${i})">${i}</button>`;
+      }
+      if (_auditPage < pages) html += `<button class="btn btn-outline btn-xs" onclick="renderAuditLog(${_auditPage+1})">❯</button>`;
+      pag.innerHTML = html;
+    }
+  } catch (e) {
+    console.error('Audit log error:', e);
+    document.getElementById('audit-tbody').innerHTML = '<tr><td colspan="6" style="text-align:center;padding:20px;color:var(--danger)">فشل تحميل سجل التدقيق</td></tr>';
+  }
+}
 
 // =================== DASHBOARD ===================
 function renderDashboard(){

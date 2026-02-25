@@ -77,7 +77,9 @@ if (!isAuthenticated()) {
     <div class="nav-item" onclick="showPage('smart-reports',this)"><span class="icon">🤖</span>التقارير الذكية</div>
     <div class="nav-item" onclick="showPage('portal',this)"><span class="icon">👤</span>بوابة العضو</div>
     <div class="nav-item" onclick="showPage('reports',this)"><span class="icon">📈</span>التقارير</div>
+    <div class="nav-item" onclick="showPage('export',this)"><span class="icon">📥</span>تصدير البيانات</div>
     <div class="nav-section">الإعدادات</div>
+    <div class="nav-item" onclick="showPage('audit',this)"><span class="icon">📋</span>سجل التدقيق</div>
     <div class="nav-item" onclick="showPage('websettings',this)"><span class="icon">🌐</span>الموقع العام</div>
     <div class="nav-item" onclick="showPage('settings',this)"><span class="icon">⚙️</span>النسخ الاحتياطي</div>
   </nav>
@@ -683,6 +685,154 @@ if (!isAuthenticated()) {
             <div style="font-size:12px;color:#991b1b;font-weight:600">تحذير: لا يمكن التراجع عن هذا الإجراء</div>
           </div>
           <button class="btn btn-danger" onclick="clearAllData()">🗑️ مسح جميع البيانات</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- AUDIT LOG -->
+    <div class="page" id="page-audit">
+      <div class="card" style="margin-bottom:16px">
+        <div class="card-header">
+          <div class="card-title">📋 سجل التدقيق — من غيّر ماذا ومتى</div>
+          <div style="display:flex;gap:8px">
+            <button class="btn btn-outline btn-sm" onclick="downloadExport('audit')">📥 تصدير CSV</button>
+          </div>
+        </div>
+        <div class="card-body">
+          <div class="search-bar" style="flex-wrap:wrap">
+            <input class="search-input" id="audit-search" placeholder="بحث في السجل..." oninput="renderAuditDebounced()">
+            <select class="form-control" style="width:140px" id="audit-flt-type" onchange="renderAuditLog()">
+              <option value="">كل الأنواع</option>
+              <option value="عضو">عضو</option>
+              <option value="دفعة">دفعة</option>
+              <option value="معاملة">معاملة</option>
+              <option value="فعالية">فعالية</option>
+              <option value="تصويت">تصويت</option>
+              <option value="إعدادات">إعدادات</option>
+              <option value="فرع">فرع</option>
+              <option value="ميديا">ميديا</option>
+            </select>
+            <select class="form-control" style="width:140px" id="audit-flt-action" onchange="renderAuditLog()">
+              <option value="">كل الإجراءات</option>
+              <option value="إضافة">إضافة</option>
+              <option value="تعديل">تعديل</option>
+              <option value="حذف">حذف</option>
+              <option value="تصدير">تصدير</option>
+              <option value="دخول">دخول</option>
+            </select>
+            <input class="form-control" style="width:140px" id="audit-from" type="date" onchange="renderAuditLog()" title="من تاريخ">
+            <input class="form-control" style="width:140px" id="audit-to" type="date" onchange="renderAuditLog()" title="إلى تاريخ">
+          </div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th style="width:160px">التاريخ</th><th>المستخدم</th><th>الإجراء</th><th>النوع</th><th>الكيان</th><th>التفاصيل</th></tr></thead>
+            <tbody id="audit-tbody"></tbody>
+          </table>
+        </div>
+        <div style="padding:12px 18px;border-top:1px solid var(--border);display:flex;justify-content:space-between;align-items:center">
+          <span style="font-size:12px;color:var(--text-muted)" id="audit-count">0 سجل</span>
+          <div id="audit-pagination" style="display:flex;gap:6px;align-items:center"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- EXPORT DATA -->
+    <div class="page" id="page-export">
+      <div class="card" style="margin-bottom:16px">
+        <div class="card-header">
+          <div class="card-title">📥 مركز تصدير البيانات</div>
+        </div>
+        <div class="card-body">
+          <div style="background:#e0f2fe;border:2px solid #7dd3fc;border-radius:12px;padding:20px;margin-bottom:24px">
+            <div style="font-size:16px;font-weight:700;color:#075985;margin-bottom:10px">تصدير بيانات المجلس</div>
+            <div style="font-size:13px;color:#075985;line-height:1.6">
+              اختر نوع البيانات والتنسيق المطلوب لتصدير تقرير جاهز. ملفات CSV متوافقة مع Excel وGoogle Sheets.
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:16px">
+        <!-- Members Export -->
+        <div class="card">
+          <div class="card-body" style="text-align:center;padding:24px">
+            <div style="font-size:40px;margin-bottom:10px">👥</div>
+            <div style="font-size:16px;font-weight:700;margin-bottom:4px">الأعضاء</div>
+            <div style="font-size:12px;color:var(--text-muted);margin-bottom:16px">قائمة جميع الأعضاء وبياناتهم</div>
+            <div style="display:flex;gap:8px;justify-content:center">
+              <button class="btn btn-primary btn-sm" onclick="downloadExport('members')">📥 CSV</button>
+              <button class="btn btn-accent btn-sm" onclick="exportMembersExcel()">📊 Excel</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Payments Export -->
+        <div class="card">
+          <div class="card-body" style="text-align:center;padding:24px">
+            <div style="font-size:40px;margin-bottom:10px">💳</div>
+            <div style="font-size:16px;font-weight:700;margin-bottom:4px">المدفوعات</div>
+            <div style="font-size:12px;color:var(--text-muted);margin-bottom:16px">سجل جميع المدفوعات والرسوم</div>
+            <div style="display:flex;gap:8px;justify-content:center">
+              <button class="btn btn-primary btn-sm" onclick="downloadExport('payments')">📥 CSV</button>
+              <button class="btn btn-accent btn-sm" onclick="exportFeesExcel()">📊 Excel</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Transactions Export -->
+        <div class="card">
+          <div class="card-body" style="text-align:center;padding:24px">
+            <div style="font-size:40px;margin-bottom:10px">💰</div>
+            <div style="font-size:16px;font-weight:700;margin-bottom:4px">المعاملات المالية</div>
+            <div style="font-size:12px;color:var(--text-muted);margin-bottom:10px">إيرادات ومصاريف المجلس</div>
+            <div style="display:flex;gap:8px;justify-content:center;margin-bottom:10px">
+              <input class="form-control" style="width:130px;font-size:11px" id="export-tx-from" type="date" title="من تاريخ">
+              <input class="form-control" style="width:130px;font-size:11px" id="export-tx-to" type="date" title="إلى تاريخ">
+            </div>
+            <div style="display:flex;gap:8px;justify-content:center">
+              <button class="btn btn-primary btn-sm" onclick="downloadExport('transactions',{from:document.getElementById('export-tx-from').value,to:document.getElementById('export-tx-to').value})">📥 CSV</button>
+              <button class="btn btn-accent btn-sm" onclick="exportBudgetExcel()">📊 Excel</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Events Export -->
+        <div class="card">
+          <div class="card-body" style="text-align:center;padding:24px">
+            <div style="font-size:40px;margin-bottom:10px">🗓️</div>
+            <div style="font-size:16px;font-weight:700;margin-bottom:4px">الفعاليات</div>
+            <div style="font-size:12px;color:var(--text-muted);margin-bottom:16px">قائمة جميع الفعاليات والأنشطة</div>
+            <div style="display:flex;gap:8px;justify-content:center">
+              <button class="btn btn-primary btn-sm" onclick="downloadExport('events')">📥 CSV</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Audit Log Export -->
+        <div class="card">
+          <div class="card-body" style="text-align:center;padding:24px">
+            <div style="font-size:40px;margin-bottom:10px">📋</div>
+            <div style="font-size:16px;font-weight:700;margin-bottom:4px">سجل التدقيق</div>
+            <div style="font-size:12px;color:var(--text-muted);margin-bottom:16px">سجل كل التعديلات والإجراءات</div>
+            <div style="display:flex;gap:8px;justify-content:center">
+              <button class="btn btn-primary btn-sm" onclick="downloadExport('audit')">📥 CSV</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Full Backup JSON -->
+        <div class="card">
+          <div class="card-body" style="text-align:center;padding:24px">
+            <div style="font-size:40px;margin-bottom:10px">💾</div>
+            <div style="font-size:16px;font-weight:700;margin-bottom:4px">نسخة احتياطية كاملة</div>
+            <div style="font-size:12px;color:var(--text-muted);margin-bottom:16px">جميع البيانات بصيغة JSON</div>
+            <div style="display:flex;gap:8px;justify-content:center">
+              <button class="btn btn-primary btn-sm" onclick="exportData()">📥 JSON</button>
+            </div>
+          </div>
         </div>
       </div>
     </div>

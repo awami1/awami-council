@@ -469,6 +469,7 @@ if (!isAuthenticated()) {
         <div class="tab" onclick="switchWSTab('ws-values',this)">💎 القيم</div>
         <div class="tab" onclick="switchWSTab('ws-media',this)">📷 الميديا</div>
         <div class="tab" onclick="switchWSTab('ws-logo',this)">🎨 الشعار</div>
+        <div class="tab" onclick="switchWSTab('ws-contact',this)">📞 التواصل</div>
       </div>
 
       <!-- HEADER -->
@@ -608,6 +609,24 @@ if (!isAuthenticated()) {
               <button class="btn btn-primary" onclick="saveLogo()">💾 حفظ الشعار</button>
               <button class="btn btn-outline" onclick="resetLogoToDefault()">🔄 استعادة الشعار الافتراضي</button>
             </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- CONTACT -->
+      <div class="tab-content" id="ws-contact">
+        <div class="card">
+          <div class="card-header"><div class="card-title">📞 معلومات التواصل</div></div>
+          <div class="card-body">
+            <div style="background:#f0fdf4;border:1px solid #86efac;border-radius:10px;padding:12px;margin-bottom:16px;font-size:12px;color:#166534">
+              💡 سيظهر زر واتساب في الفوتر وفي البانر الرئيسي عند إضافة الرقم.
+            </div>
+            <div class="form-group">
+              <label class="form-label">رقم الواتساب</label>
+              <input class="form-control" id="ws-contact-whatsapp" type="tel" placeholder="مثال: 966501234567" style="direction:ltr;text-align:left">
+              <div style="font-size:11px;color:var(--text-muted);margin-top:4px">أدخل الرقم مع رمز الدولة بدون + (مثال: 966501234567)</div>
+            </div>
+            <button class="btn btn-primary" onclick="saveContactSettings()">💾 حفظ</button>
           </div>
         </div>
       </div>

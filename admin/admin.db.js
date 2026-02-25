@@ -484,6 +484,11 @@ if (!DB.media) DB.media = [];
 DB.media.push(r.media);
 return r.media;
 },
+async update(id, data) {
+await MediaAPI.update(id, data);
+const idx = (DB.media ?? []).findIndex(m => m.id === id);
+if (idx !== -1) DB.media[idx] = { ...DB.media[idx], ...data };
+},
 async delete(id) {
 await MediaAPI.delete(id);
 DB.media = (DB.media ?? []).filter(m => m.id !== id);

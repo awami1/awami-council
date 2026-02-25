@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 require_once __DIR__ . '/config.php';
 require_once __DIR__ . '/auth_guard.php';
+require_once __DIR__ . '/audit_helper.php';
 requireAuth();
 
 /*
@@ -139,6 +140,7 @@ function handlePost(): void
         ':branch_id' => $data['branch_id'] ?? null,
     ]);
 
+    logAudit('إضافة', 'عضو', $id, $data['name'] ?? '');
     handleGetOne($id);
 }
 
@@ -162,6 +164,7 @@ function handlePut(string $id): void
     $sql = "UPDATE members SET " . implode(', ', $fields) . " WHERE id = :id";
     $pdo->prepare($sql)->execute($params);
 
+    logAudit('تعديل', 'عضو', $id, $data['name'] ?? '', $data);
     handleGetOne($id);
 }
 
@@ -169,9 +172,13 @@ function handleDelete(string $id): void
 {
     $pdo = getPDO();
 
-    $stmt = $pdo->prepare('DELETE FROM members WHERE id = :id');
+    $stmt = $pdo->prepare('SELECT name FROM members WHERE id = :id LIMIT 1');
     $stmt->execute([':id' => $id]);
+    $row = $stmt->fetch();
 
+    $pdo->prepare('DELETE FROM members WHERE id = :id')->execute([':id' => $id]);
+
+    logAudit('حذف', 'عضو', $id, $row['name'] ?? '');
     respond(200, ['message' => 'Member deleted successfully.']);
 }
 

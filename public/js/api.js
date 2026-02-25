@@ -98,6 +98,22 @@ create: (data) => api.post('media.php', data),
 delete: (id)   => api.del('media.php', id),
 };
 
+// –– Audit Log ––
+const AuditAPI = {
+getAll: (params = {}) => {
+    const qs = new URLSearchParams(params).toString();
+    return api.get('audit.php' + (qs ? '?' + qs : ''));
+},
+};
+
+// –– Export (returns CSV download URL) ––
+const ExportAPI = {
+url: (type, params = {}) => {
+    const qs = new URLSearchParams({ type, ...params }).toString();
+    return `${API_BASE}/export.php?${qs}`;
+},
+};
+
 // –– Public site helpers (used in index.php) ––
 async function loadSettings()  { const r = await SettingsAPI.get();     return r.settings; }
 async function loadEvents()    { return await EventsAPI.getAll(); }

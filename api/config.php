@@ -4,6 +4,10 @@
 
 declare(strict_types=1);
 
+// Suppress PHP errors/warnings from polluting JSON API responses
+ini_set('display_errors', '0');
+ini_set('display_startup_errors', '0');
+
 // Global exception handler — returns JSON instead of HTML for uncaught exceptions
 set_exception_handler(function (\Throwable $e): void {
     if (!headers_sent()) {

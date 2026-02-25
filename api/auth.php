@@ -51,7 +51,13 @@ if ($method === 'POST' && $action === 'login') {
     }
 
     if ($valid) {
-        session_regenerate_id(true);
+        // تجديد معرف الجلسة لمنع هجمات Session Fixation
+        // داخل try-catch لأن بعض بيئات PHP قد تُخفق في هذه العملية
+        try {
+            session_regenerate_id(true);
+        } catch (\Throwable $e) {
+            error_log('session_regenerate_id failed: ' . $e->getMessage());
+        }
         $_SESSION['awami_admin']      = true;
         $_SESSION['awami_user']       = $username;
         $_SESSION['awami_login_time'] = time();

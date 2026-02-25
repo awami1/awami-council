@@ -188,14 +188,29 @@
   </div>
 </div>
 
-<!-- ADD MEDIA MODAL -->
+<!-- ADD / EDIT MEDIA MODAL -->
 <div class="modal-overlay" id="modal-add-media">
   <div class="modal">
-    <div class="modal-header"><div class="modal-title">📷 إضافة ميديا</div><button class="modal-close" onclick="closeModal('modal-add-media')">✕</button></div>
+    <div class="modal-header"><div class="modal-title" id="modal-media-title">📷 إضافة ميديا</div><button class="modal-close" onclick="closeModal('modal-add-media')">✕</button></div>
     <div class="modal-body">
+      <input type="hidden" id="media-edit-id">
       <div class="form-group"><label class="form-label">العنوان *</label><input class="form-control" id="media-title" required></div>
-      <div class="form-group"><label class="form-label">النوع *</label><select class="form-control" id="media-type"><option value="images">📷 صورة</option><option value="videos">🎥 فيديو</option><option value="events">🎉 فعالية</option></select></div>
-      <div class="form-group"><label class="form-label">رابط الصورة/الفيديو *</label><input class="form-control" id="media-url" placeholder="https://..."></div>
+      <div class="form-group"><label class="form-label">النوع *</label>
+        <select class="form-control" id="media-type">
+          <option value="images">📷 صورة</option>
+          <option value="videos">🎥 فيديو</option>
+          <option value="youtube">▶️ يوتيوب</option>
+          <option value="events">🎉 فعالية</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label class="form-label">رابط الصورة/الفيديو *</label>
+        <input class="form-control" id="media-url" placeholder="https://...">
+        <div id="media-url-preview" style="display:none;margin-top:8px;border-radius:8px;overflow:hidden">
+          <img id="media-url-preview-img" src="" alt="" style="width:100%;height:160px;object-fit:cover;display:none;border-radius:8px">
+          <div id="media-url-preview-yt" style="display:none;background:#111;height:80px;align-items:center;justify-content:center;color:#fff;font-size:14px;font-weight:700;border-radius:8px;gap:8px">▶️ رابط يوتيوب</div>
+        </div>
+      </div>
       <div class="form-group"><label class="form-label">التاريخ</label><input class="form-control" id="media-date" type="date"></div>
       <div class="form-group"><label class="form-label">الوسوم (افصل بفاصلة)</label><input class="form-control" id="media-tags" placeholder="مثال: فعالية، رحلة، اجتماع"></div>
     </div>

@@ -502,11 +502,14 @@ function deleteValue(){
 
 // =================== MEDIA MANAGEMENT ===================
 function openAddMedia(){
+  document.getElementById('media-edit-id').value='';
+  document.getElementById('modal-media-title').textContent='📷 إضافة ميديا';
   document.getElementById('media-title').value='';
   document.getElementById('media-type').value='images';
   document.getElementById('media-url').value='';
   document.getElementById('media-date').value=today();
   document.getElementById('media-tags').value='';
+  document.getElementById('media-url-preview').style.display='none';
   openModal('modal-add-media');
 }
 
@@ -539,20 +542,32 @@ async function saveMedia(){
 function renderMediaList(){
   var container=document.getElementById('media-list-admin');
   var media=State.getMedia()||[];
-  
+
   if(!media.length){
     container.innerHTML='<div class="empty-state"><div class="empty-icon">📷</div><p>لا توجد وسائط</p></div>';
     return;
   }
-  
+
   var html='<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:16px">';
   media.forEach(function(item){
-    var icon=item.type==='images'?'📷':item.type==='videos'?'🎥':'🎉';
+    var icon=item.type==='images'?'📷':item.type==='videos'?'🎥':item.type==='youtube'?'▶️':'🎉';
     html+='<div style="border:2px solid var(--border);border-radius:10px;overflow:hidden">';
     if(item.type==='images'){
-      html+='<img src="'+item.url+'" style="width:100%;height:150px;object-fit:cover">';
+      html+='<img src="'+item.url+'" style="width:100%;height:150px;object-fit:cover" loading="lazy">';
     }else if(item.type==='videos'){
-      html+='<video src="'+item.url+'" style="width:100%;height:150px;object-fit:cover"></video>';
+      html+='<video src="'+item.url+'" style="width:100%;height:150px;object-fit:cover" preload="metadata"></video>';
+    }else if(item.type==='youtube'){
+      // صورة مصغرة من يوتيوب بدلاً من iframe بطيء
+      var ytId='';var ytMatch=item.url.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/)([a-zA-Z0-9_-]{11})/);
+      if(ytMatch)ytId=ytMatch[1];
+      if(ytId){
+        html+='<div style="position:relative;width:100%;height:150px;background:#000;overflow:hidden">';
+        html+='<img src="https://img.youtube.com/vi/'+ytId+'/mqdefault.jpg" style="width:100%;height:100%;object-fit:cover;opacity:.8">';
+        html+='<div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center"><div style="width:44px;height:44px;background:rgba(255,0,0,.85);border-radius:50%;display:flex;align-items:center;justify-content:center;color:#fff;font-size:20px">▶</div></div>';
+        html+='</div>';
+      }else{
+        html+='<div style="width:100%;height:150px;background:#111;display:flex;align-items:center;justify-content:center;font-size:48px">▶️</div>';
+      }
     }else{
       html+='<div style="width:100%;height:150px;background:var(--green);display:flex;align-items:center;justify-content:center;font-size:48px">'+icon+'</div>';
     }
@@ -564,7 +579,10 @@ function renderMediaList(){
         html+='<span class="badge badge-gray" style="margin:2px">'+tag+'</span>';
       });
     }
-    html+='<div style="margin-top:10px"><button class="btn btn-danger btn-xs" onclick="deleteMedia(\''+item.id+'\')">حذف</button></div>';
+    html+='<div style="display:flex;gap:6px;margin-top:10px">';
+    html+='<button class="btn btn-outline btn-xs" onclick="openEditMedia(\''+item.id+'\')">✏️ تعديل</button>';
+    html+='<button class="btn btn-danger btn-xs" onclick="deleteMedia(\''+item.id+'\')">🗑️ حذف</button>';
+    html+='</div>';
     html+='</div></div>';
   });
   html+='</div>';

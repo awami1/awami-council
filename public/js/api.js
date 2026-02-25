@@ -93,9 +93,10 @@ delete: (id)   => api.del('branches.php', id),
 
 // –– Media ––
 const MediaAPI = {
-getAll: ()     => api.get('media.php'),
-create: (data) => api.post('media.php', data),
-delete: (id)   => api.del('media.php', id),
+getAll: ()          => api.get('media.php'),
+create: (data)      => api.post('media.php', data),
+update: (id, data)  => api.put('media.php', data, id),
+delete: (id)        => api.del('media.php', id),
 };
 
 // –– Committees (DB-backed CRUD) ––

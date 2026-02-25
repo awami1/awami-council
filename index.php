@@ -231,6 +231,24 @@ section{max-width:1200px;margin:0 auto;padding:70px 24px}
 .media-item-title{font-weight:700;font-size:15px}
 .media-item-date{font-size:12px;color:#6b7c6e;margin:6px 0 10px}
 .media-item-tag{display:inline-block;padding:4px 12px;background:#e8f5ec;border-radius:8px;font-size:11px;margin-left:4px;color:#2d6b40;font-weight:600}
+/* Lightbox */
+.lightbox-overlay{position:fixed;inset:0;background:rgba(0,0,0,.92);z-index:9000;display:none;align-items:center;justify-content:center;padding:16px}
+.lightbox-overlay.open{display:flex}
+.lightbox-img{max-width:90vw;max-height:85vh;border-radius:12px;object-fit:contain;box-shadow:0 8px 40px rgba(0,0,0,.6)}
+.lightbox-close{position:fixed;top:18px;left:18px;background:rgba(255,255,255,.12);border:none;color:#fff;font-size:24px;width:44px;height:44px;border-radius:50%;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:background .2s;z-index:9001}
+.lightbox-close:hover{background:rgba(255,255,255,.25)}
+.lightbox-nav{position:fixed;top:50%;transform:translateY(-50%);background:rgba(255,255,255,.12);border:none;color:#fff;font-size:24px;width:44px;height:44px;border-radius:50%;cursor:pointer;transition:background .2s;z-index:9001}
+.lightbox-nav:hover{background:rgba(255,255,255,.25)}
+.lightbox-prev{right:16px}
+.lightbox-next{left:16px}
+.lightbox-caption{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);color:#fff;font-size:14px;font-weight:700;text-align:center;background:rgba(0,0,0,.5);padding:8px 20px;border-radius:20px;max-width:80vw;z-index:9001}
+/* YouTube embed */
+.media-item-youtube{position:relative;padding-bottom:56.25%;height:0;overflow:hidden}
+.media-item-youtube iframe{position:absolute;top:0;left:0;width:100%;height:100%;border:none}
+/* Filter animation */
+.media-item{transition:opacity .25s,transform .25s,box-shadow .35s}
+.media-item.hiding{opacity:0;transform:scale(.97);pointer-events:none}
+.media-item img{cursor:pointer}
 
 /* EID */
 .eid-section{max-width:800px;margin:0 auto}
@@ -628,6 +646,7 @@ body { background: #0f1a12; color: #e8f0ea; }
     <button class="media-tab active" data-filter="all">الكل</button>
     <button class="media-tab" data-filter="images">&#x1F4F7; الصور</button>
     <button class="media-tab" data-filter="videos">&#x1F3AC; الفيديوهات</button>
+    <button class="media-tab" data-filter="youtube">&#x25B6;&#xFE0F; يوتيوب</button>
     <button class="media-tab" data-filter="events">&#x1F389; الفعاليات</button>
   </div>
   <div class="media-grid" id="media-grid">
@@ -640,11 +659,23 @@ body { background: #0f1a12; color: #e8f0ea; }
       </div>
     <?php else: ?>
       <?php foreach ($mediaItems as $item): ?>
-        <div class="media-item animate-in" data-type="<?= esc($item['type'] ?? 'images') ?>">
-          <?php if (($item['type'] ?? '') === 'videos'): ?>
+        <?php $itemType = $item['type'] ?? 'images'; ?>
+        <div class="media-item animate-in" data-type="<?= esc($itemType) ?>">
+          <?php if ($itemType === 'videos'): ?>
             <video controls preload="metadata"><source src="<?= esc($item['url'] ?? '') ?>"></video>
+          <?php elseif ($itemType === 'youtube'): ?>
+            <?php
+              $ytUrl = $item['url'] ?? '';
+              preg_match('/(?:youtube\.com\/watch\?v=|youtu\.be\/)([a-zA-Z0-9_-]{11})/', $ytUrl, $ytM);
+              $ytId = $ytM[1] ?? '';
+            ?>
+            <?php if ($ytId): ?>
+              <div class="media-item-youtube">
+                <iframe src="https://www.youtube.com/embed/<?= esc($ytId) ?>" loading="lazy" allowfullscreen title="<?= esc($item['title'] ?? '') ?>"></iframe>
+              </div>
+            <?php endif; ?>
           <?php else: ?>
-            <img src="<?= esc($item['url'] ?? '') ?>" alt="<?= esc($item['title'] ?? '') ?>" loading="lazy">
+            <img src="<?= esc($item['url'] ?? '') ?>" alt="<?= esc($item['title'] ?? '') ?>" loading="lazy" onclick="openLightbox(this)">
           <?php endif; ?>
           <div class="media-item-content">
             <div class="media-item-title"><?= esc($item['title'] ?? '') ?></div>
@@ -828,6 +859,15 @@ body { background: #0f1a12; color: #e8f0ea; }
   initEid();
 })();
 </script>
+
+<!-- Lightbox -->
+<div class="lightbox-overlay" id="lightbox" role="dialog" aria-modal="true" aria-label="معاينة الصورة">
+  <button class="lightbox-close" onclick="closeLightbox()" aria-label="إغلاق">✕</button>
+  <button class="lightbox-nav lightbox-prev" onclick="lightboxNav(-1)" aria-label="السابق">&#8250;</button>
+  <img class="lightbox-img" id="lightbox-img" src="" alt="">
+  <button class="lightbox-nav lightbox-next" onclick="lightboxNav(1)" aria-label="التالي">&#8249;</button>
+  <div class="lightbox-caption" id="lightbox-caption"></div>
+</div>
 
 </body>
 </html>

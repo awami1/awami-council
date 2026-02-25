@@ -50,6 +50,30 @@ if ($method === 'POST') {
     respond(201, ['media' => $item]);
 }
 
+if ($method === 'PUT') {
+    $id = $_GET['id'] ?? null;
+    if (!$id) respond(400, ['error' => 'id required']);
+
+    $d = bodyJson();
+    $s = getSettings($pdo);
+    $found = false;
+    foreach ($s['media'] as &$item) {
+        if ($item['id'] === $id) {
+            $item['title'] = trim($d['title'] ?? $item['title']);
+            $item['type']  = $d['type']  ?? $item['type'];
+            $item['url']   = trim($d['url']   ?? $item['url']);
+            $item['date']  = $d['date']  ?? $item['date'];
+            $item['tags']  = $d['tags']  ?? $item['tags'];
+            $found = true;
+            break;
+        }
+    }
+    unset($item);
+    if (!$found) respond(404, ['error' => 'not found']);
+    saveSettings($pdo, $s);
+    respond(200, ['ok' => true]);
+}
+
 if ($method === 'DELETE') {
     $id = $_GET['id'] ?? null;
     if (!$id) respond(400, ['error' => 'id required']);

@@ -197,37 +197,93 @@ document.getElementById('current-logo-preview').innerHTML = ` <svg width="44" he
 }
 
 // –– الميديا ––
+function _updateUrlPreview(url, type) {
+const preview = document.getElementById('media-url-preview');
+const img     = document.getElementById('media-url-preview-img');
+const yt      = document.getElementById('media-url-preview-yt');
+if (!preview) return;
+if (!url) { preview.style.display = 'none'; return; }
+if (type === 'images' || type === 'events') {
+    img.src = url; img.style.display = 'block'; yt.style.display = 'none';
+    preview.style.display = 'block';
+} else if (type === 'youtube') {
+    img.style.display = 'none'; yt.style.display = 'flex';
+    preview.style.display = 'block';
+} else {
+    preview.style.display = 'none';
+}
+}
+
+function openEditMedia(id) {
+const item = State.getMedia().find(m => m.id === id);
+if (!item) return;
+document.getElementById('media-edit-id').value = id;
+document.getElementById('modal-media-title').textContent = '✏️ تعديل ميديا';
+document.getElementById('media-title').value = item.title || '';
+document.getElementById('media-type').value  = item.type  || 'images';
+document.getElementById('media-url').value   = item.url   || '';
+document.getElementById('media-date').value  = item.date  || today();
+document.getElementById('media-tags').value  = (item.tags || []).join(', ');
+_updateUrlPreview(item.url, item.type);
+openModal('modal-add-media');
+}
+
 async function saveMedia() {
-const title = document.getElementById('media-title').value.trim();
-const url   = document.getElementById('media-url').value.trim();
+const title  = document.getElementById('media-title').value.trim();
+const url    = document.getElementById('media-url').value.trim();
+const editId = document.getElementById('media-edit-id').value;
 if (!title || !url) { toast('الرجاء ملء العنوان والرابط', 'error'); return; }
 
 const tags = document.getElementById('media-tags').value
     .split(',').map(t => t.trim()).filter(Boolean);
+const data = {
+    title,
+    type: document.getElementById('media-type').value,
+    url,
+    date: document.getElementById('media-date').value || today(),
+    tags,
+};
 
 try {
-    await AdminMedia.create({
-        title,
-        type:  document.getElementById('media-type').value,
-        url,
-        date:  document.getElementById('media-date').value || today(),
-        tags,
-    });
-    toast('تم إضافة الميديا ✅');
+    if (editId) {
+        await AdminMedia.update(editId, data);
+        toast('تم التعديل ✅');
+    } else {
+        await AdminMedia.create(data);
+        toast('تم إضافة الميديا ✅');
+    }
     closeModal('modal-add-media');
-    DB.media = (await MediaAPI.getAll()).media ?? [];
     renderMediaList();
 } catch (e) { toast('فشل: ' + e.message, 'error'); }
 }
 
 async function deleteMedia(id) {
-if (!confirm('حذف هذه الميديا؟')) return;
+confirm2('حذف هذه الميديا؟', async () => {
 try {
-await AdminMedia.delete(id);
-toast('تم الحذف');
-renderMediaList();
+    await AdminMedia.delete(id);
+    toast('تم الحذف');
+    renderMediaList();
 } catch (e) { toast('فشل: ' + e.message, 'error'); }
+});
 }
+
+// تسجيل event listeners لـ URL preview و auto-detect يوتيوب (مرة واحدة)
+document.addEventListener('DOMContentLoaded', () => {
+const urlInput  = document.getElementById('media-url');
+const typeInput = document.getElementById('media-type');
+if (!urlInput) return;
+
+urlInput.addEventListener('input', () => {
+    const url = urlInput.value.trim();
+    if (/youtube\.com|youtu\.be/.test(url)) typeInput.value = 'youtube';
+});
+urlInput.addEventListener('blur', () => {
+    _updateUrlPreview(urlInput.value.trim(), typeInput.value);
+});
+typeInput.addEventListener('change', () => {
+    _updateUrlPreview(urlInput.value.trim(), typeInput.value);
+});
+});
 
 // –– شجرة العائلة ––
 async function saveBranch() {

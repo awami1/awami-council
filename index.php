@@ -98,8 +98,8 @@ $upcomingEvents = getUpcomingEvents();
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Amiri:wght@400;700&family=Cairo:wght@300;400;600;700;900&family=Readex+Pro:wght@400;700&family=Tajawal:wght@400;500;700;800&display=swap" rel="stylesheet">
 <style>
-@font-face{font-family:'Saudi';src:url('public/fonts/saudi-normal.ttf') format('truetype');font-weight:normal;font-display:swap}
-@font-face{font-family:'Saudi';src:url('public/fonts/saudi-bold.ttf') format('truetype');font-weight:bold;font-display:swap}
+@font-face{font-family:'Saudi';src:url('/public/fonts/saudi-normal.ttf') format('truetype');font-weight:normal;font-display:swap}
+@font-face{font-family:'Saudi';src:url('/public/fonts/saudi-bold.ttf') format('truetype');font-weight:bold;font-display:swap}
 :root{
   --primary:#1B3456;--green:#47915C;--green-dark:#2d6b40;--green-light:#e8f5ec;
   --accent:#c8a84b;--bg:#fafbf9;--text:#1a2a1e;--text-muted:#6b7c6e;--border:#d4ddd6;
@@ -712,20 +712,20 @@ body { background: #0f1a12; color: #e8f0ea; }
   <div class="eid-section">
     <div class="eid-wrapper">
       <label class="eid-label">&#x270D;&#xFE0F; اكتب اسمك:</label>
-      <input type="text" id="eid-name" class="eid-input" placeholder="مثال: أحمد محمد العوامي">
+      <input type="text" id="eid-name" class="eid-input" placeholder="مثال: أحمد محمد العوامي" oninput="updateEidPreview()">
       <div class="eid-font-preview" id="eid-name-preview">مثال على الخط</div>
 
       <div class="eid-controls">
         <div>
           <label class="eid-label">&#x1F3A8; نوع الخط:</label>
-          <select id="eid-font-weight" class="eid-input">
+          <select id="eid-font-weight" class="eid-input" onchange="updateEidPreview()">
             <option value="normal">السعودي — عادي</option>
             <option value="bold" selected>السعودي — عريض (Bold)</option>
           </select>
         </div>
         <div>
           <label class="eid-label">&#x1F4CF; حجم الخط: <span id="eid-font-size-label">70</span>px</label>
-          <input type="range" id="eid-font-size" class="eid-range" min="40" max="120" value="70">
+          <input type="range" id="eid-font-size" class="eid-range" min="40" max="120" value="70" oninput="updateFontSize()">
           <div class="eid-range-labels"><span>كبير</span><span>متوسط</span><span>صغير</span></div>
         </div>
       </div>
@@ -844,7 +844,7 @@ body { background: #0f1a12; color: #e8f0ea; }
 
 <script src="public/js/media.js"></script>
 
-<script src="public/js/eid.js"></script>
+<script src="public/js/eid.js?v=2"></script>
 
 <script>
 (function () {

@@ -4,6 +4,22 @@
 
 declare(strict_types=1);
 
+// Global exception handler — returns JSON instead of HTML for uncaught exceptions
+set_exception_handler(function (\Throwable $e): void {
+    if (!headers_sent()) {
+        http_response_code(500);
+        header('Content-Type: application/json; charset=utf-8');
+        header('Access-Control-Allow-Origin: *');
+        header('Access-Control-Allow-Methods: GET, POST, PUT, DELETE, OPTIONS');
+        header('Access-Control-Allow-Headers: Content-Type');
+    }
+    echo json_encode(
+        ['error' => $e->getMessage()],
+        JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES
+    );
+    exit;
+});
+
 // Load .env file if it exists (PHP doesn't read .env automatically)
 (function () {
     $envFile = __DIR__ . '/../.env';
@@ -84,10 +100,7 @@ function getPDO(): PDO
             $pdo->exec("PRAGMA foreign_keys=ON");
         }
     } catch (PDOException $e) {
-        http_response_code(500);
-        header('Content-Type: application/json; charset=utf-8');
-        echo json_encode(['error' => 'Database connection failed: ' . $e->getMessage()]);
-        exit;
+        throw new \RuntimeException('Database connection failed: ' . $e->getMessage());
     }
 
     return $pdo;

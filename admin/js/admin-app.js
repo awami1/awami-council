@@ -1982,9 +1982,10 @@ function renderNews(page) {
   var info = paginate(all, 'news', page, 15);
   var tbody = document.getElementById('news-tbody');
   if (!tbody) return;
-  tbody.innerHTML = info.items.length ? info.items.map(function(n, i) {
+  tbody.innerHTML = info.data.length ? info.data.map(function(n, i) {
+    var idx = (info.page - 1) * 15 + i + 1;
     return '<tr>' +
-      '<td data-label="#">' + (info.startIndex + i + 1) + '</td>' +
+      '<td data-label="#">' + idx + '</td>' +
       '<td data-label="العنوان"><strong>' + n.title + '</strong>' + (n.excerpt ? '<br><small style="color:var(--text-muted)">' + n.excerpt.substring(0, 60) + '...</small>' : '') + '</td>' +
       '<td data-label="التصنيف"><span class="badge badge-info">' + (n.category || 'عام') + '</span></td>' +
       '<td data-label="الحالة"><span class="badge ' + (n.status === 'published' ? 'badge-success' : 'badge-warning') + '">' + (n.status === 'published' ? 'منشور' : 'مسودة') + '</span></td>' +
@@ -2061,10 +2062,11 @@ function renderMessages(page) {
   var info = paginate(all, 'messages', page, 15);
   var tbody = document.getElementById('msg-tbody');
   if (!tbody) return;
-  tbody.innerHTML = info.items.length ? info.items.map(function(m, i) {
+  tbody.innerHTML = info.data.length ? info.data.map(function(m, i) {
     var weight = m.is_read ? '400' : '700';
+    var idx = (info.page - 1) * 15 + i + 1;
     return '<tr style="font-weight:' + weight + '">' +
-      '<td data-label="#">' + (info.startIndex + i + 1) + '</td>' +
+      '<td data-label="#">' + idx + '</td>' +
       '<td data-label="المرسل">' + m.name + (m.email ? '<br><small style="color:var(--text-muted)">' + m.email + '</small>' : '') + '</td>' +
       '<td data-label="الموضوع">' + (m.subject || '—') + '</td>' +
       '<td data-label="الرسالة"><span style="font-weight:400">' + (m.message || '').substring(0, 50) + (m.message && m.message.length > 50 ? '...' : '') + '</span></td>' +

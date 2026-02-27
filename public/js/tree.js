@@ -344,6 +344,16 @@ var searchInput   = document.getElementById('tree-search');
 var searchResults = document.getElementById('tree-search-results');
 var _highlightedId = null;
 
+/* تطبيع النص العربي: توحيد أشكال الألف وإزالة التشكيل */
+function normalizeAr(str) {
+  return str
+    .replace(/[أإآٱ]/g, 'ا')
+    .replace(/[ؤ]/g, 'و')
+    .replace(/[ئ]/g, 'ي')
+    .replace(/ة/g, 'ه')
+    .replace(/[\u0610-\u061A\u064B-\u065F\u0670]/g, '');
+}
+
 /* بناء سلسلة النسب: "حسن بن محمد بن علي" */
 function getLineage(member) {
   var parts = [member.name];
@@ -367,8 +377,9 @@ if (searchInput) {
       clearHighlight();
       return;
     }
+    var nq = normalizeAr(q);
     var matches = rawData.filter(function (m) {
-      return m.name.indexOf(q) !== -1;
+      return normalizeAr(m.name).indexOf(nq) !== -1;
     }).slice(0, 12);
 
     if (!matches.length) {

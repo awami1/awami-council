@@ -104,6 +104,7 @@ if (!isAuthenticated()) {
     <div class="page-title" id="topbar-title">لوحة التحكم <span>مجلس عائلة العوامي</span></div>
     <div style="display:flex;gap:8px;align-items:center;">
       <div class="topbar-actions" id="topbar-action"></div>
+      <button class="dark-toggle" onclick="toggleDarkMode()" id="dark-mode-btn" title="الوضع الليلي">🌙</button>
       <button class="btn btn-outline btn-sm" onclick="adminLogout()" title="تسجيل الخروج"
               style="border-color:#fca5a5;color:#b91c1c;">🚪 خروج</button>
     </div>
@@ -162,11 +163,12 @@ if (!isAuthenticated()) {
         <div class="search-bar">
           <button class="btn btn-primary btn-sm" onclick="openAddMember()">+ إضافة عضو</button>
           <button class="btn btn-accent btn-sm" onclick="openImportExcel()">📥 استيراد Excel</button>
-          <input class="search-input" id="m-search" placeholder="بحث بالاسم أو الجوال..." oninput="renderMembers()">
-          <select class="form-control" style="width:130px" id="m-flt-status" onchange="renderMembers()"><option value="">كل الحالات</option><option>نشط</option><option>معفي</option><option>غير نشط</option></select>
+          <input class="search-input" id="m-search" placeholder="بحث بالاسم أو الجوال..." oninput="debouncedRenderMembers()">
+          <select class="filter-select" style="width:130px" id="m-flt-status" onchange="_pageState.members=1;renderMembers()"><option value="">كل الحالات</option><option>نشط</option><option>معفي</option><option>غير نشط</option></select>
           <button class="btn btn-outline btn-sm" onclick="exportMembersExcel()">📊 Excel</button>
         </div>
-        <div class="table-wrap"><table><thead><tr><th>#</th><th>العضو</th><th>الجوال</th><th>اللجان</th><th>الانضمام</th><th>الحالة</th><th>الدفع</th><th>إجراءات</th></tr></thead><tbody id="members-tbody"></tbody></table></div>
+        <div class="table-wrap mobile-cards"><table><thead><tr><th>#</th><th>العضو</th><th>الجوال</th><th>اللجان</th><th>الانضمام</th><th>الحالة</th><th>الدفع</th><th>إجراءات</th></tr></thead><tbody id="members-tbody"></tbody></table></div>
+        <div id="members-pagination"></div>
         <div style="padding:12px 18px;border-top:1px solid var(--border);display:flex;justify-content:space-between;align-items:center">
           <span style="font-size:12px;color:var(--text-muted)" id="members-count">0 عضو</span>
           <button class="btn btn-whatsapp btn-sm" onclick="sendWhatsappReminders()">📱 واتساب للمتأخرين</button>
@@ -189,10 +191,11 @@ if (!isAuthenticated()) {
       </div>
       <div class="card">
         <div class="search-bar">
-          <input class="search-input" id="fees-search" placeholder="بحث..." oninput="renderFees()">
-          <select class="form-control" style="width:160px" id="fees-flt" onchange="renderFees()"><option value="">كل الحالات</option><option value="مدفوع">مدفوع ✅</option><option value="لم يدفع">لم يدفع ⏳</option><option value="معفي">معفي 🔖</option></select>
+          <input class="search-input" id="fees-search" placeholder="بحث..." oninput="debouncedRenderFees()">
+          <select class="filter-select" style="width:160px" id="fees-flt" onchange="_pageState.fees=1;renderFees()"><option value="">كل الحالات</option><option value="مدفوع">مدفوع ✅</option><option value="لم يدفع">لم يدفع ⏳</option><option value="معفي">معفي 🔖</option></select>
         </div>
-        <div class="table-wrap"><table><thead><tr><th>العضو</th><th>المطلوب</th><th>المدفوع</th><th>التاريخ</th><th>الطريقة</th><th>الحالة</th><th>إجراءات</th></tr></thead><tbody id="fees-tbody"></tbody></table></div>
+        <div class="table-wrap mobile-cards"><table><thead><tr><th>العضو</th><th>المطلوب</th><th>المدفوع</th><th>التاريخ</th><th>الطريقة</th><th>الحالة</th><th>إجراءات</th></tr></thead><tbody id="fees-tbody"></tbody></table></div>
+        <div id="fees-pagination"></div>
       </div>
     </div>
 
@@ -245,12 +248,13 @@ if (!isAuthenticated()) {
         <div class="card-header">
           <div class="card-title">سجل المعاملات</div>
           <div style="display:flex;gap:8px">
-            <select class="form-control btn-sm" style="width:130px" id="b-flt" onchange="renderBudget()"><option value="">الكل</option><option value="إيراد">إيرادات</option><option value="مصروف">مصاريف</option></select>
+            <select class="filter-select btn-sm" style="width:130px" id="b-flt" onchange="_pageState.budget=1;renderBudget()"><option value="">الكل</option><option value="إيراد">إيرادات</option><option value="مصروف">مصاريف</option></select>
             <button class="btn btn-outline btn-sm" onclick="exportBudgetExcel()">📊 Excel</button>
             <button class="btn btn-primary btn-sm" onclick="openModal('modal-tx')">+ معاملة</button>
           </div>
         </div>
-        <div class="table-wrap"><table><thead><tr><th>التاريخ</th><th>الوصف</th><th>الفئة</th><th>اللجنة</th><th>النوع</th><th>المبلغ</th><th></th></tr></thead><tbody id="budget-tbody"></tbody></table></div>
+        <div class="table-wrap mobile-cards"><table><thead><tr><th>التاريخ</th><th>الوصف</th><th>الفئة</th><th>اللجنة</th><th>النوع</th><th>المبلغ</th><th></th></tr></thead><tbody id="budget-tbody"></tbody></table></div>
+        <div id="budget-pagination"></div>
       </div>
     </div>
 
@@ -891,10 +895,18 @@ if (!isAuthenticated()) {
 <!-- MODALS -->
 <?php include __DIR__ . '/pages/modals.php'; ?>
 
-<div id="toast"></div>
+<div id="toast-container"></div>
+<div id="toast" style="display:none"></div>
 
 <button class="mobile-toggle" aria-label="القائمة">☰</button>
 
+<script>
+// تحميل تفضيل الوضع الداكن
+(function(){
+  var saved = localStorage.getItem('awami_theme');
+  if(saved === 'dark') document.documentElement.setAttribute('data-theme','dark');
+})();
+</script>
 <script src="js/admin-app.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <script src="js/admin-import.js"></script>

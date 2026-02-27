@@ -324,6 +324,7 @@
         <div class="form-group"><label class="form-label">اللون الثاني</label><input class="form-control" id="cm-color2" type="color" value="#2d6b40"></div>
       </div>
       <div class="form-group"><label class="form-label">الوصف</label><textarea class="form-control" id="cm-desc" rows="2" placeholder="وصف مختصر لعمل اللجنة"></textarea></div>
+      <div class="form-group"><label class="form-label">عدد الأعضاء</label><input class="form-control" id="cm-members-count" type="number" min="0" placeholder="0" style="max-width:140px"></div>
       <div class="form-group" style="display:flex;align-items:center;gap:10px">
         <input type="checkbox" id="cm-advisory">
         <label class="form-label" for="cm-advisory" style="margin:0">لجنة استشارية</label>

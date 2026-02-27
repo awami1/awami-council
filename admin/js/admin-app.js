@@ -987,10 +987,12 @@ var debouncedRenderFees = debounce(function(){ _pageState.fees=1; renderFees(); 
 // =================== COMMITTEES ===================
 function renderCommittees(){
   document.getElementById('committees-grid').innerHTML=State.getCommittees().map(c=>{
-    const mems=(State.getCommitteeMembers()[c.id]||c.members||[]).length;
+    const linkedMems=(State.getCommitteeMembers()[c.id]||c.members||[]).length;
+    const mems=Math.max(c.members_count||0, linkedMems);
     const evs=State.getEvents().filter(e=>e.committeeId===c.id).length;
     return `<div class="committee-card" onclick="showCommitteeDetail('${c.id}')">
       <div class="committee-banner" style="background:${c.color}">${c.icon}
+        <span style="position:absolute;top:8px;right:8px;background:rgba(255,255,255,.85);color:#166534;padding:2px 10px;border-radius:20px;font-size:11px;font-weight:700">👥 ${mems}</span>
         <button class="btn btn-xs" style="position:absolute;top:8px;left:8px;background:rgba(255,255,255,.9);color:#333;border:none;font-size:11px" onclick="event.stopPropagation();openEditCommitteeModal('${c.id}')">✏️</button>
       </div>
       <div class="committee-body"><div class="committee-title">${c.name}</div><div class="committee-meta">${c.desc||''}</div>${c.advisory?'<div style="margin-top:5px"><span class="badge badge-purple">🎓 استشارية</span></div>':''}</div>
@@ -1015,7 +1017,7 @@ function showCommitteeDetail(cid){
       ${c.advisory?'<div style="margin-top:6px"><span class="badge badge-purple">🎓 لجنة استشارية - تقدم المشورة للإدارة</span></div>':''}
     </div>
     <div class="grid-3" style="margin-bottom:14px;text-align:center">
-      <div style="background:#dcfce7;padding:10px;border-radius:10px"><div style="font-size:18px;font-weight:900;color:#166534">${defaultMembers.length}</div><div style="font-size:11px;color:#166534">عضو مُعيَّن</div></div>
+      <div style="background:#dcfce7;padding:10px;border-radius:10px"><div style="font-size:18px;font-weight:900;color:#166534">${Math.max(c.members_count||0, defaultMembers.length, allMembers.length)}</div><div style="font-size:11px;color:#166534">عضو</div></div>
       <div style="background:#dbeafe;padding:10px;border-radius:10px"><div style="font-size:18px;font-weight:900;color:#1e40af">${events.length}</div><div style="font-size:11px;color:#1e40af">فعالية</div></div>
       <div style="background:#fef9c3;padding:10px;border-radius:10px"><div style="font-size:18px;font-weight:900;color:#854d0e">${fmt(spent)}</div><div style="font-size:11px;color:#854d0e">ريال مصاريف</div></div>
     </div>
@@ -1049,7 +1051,7 @@ function renderOrgChart(){
       <div style="display:flex;justify-content:center;margin:2px 0"><div style="width:2px;height:20px;background:var(--border)"></div></div>
       <div style="width:80%;height:2px;background:var(--border);margin:0 auto"></div>
       <div style="display:flex;justify-content:center;gap:8px;flex-wrap:wrap;padding-top:0">
-        ${regular.map(c=>{ const mems=(State.getCommitteeMembers()[c.id]||c.members||[]).length; return `<div style="display:flex;flex-direction:column;align-items:center"><div style="width:2px;height:20px;background:var(--border)"></div><div style="border:2px solid var(--border);border-radius:10px;padding:10px 12px;min-width:120px;background:var(--bg-card);cursor:pointer;transition:all .2s" onmouseover="this.style.borderColor='var(--green)'" onmouseout="this.style.borderColor='var(--border)'" onclick="showPage('committees',document.querySelector('[onclick*=committees]'));setTimeout(()=>showCommitteeDetail('${c.id}'),300)"><div style="font-size:20px;margin-bottom:3px">${c.icon}</div><div style="font-size:11px;font-weight:700;color:var(--green-dark)">${c.name}</div><div style="font-size:10px;color:var(--text-muted);margin-top:2px">👥 ${mems} عضو</div></div></div>`; }).join('')}
+        ${regular.map(c=>{ const linkedMems=(State.getCommitteeMembers()[c.id]||c.members||[]).length; const mems=Math.max(c.members_count||0, linkedMems); return `<div style="display:flex;flex-direction:column;align-items:center"><div style="width:2px;height:20px;background:var(--border)"></div><div style="border:2px solid var(--border);border-radius:10px;padding:10px 12px;min-width:120px;background:var(--bg-card);cursor:pointer;transition:all .2s" onmouseover="this.style.borderColor='var(--green)'" onmouseout="this.style.borderColor='var(--border)'" onclick="showPage('committees',document.querySelector('[onclick*=committees]'));setTimeout(()=>showCommitteeDetail('${c.id}'),300)"><div style="font-size:20px;margin-bottom:3px">${c.icon}</div><div style="font-size:11px;font-weight:700;color:var(--green-dark)">${c.name}</div><div style="font-size:10px;color:var(--text-muted);margin-top:2px">👥 ${mems} عضو</div></div></div>`; }).join('')}
       </div>
     </div>`;
 }
@@ -1729,6 +1731,7 @@ function openAddCommitteeModal() {
   document.getElementById('cm-color1').value = '#47915C';
   document.getElementById('cm-color2').value = '#2d6b40';
   document.getElementById('cm-desc').value = '';
+  document.getElementById('cm-members-count').value = '';
   document.getElementById('cm-advisory').checked = false;
   document.getElementById('cm-delete-btn').style.display = 'none';
   openModal('modal-add-committee');
@@ -1748,6 +1751,7 @@ function openEditCommitteeModal(cid) {
   document.getElementById('cm-color2').value = colorMatch && colorMatch[1] ? colorMatch[1] : '#2d6b40';
 
   document.getElementById('cm-desc').value = c.desc || '';
+  document.getElementById('cm-members-count').value = c.members_count || '';
   document.getElementById('cm-advisory').checked = Boolean(c.advisory);
   document.getElementById('cm-delete-btn').style.display = 'inline-block';
   openModal('modal-add-committee');
@@ -1765,6 +1769,7 @@ async function saveCommittee() {
     icon: document.getElementById('cm-icon').value || '🏛️',
     color: `linear-gradient(135deg,${c1},${c2})`,
     description: document.getElementById('cm-desc').value,
+    members_count: parseInt(document.getElementById('cm-members-count').value) || 0,
     advisory: document.getElementById('cm-advisory').checked,
   };
 

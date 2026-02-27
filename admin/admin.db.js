@@ -178,16 +178,17 @@ created:     p.created_date ?? p.created ?? '',
 
 function normalizeCommittee(c) {
 return {
-id:          c.id,
-name:        c.name,
-icon:        c.icon        ?? '🏛️',
-color:       c.color       ?? 'linear-gradient(135deg,#47915C,#2d6b40)',
-desc:        c.description ?? c.desc ?? '',
-advisory:    Boolean(c.advisory),
-sortOrder:   parseInt(c.sort_order ?? c.sortOrder ?? 0),
-memberCount: parseInt(c.member_count ?? 0),
-eventCount:  parseInt(c.event_count ?? 0),
-members:     c.members     ?? [],
+id:            c.id,
+name:          c.name,
+icon:          c.icon        ?? '🏛️',
+color:         c.color       ?? 'linear-gradient(135deg,#47915C,#2d6b40)',
+desc:          c.description ?? c.desc ?? '',
+advisory:      Boolean(c.advisory),
+members_count: parseInt(c.members_count ?? 0),
+sortOrder:     parseInt(c.sort_order ?? c.sortOrder ?? 0),
+memberCount:   parseInt(c.member_count ?? 0),
+eventCount:    parseInt(c.event_count ?? 0),
+members:       c.members     ?? [],
 };
 }
 

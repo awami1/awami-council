@@ -145,16 +145,22 @@ $committees = getCommittees();
   <div class="committees-grid">
     <?php if (!empty($committees)): ?>
       <?php foreach ($committees as $c): ?>
+        <?php $mc = (int)$c['member_count']; ?>
         <div class="committee-card animate-in">
           <div class="committee-banner" style="background:<?= esc($c['color'] ?? 'linear-gradient(135deg,#47915C,#2d6b40)') ?>">
             <?= esc($c['icon'] ?? '&#127970;') ?>
+            <?php if ($mc > 0): ?>
+              <span class="committee-badge">&#x1F465; <?= $mc ?></span>
+            <?php endif; ?>
           </div>
           <div class="committee-body">
             <div class="committee-title"><?= esc($c['name']) ?></div>
             <?php if (!empty($c['description'])): ?>
               <div class="committee-desc"><?= esc($c['description']) ?></div>
             <?php endif; ?>
-            <div class="committee-members">&#x1F465; <?= (int)$c['member_count'] ?> <?= (int)$c['member_count'] === 1 ? 'عضو' : 'أعضاء' ?></div>
+            <?php if ($mc > 0): ?>
+              <div class="committee-members"><?= $mc ?> <?= $mc === 1 ? 'عضو' : 'أعضاء' ?></div>
+            <?php endif; ?>
           </div>
         </div>
       <?php endforeach; ?>

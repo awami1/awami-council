@@ -70,11 +70,14 @@ $pageScripts      = $route['scripts'];
 $pageTitleOverride = $route['title'] ?? null;
 
 // كشف طلبات AJAX — يُرجع محتوى الصفحة فقط بدون layout
-$isAjax = !empty($_SERVER['HTTP_X_REQUESTED_WITH'])
-       && strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) === 'xmlhttprequest';
+// يدعم طريقتين: هيدر X-Requested-With أو معامل ?_ajax=1 (fallback للاستضافات التي تحذف الهيدرات)
+$isAjax = (!empty($_SERVER['HTTP_X_REQUESTED_WITH'])
+        && strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) === 'xmlhttprequest')
+       || !empty($_GET['_ajax']);
 
 if ($isAjax) {
     header('Content-Type: text/html; charset=UTF-8');
+    header('Cache-Control: no-store');
     include $pageFile;
 } else {
     include __DIR__ . '/includes/layout.php';

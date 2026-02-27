@@ -25,19 +25,7 @@ nextMeeting: null,
 async function loadAllData() {
 showGlobalLoading(true);
 try {
-const [
-settingsRes,
-membersRes,
-periodsRes,
-paymentsRes,
-transactionsRes,
-eventsRes,
-pollsRes,
-branchesRes,
-meetingRes,
-mediaRes,
-committeesRes,
-] = await Promise.all([
+const results = await Promise.allSettled([
 SettingsAPI.get(),
 MembersAPI.getAll(),
 PeriodsAPI.getAll(),
@@ -50,6 +38,20 @@ MeetingAPI.get(),
 MediaAPI.getAll(),
 CommitteesAPI.getAll(),
 ]);
+
+    function safeVal(r, fallback) { return r.status === 'fulfilled' ? r.value : (fallback || {}); }
+
+    var settingsRes     = safeVal(results[0]);
+    var membersRes      = safeVal(results[1], {data:[]});
+    var periodsRes      = safeVal(results[2], {data:[]});
+    var paymentsRes     = safeVal(results[3], {data:[]});
+    var transactionsRes = safeVal(results[4], {data:[]});
+    var eventsRes       = safeVal(results[5], {data:[]});
+    var pollsRes        = safeVal(results[6], {data:[]});
+    var branchesRes     = safeVal(results[7], {branches:[]});
+    var meetingRes      = safeVal(results[8]);
+    var mediaRes        = safeVal(results[9], {media:[]});
+    var committeesRes   = safeVal(results[10], {data:[]});
 
     DB.settings     = settingsRes.settings  ?? {};
     DB.members      = membersRes.data        ?? [];
@@ -72,6 +74,13 @@ CommitteesAPI.getAll(),
     DB.transactions = DB.transactions.map(normalizeTx);
     DB.events = DB.events.map(normalizeEvent);
     DB.polls = DB.polls.map(normalizePoll);
+
+    // عرض تحذير للبيانات التي فشل تحميلها
+    var failedCount = results.filter(function(r){ return r.status === 'rejected'; }).length;
+    if (failedCount > 0) {
+        console.warn('فشل تحميل ' + failedCount + ' من مصادر البيانات');
+        if (typeof toast === 'function') toast('تم تحميل البيانات جزئياً (' + failedCount + ' خطأ)', 'warning');
+    }
 
 } catch (e) {
     console.error('فشل تحميل البيانات:', e);

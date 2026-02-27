@@ -148,6 +148,23 @@ function clearAllData(){
   });
 }
 
+// =================== DARK MODE ===================
+function toggleDarkMode(){
+  const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+  document.documentElement.setAttribute('data-theme', isDark ? '' : 'dark');
+  localStorage.setItem('awami_theme', isDark ? 'light' : 'dark');
+  const btn = document.getElementById('dark-mode-btn');
+  if(btn) btn.textContent = isDark ? '🌙' : '☀️';
+}
+// تحديث أيقونة الزر عند التحميل
+(function(){
+  const saved = localStorage.getItem('awami_theme');
+  if(saved === 'dark'){
+    const btn = document.getElementById('dark-mode-btn');
+    if(btn) btn.textContent = '☀️';
+  }
+})();
+
 // =================== UTILS ===================
 function uid(){ return Date.now().toString(36)+Math.random().toString(36).slice(2); }
 function today(){ return new Date().toISOString().split('T')[0]; }
@@ -155,11 +172,105 @@ function fmt(n){ return Number(n||0).toLocaleString('ar-SA'); }
 function openModal(id){ document.getElementById(id).classList.add('open'); }
 function closeModal(id){ document.getElementById(id).classList.remove('open'); }
 function log(action,icon='📝'){ State.getActivity().unshift({id:uid(),action,icon,time:new Date().toLocaleString('ar-SA')}); if(State.getActivity().length>40) State.getActivity().pop(); saveDB(); }
-function toast(msg,type='success'){
-  const t=document.getElementById('toast');
-  t.innerHTML=(type==='success'?'✅':'❌')+' '+msg;
-  t.style.cssText=`display:flex;align-items:center;gap:8px;background:${type==='success'?'var(--green)':'var(--danger)'};color:#fff;padding:11px 18px;border-radius:10px;font-size:13px;font-weight:600;box-shadow:0 8px 24px rgba(0,0,0,.2);`;
-  setTimeout(()=>t.style.display='none',3000);
+function debounce(fn, delay){
+  delay = delay || 300;
+  var timer;
+  return function(){
+    var args = arguments, ctx = this;
+    clearTimeout(timer);
+    timer = setTimeout(function(){ fn.apply(ctx, args); }, delay);
+  };
+}
+
+// =================== TOAST (IMPROVED) ===================
+function toast(msg, type){
+  type = type || 'success';
+  var container = document.getElementById('toast-container');
+  if(!container){
+    container = document.createElement('div');
+    container.id = 'toast-container';
+    document.body.appendChild(container);
+  }
+  var icons = {success:'✅',error:'❌',warning:'⚠️',info:'ℹ️'};
+  var colors = {success:'var(--green)',error:'var(--danger)',warning:'var(--warning)',info:'var(--info)'};
+  var el = document.createElement('div');
+  el.className = 'toast-item';
+  el.style.background = colors[type] || colors.success;
+  el.innerHTML = (icons[type]||icons.success) + ' ' + msg;
+  el.onclick = function(){ el.className='toast-item hide'; setTimeout(function(){el.remove()},300); };
+  container.appendChild(el);
+  requestAnimationFrame(function(){ el.className='toast-item show'; });
+  setTimeout(function(){
+    el.className='toast-item hide';
+    setTimeout(function(){el.remove()},300);
+  }, 4000);
+}
+
+// =================== PAGINATION ===================
+var _pageState = {};
+function paginate(items, pageKey, page, perPage){
+  perPage = perPage || 25;
+  if(page !== undefined) _pageState[pageKey] = page;
+  var currentPage = _pageState[pageKey] || 1;
+  var total = items.length;
+  var pages = Math.ceil(total / perPage) || 1;
+  if(currentPage > pages) currentPage = pages;
+  _pageState[pageKey] = currentPage;
+  var start = (currentPage - 1) * perPage;
+  return { data: items.slice(start, start + perPage), total:total, pages:pages, page:currentPage };
+}
+function renderPaginationHTML(info, callbackName){
+  if(info.pages <= 1) return '<div class="table-footer"><span class="count-label">'+info.total+' عنصر</span></div>';
+  var html = '<div class="table-footer"><span class="count-label">'+info.total+' عنصر — صفحة '+info.page+' من '+info.pages+'</span><div class="pagination">';
+  if(info.page > 1) html += '<button onclick="'+callbackName+'('+(info.page-1)+')">&#x276E;</button>';
+  var start = Math.max(1, info.page-2), end = Math.min(info.pages, info.page+2);
+  if(start > 1) html += '<button onclick="'+callbackName+'(1)">1</button><span class="page-info">…</span>';
+  for(var i=start;i<=end;i++) html += '<button class="'+(i===info.page?'active':'')+'" onclick="'+callbackName+'('+i+')">'+i+'</button>';
+  if(end < info.pages) html += '<span class="page-info">…</span><button onclick="'+callbackName+'('+info.pages+')">'+info.pages+'</button>';
+  if(info.page < info.pages) html += '<button onclick="'+callbackName+'('+(info.page+1)+')">&#x276F;</button>';
+  html += '</div></div>';
+  return html;
+}
+
+// =================== FORM VALIDATION ===================
+function validateRequired(fieldId, label){
+  var el = document.getElementById(fieldId);
+  if(!el) return true;
+  var val = el.value.trim();
+  var group = el.closest('.form-group');
+  if(!val){
+    el.classList.add('invalid');
+    if(group) group.classList.add('has-error');
+    toast(label+' مطلوب','error');
+    el.focus();
+    return false;
+  }
+  el.classList.remove('invalid');
+  if(group) group.classList.remove('has-error');
+  return true;
+}
+function clearValidation(){
+  document.querySelectorAll('.invalid').forEach(function(el){el.classList.remove('invalid')});
+  document.querySelectorAll('.has-error').forEach(function(el){el.classList.remove('has-error')});
+}
+
+// =================== LOADING HELPERS ===================
+function showSkeletonRows(tbodyId, cols, rows){
+  cols = cols || 6; rows = rows || 5;
+  var el = document.getElementById(tbodyId);
+  if(!el) return;
+  el.innerHTML = Array(rows).fill('<tr><td colspan="'+cols+'"><div class="skeleton skeleton-row"></div></td></tr>').join('');
+}
+function setBtnLoading(btn, loading){
+  if(!btn) return;
+  if(loading){
+    btn._origText = btn.innerHTML;
+    btn.innerHTML = '<span class="spinner-sm"></span>';
+    btn.classList.add('loading');
+  } else {
+    btn.innerHTML = btn._origText || btn.innerHTML;
+    btn.classList.remove('loading');
+  }
 }
 function confirm2(msg,cb){ document.getElementById('confirm-msg').textContent=msg; document.getElementById('confirm-btn').onclick=()=>{ cb(); closeModal('modal-confirm'); }; openModal('modal-confirm'); }
 const aColors=['#2d6b40','#1B3456','#c8a84b','#b7950b','#8e44ad','#c0392b','#117a65','#2980b9','#6b3a1a'];
@@ -747,8 +858,9 @@ function openAddMember(){ clearMemberForm(); document.getElementById('modal-memb
 function clearMemberForm(){ ['mm-id','mm-name','mm-phone','mm-idnum','mm-family','mm-notes'].forEach(id=>document.getElementById(id).value=''); document.getElementById('mm-join').value=today(); document.getElementById('mm-status').value='نشط'; }
 
 function saveMember(){
+  clearValidation();
+  if(!validateRequired('mm-name','اسم العضو')) return;
   const name=document.getElementById('mm-name').value.trim();
-  if(!name){toast('الاسم مطلوب','error');return;}
   const id=document.getElementById('mm-id').value;
   const data={name,phone:document.getElementById('mm-phone').value,idNum:document.getElementById('mm-idnum').value,family:document.getElementById('mm-family').value||'غير محدد',joinDate:document.getElementById('mm-join').value||today(),status:document.getElementById('mm-status').value,notes:document.getElementById('mm-notes').value};
   MemberService.saveMember(id, data);
@@ -773,7 +885,7 @@ function deleteMember(id){
   MemberService.deleteMember(id);
 }
 
-function renderMembers(){
+function renderMembers(page){
   const s=document.getElementById('m-search').value;
   const sf=document.getElementById('m-flt-status').value;
   let list=State.getMembers();
@@ -781,29 +893,37 @@ function renderMembers(){
   if(sf) list=list.filter(m=>m.status===sf);
   const p=curPeriod();
   const tbody=document.getElementById('members-tbody');
-  if(!list.length){tbody.innerHTML='<tr><td colspan="8"><div class="empty-state"><div class="empty-icon">👥</div><p>لا يوجد أعضاء</p></div></td></tr>';return;}
-  tbody.innerHTML=list.map((m,i)=>{
+  if(!list.length){tbody.innerHTML='<tr><td colspan="8"><div class="empty-state"><div class="empty-icon">👥</div><p>لا يوجد أعضاء</p></div></td></tr>';var mp=document.getElementById('members-pagination');if(mp)mp.innerHTML='';return;}
+  var pg = paginate(list, 'members', page, 25);
+  var startIdx = (pg.page - 1) * 25;
+  tbody.innerHTML=pg.data.map((m,i)=>{
     const pay=p?State.getPayments().find(x=>x.memberId===m.id&&x.periodId===p.id):null;
     const pb=!p?'<span class="badge badge-gray">لا دورة</span>':pay?.status==='مدفوع'?'<span class="badge badge-success">✅ مدفوع</span>':pay?.status==='معفي'?'<span class="badge badge-purple">🔖 معفي</span>':'<span class="badge badge-warning">⏳ لم يدفع</span>';
     const sb=m.status==='نشط'?'<span class="badge badge-success">نشط</span>':m.status==='معفي'?'<span class="badge badge-purple">معفي</span>':'<span class="badge badge-gray">غير نشط</span>';
-    return `<tr><td style="color:var(--text-muted);font-size:11px">${i+1}</td>
-    <td><div style="display:flex;align-items:center;gap:8px"><div class="avatar" style="background:${avColor(m.name)}">${avInit(m.name)}</div><div><div style="font-weight:600">${m.name}</div><div style="font-size:11px;color:var(--text-muted)">${m.family}</div></div></div></td>
-    <td>${m.phone||'—'}</td>
-    <td style="font-size:11px;max-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${memberCommittees(m.id)}</td>
-    <td style="font-size:11px">${m.joinDate||'—'}</td><td>${sb}</td><td>${pb}</td>
-    <td><div style="display:flex;gap:4px">
+    return `<tr><td data-label="#" style="color:var(--text-muted);font-size:11px">${startIdx+i+1}</td>
+    <td data-label="العضو"><div style="display:flex;align-items:center;gap:8px"><div class="avatar" style="background:${avColor(m.name)}">${avInit(m.name)}</div><div><div style="font-weight:600">${m.name}</div><div style="font-size:11px;color:var(--text-muted)">${m.family}</div></div></div></td>
+    <td data-label="الجوال">${m.phone||'—'}</td>
+    <td data-label="اللجان" style="font-size:11px;max-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${memberCommittees(m.id)}</td>
+    <td data-label="الانضمام" style="font-size:11px">${m.joinDate||'—'}</td><td data-label="الحالة">${sb}</td><td data-label="الدفع">${pb}</td>
+    <td data-label="إجراءات"><div style="display:flex;gap:4px">
       <button class="btn btn-outline btn-xs" onclick="editMember('${m.id}')">✏️</button>
       ${p?`<button class="btn btn-accent btn-xs" onclick="openPayModal('${m.id}')">💳</button>`:''}
       <button class="btn btn-danger btn-xs" onclick="deleteMember('${m.id}')">🗑️</button>
     </div></td></tr>`;
   }).join('');
-  document.getElementById('members-count').textContent=`${list.length} عضو`;
+  document.getElementById('members-count').textContent=pg.total+' عضو';
+  var paginEl=document.getElementById('members-pagination');
+  if(paginEl) paginEl.innerHTML = renderPaginationHTML(pg, 'renderMembers');
 }
+var debouncedRenderMembers = debounce(function(){ _pageState.members=1; renderMembers(); });
 
 // =================== FEES ===================
 function createPeriod(){
+  clearValidation();
+  if(!validateRequired('pd-name','اسم الدورة')) return;
+  if(!validateRequired('pd-amount','مبلغ الرسوم')) return;
   const name=document.getElementById('pd-name').value.trim(); const amount=parseFloat(document.getElementById('pd-amount').value);
-  if(!name||!amount){toast('اسم الدورة والمبلغ مطلوبان','error');return;}
+  if(!amount||amount<=0){toast('مبلغ الرسوم يجب أن يكون أكبر من صفر','error');document.getElementById('pd-amount').classList.add('invalid');return;}
   const data={name,feeAmount:amount,start:document.getElementById('pd-start').value||today(),end:document.getElementById('pd-end').value||''};
   FinanceService.createPeriod(data);
 }
@@ -834,10 +954,10 @@ function savePayment(){
   FinanceService.savePayment(memberId, paymentData);
 }
 
-function renderFees(){
+function renderFees(page){
   const p=curPeriod();
   document.getElementById('fees-period-lbl').textContent=p?p.name:'لا توجد دورة';
-  if(!p){ document.getElementById('fees-stats').innerHTML='<div style="grid-column:1/-1;text-align:center;color:var(--text-muted);padding:16px">أنشئ دورة أولاً</div>'; document.getElementById('fees-tbody').innerHTML=''; return; }
+  if(!p){ document.getElementById('fees-stats').innerHTML='<div style="grid-column:1/-1;text-align:center;color:var(--text-muted);padding:16px">أنشئ دورة أولاً</div>'; document.getElementById('fees-tbody').innerHTML=''; var fp=document.getElementById('fees-pagination');if(fp)fp.innerHTML=''; return; }
   const pays=State.getPayments().filter(x=>x.periodId===p.id);
   const paid=pays.filter(x=>x.status==='مدفوع'); const unpaid=pays.filter(x=>x.status==='لم يدفع'); const exempt=pays.filter(x=>x.status==='معفي');
   const collected=paid.reduce((s,x)=>s+x.amount,0);
@@ -849,16 +969,20 @@ function renderFees(){
   let list=pays; const s=document.getElementById('fees-search').value; const sf=document.getElementById('fees-flt').value;
   if(s) list=list.filter(x=>{ const m=State.getMembers().find(y=>y.id===x.memberId); return m?.name.includes(s); });
   if(sf) list=list.filter(x=>x.status===sf);
-  document.getElementById('fees-tbody').innerHTML=list.map(pay=>{
+  var pg = paginate(list, 'fees', page, 25);
+  document.getElementById('fees-tbody').innerHTML=pg.data.map(pay=>{
     const m=State.getMembers().find(x=>x.id===pay.memberId); if(!m) return '';
     const sb=pay.status==='مدفوع'?'<span class="badge badge-success">✅ مدفوع</span>':pay.status==='معفي'?'<span class="badge badge-purple">🔖 معفي</span>':'<span class="badge badge-warning">⏳ لم يدفع</span>';
-    return `<tr><td><div style="display:flex;align-items:center;gap:8px"><div class="avatar" style="background:${avColor(m.name)};width:30px;height:30px;font-size:11px">${avInit(m.name)}</div><div><div style="font-weight:600">${m.name}</div><div style="font-size:11px;color:var(--text-muted)">${m.family}</div></div></div></td>
-    <td>${fmt(pay.required||p.feeAmount)} ريال</td>
-    <td style="font-weight:700;color:${pay.status==='مدفوع'?'var(--green)':'var(--text-muted)'}">${pay.status==='مدفوع'?fmt(pay.amount)+' ريال':'—'}</td>
-    <td style="font-size:11px">${pay.date||'—'}</td><td style="font-size:11px">${pay.method||'—'}</td>
-    <td>${sb}</td><td><button class="btn btn-accent btn-xs" onclick="openPayModal('${m.id}')">💳 تحديث</button></td></tr>`;
+    return `<tr><td data-label="العضو"><div style="display:flex;align-items:center;gap:8px"><div class="avatar" style="background:${avColor(m.name)};width:30px;height:30px;font-size:11px">${avInit(m.name)}</div><div><div style="font-weight:600">${m.name}</div><div style="font-size:11px;color:var(--text-muted)">${m.family}</div></div></div></td>
+    <td data-label="المطلوب">${fmt(pay.required||p.feeAmount)} ريال</td>
+    <td data-label="المدفوع" style="font-weight:700;color:${pay.status==='مدفوع'?'var(--green)':'var(--text-muted)'}">${pay.status==='مدفوع'?fmt(pay.amount)+' ريال':'—'}</td>
+    <td data-label="التاريخ" style="font-size:11px">${pay.date||'—'}</td><td data-label="الطريقة" style="font-size:11px">${pay.method||'—'}</td>
+    <td data-label="الحالة">${sb}</td><td data-label="إجراء"><button class="btn btn-accent btn-xs" onclick="openPayModal('${m.id}')">💳 تحديث</button></td></tr>`;
   }).join('');
+  var paginEl=document.getElementById('fees-pagination');
+  if(paginEl) paginEl.innerHTML = renderPaginationHTML(pg, 'renderFees');
 }
+var debouncedRenderFees = debounce(function(){ _pageState.fees=1; renderFees(); });
 
 // =================== COMMITTEES ===================
 function renderCommittees(){
@@ -932,8 +1056,11 @@ function renderOrgChart(){
 
 // =================== BUDGET ===================
 function addTransaction(){
+  clearValidation();
+  if(!validateRequired('tx-desc','وصف المعاملة')) return;
+  if(!validateRequired('tx-amount','المبلغ')) return;
   const desc=document.getElementById('tx-desc').value.trim(); const amount=parseFloat(document.getElementById('tx-amount').value);
-  if(!desc||!amount){toast('الوصف والمبلغ مطلوبان','error');return;}
+  if(!amount||amount<=0){toast('المبلغ يجب أن يكون أكبر من صفر','error');document.getElementById('tx-amount').classList.add('invalid');return;}
   const data={
     type:      document.getElementById('tx-type').value,
     amount,
@@ -945,7 +1072,7 @@ function addTransaction(){
   FinanceService.addTransaction(data);
 }
 
-function renderBudget(){
+function renderBudget(page){
   document.getElementById('tx-committee').innerHTML='<option value="">عام</option>'+committeeSelectOptions();
   const flt=document.getElementById('b-flt').value;
   let txs=[...State.getTransactions()].sort((a,b)=>b.date.localeCompare(a.date));
@@ -956,7 +1083,11 @@ function renderBudget(){
   document.getElementById('b-expense').textContent=fmt(expense);
   document.getElementById('b-net').textContent=fmt(income-expense);
   const catClr={'رسوم الأعضاء':'#27ae60','رحلة العمرة':'#2980b9','غداء العيد':'#e67e22','رحلة ترفيهية':'#8e44ad','مسابقة':'#c8a84b','مصاريف إدارية':'#95a5a6','استثمار':'#1B3456','عقيقة جماعية':'#6b3a1a','تبرعات':'#c8a84b','أخرى':'#7f8c8d'};
-  document.getElementById('budget-tbody').innerHTML=txs.length?txs.map(tx=>{ const c=State.getCommittees().find(x=>x.id===tx.committee); return `<tr><td style="font-size:11px;color:var(--text-muted)">${tx.date}</td><td style="font-weight:600">${tx.desc}</td><td><span style="background:${(catClr[tx.category]||'#777')}22;color:${catClr[tx.category]||'#777'};padding:3px 9px;border-radius:20px;font-size:11px;font-weight:600">${tx.category}</span></td><td style="font-size:11px">${c?c.name:'عام'}</td><td><span class="badge ${tx.type==='إيراد'?'badge-success':'badge-danger'}">${tx.type==='إيراد'?'⬆️':'⬇️'} ${tx.type}</span></td><td style="font-weight:700;color:${tx.type==='إيراد'?'var(--green)':'var(--danger)'}">${tx.type==='إيراد'?'+':'-'}${fmt(tx.amount)} ريال</td><td><button class="btn btn-danger btn-xs" onclick="deleteTx('${tx.id}')">🗑️</button></td></tr>`; }).join(''):'<tr><td colspan="7"><div class="empty-state"><div class="empty-icon">💰</div><p>لا معاملات</p></div></td></tr>';
+  if(!txs.length){ document.getElementById('budget-tbody').innerHTML='<tr><td colspan="7"><div class="empty-state"><div class="empty-icon">💰</div><p>لا معاملات</p></div></td></tr>'; var bp=document.getElementById('budget-pagination');if(bp)bp.innerHTML=''; return; }
+  var pg = paginate(txs, 'budget', page, 25);
+  document.getElementById('budget-tbody').innerHTML=pg.data.map(tx=>{ const c=State.getCommittees().find(x=>x.id===tx.committee); return `<tr><td data-label="التاريخ" style="font-size:11px;color:var(--text-muted)">${tx.date}</td><td data-label="الوصف" style="font-weight:600">${tx.desc}</td><td data-label="الفئة"><span style="background:${(catClr[tx.category]||'#777')}22;color:${catClr[tx.category]||'#777'};padding:3px 9px;border-radius:20px;font-size:11px;font-weight:600">${tx.category}</span></td><td data-label="اللجنة" style="font-size:11px">${c?c.name:'عام'}</td><td data-label="النوع"><span class="badge ${tx.type==='إيراد'?'badge-success':'badge-danger'}">${tx.type==='إيراد'?'⬆️':'⬇️'} ${tx.type}</span></td><td data-label="المبلغ" style="font-weight:700;color:${tx.type==='إيراد'?'var(--green)':'var(--danger)'}">${tx.type==='إيراد'?'+':'-'}${fmt(tx.amount)} ريال</td><td data-label="حذف"><button class="btn btn-danger btn-xs" onclick="deleteTx('${tx.id}')">🗑️</button></td></tr>`; }).join('');
+  var paginEl=document.getElementById('budget-pagination');
+  if(paginEl) paginEl.innerHTML = renderPaginationHTML(pg, 'renderBudget');
 }
 
 function deleteTx(id){ FinanceService.deleteTx(id); }

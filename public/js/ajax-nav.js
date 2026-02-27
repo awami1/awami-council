@@ -59,13 +59,22 @@
     pageContent.classList.add('page-loading');
 
     var xhr = new XMLHttpRequest();
-    xhr.open('GET', url, true);
+    var separator = url.indexOf('?') === -1 ? '?' : '&';
+    xhr.open('GET', url + separator + '_ajax=1', true);
     xhr.setRequestHeader('X-Requested-With', 'XMLHttpRequest');
 
     xhr.onload = function() {
       if (xhr.status >= 200 && xhr.status < 400) {
+        // حماية: إذا رجعت صفحة كاملة بدل محتوى جزئي، نستخرج #page-content فقط
+        var html = xhr.responseText;
+        if (html.indexOf('<!DOCTYPE') !== -1 || html.indexOf('<html') !== -1) {
+          var tmp = document.createElement('div');
+          tmp.innerHTML = html;
+          var inner = tmp.querySelector('#page-content');
+          if (inner) html = inner.innerHTML;
+        }
         // تحديث المحتوى
-        pageContent.innerHTML = xhr.responseText;
+        pageContent.innerHTML = html;
 
         // تحديث URL
         if (pushState !== false) {

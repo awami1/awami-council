@@ -78,8 +78,9 @@
 <!-- EVENT MODAL -->
 <div class="modal-overlay" id="modal-event">
   <div class="modal">
-    <div class="modal-header"><div class="modal-title">🎉 إضافة فعالية</div><button class="modal-close" onclick="closeModal('modal-event')">✕</button></div>
+    <div class="modal-header"><div class="modal-title" id="event-modal-title">🎉 إضافة فعالية</div><button class="modal-close" onclick="closeModal('modal-event')">✕</button></div>
     <div class="modal-body">
+      <input type="hidden" id="ev-edit-id">
       <div class="form-group"><label class="form-label">اسم الفعالية *</label><input class="form-control" id="ev-name"></div>
       <div class="form-grid">
         <div class="form-group"><label class="form-label">اللجنة المنظِّمة</label><select class="form-control" id="ev-committee"><option value="">غير محدد</option></select></div>
@@ -96,7 +97,11 @@
       </div>
       <div class="form-group"><label class="form-label">ملاحظات</label><textarea class="form-control" id="ev-notes" rows="2"></textarea></div>
     </div>
-    <div class="modal-footer"><button class="btn btn-outline" onclick="closeModal('modal-event')">إلغاء</button><button class="btn btn-primary" onclick="addEvent()">إضافة</button></div>
+    <div class="modal-footer">
+      <button class="btn btn-outline" onclick="closeModal('modal-event')">إلغاء</button>
+      <button class="btn btn-danger" id="ev-delete-btn" onclick="deleteEventFromModal()" style="display:none">🗑 حذف</button>
+      <button class="btn btn-primary" id="ev-save-btn" onclick="saveEvent()">حفظ</button>
+    </div>
   </div>
 </div>
 

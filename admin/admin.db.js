@@ -370,10 +370,34 @@ const r = await EventsAPI.create(payload);
 DB.events.push(normalizeEvent(r.data ?? { ...payload, id: uid() }));
 },
 
+async update(id, data) {
+const payload = {};
+if (data.name !== undefined)         payload.name         = data.name;
+if (data.committeeId !== undefined)  payload.committee_id  = data.committeeId;
+if (data.status !== undefined)       payload.status       = data.status;
+if (data.date !== undefined)         payload.event_date   = data.date || null;
+if (data.budget !== undefined)       payload.budget       = data.budget;
+if (data.participants !== undefined) payload.participants = data.participants;
+if (data.lead !== undefined)         payload.lead         = data.lead;
+if (data.notes !== undefined)        payload.notes        = data.notes;
+if (data.icon !== undefined)         payload.icon         = data.icon;
+if (data.images !== undefined)       payload.images       = data.images;
+const r = await EventsAPI.update(id, payload);
+const updated = normalizeEvent(r.data ?? { ...payload, id });
+const idx = DB.events.findIndex(e => e.id === id);
+if (idx >= 0) DB.events[idx] = { ...DB.events[idx], ...updated };
+},
+
 async delete(id) {
     await EventsAPI.delete(id);
     DB.events = DB.events.filter(e => e.id !== id);
 },
+};
+
+const EventService = {
+create: async (data) => { await AdminEvent.create(data); renderEvents(); renderCalendar(); renderDashboard(); toast('تم إضافة الفعالية'); },
+update: async (id, data) => { await AdminEvent.update(id, data); renderEvents(); renderCalendar(); renderDashboard(); toast('تم تحديث الفعالية'); },
+delete: async (id) => { confirm2('حذف الفعالية؟', async () => { await AdminEvent.delete(id); renderEvents(); renderCalendar(); renderDashboard(); toast('تم الحذف'); }); },
 };
 
 // ============================================================

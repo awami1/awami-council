@@ -91,11 +91,10 @@ function getPublishedNews(int $limit = 3): array {
     try {
         $pdo = getPDO();
         $stmt = $pdo->prepare("
-            SELECT id, title, excerpt, image_url, category, publish_date, created_at
+            SELECT id, title, excerpt, image, category, author, created_at
             FROM news
-            WHERE status = 'منشور'
-              AND (publish_date IS NULL OR publish_date <= datetime('now'))
-            ORDER BY COALESCE(publish_date, created_at) DESC
+            WHERE status = 'published'
+            ORDER BY created_at DESC
             LIMIT ?
         ");
         $stmt->execute([$limit]);
@@ -123,4 +122,57 @@ function getCommitteesCount(): int {
         $row = $pdo->query("SELECT COUNT(*) as cnt FROM committees")->fetch();
         return (int)($row['cnt'] ?? 0);
     } catch (Throwable $e) { return 0; }
+}
+
+/**
+ * جلب اللجان مع عدد الأعضاء
+ */
+function getCommittees(): array {
+    try {
+        $pdo = getPDO();
+        $committees = $pdo->query("SELECT * FROM committees ORDER BY sort_order ASC, created_at ASC")->fetchAll();
+        $counts = [];
+        try {
+            $rows = $pdo->query("SELECT committee_id, COUNT(*) as cnt FROM committee_members GROUP BY committee_id")->fetchAll();
+            foreach ($rows as $r) $counts[$r['committee_id']] = (int)$r['cnt'];
+        } catch (Throwable $e) {}
+        foreach ($committees as &$c) {
+            $c['member_count'] = $counts[$c['id']] ?? 0;
+        }
+        unset($c);
+        return $committees;
+    } catch (Throwable $e) { return []; }
+}
+
+/**
+ * جلب جميع الفعاليات
+ */
+function getAllEvents(int $limit = 20): array {
+    try {
+        $pdo = getPDO();
+        $stmt = $pdo->prepare("
+            SELECT id, name, icon, event_date, status, lead, participants, notes
+            FROM events
+            ORDER BY event_date DESC, created_at DESC
+            LIMIT ?
+        ");
+        $stmt->execute([$limit]);
+        return $stmt->fetchAll();
+    } catch (Throwable $e) { return []; }
+}
+
+/**
+ * إحصائيات ديناميكية حقيقية
+ */
+function getDynamicStats(): array {
+    $ws = getWS();
+    $members = getActiveMembersCount();
+    $committees = getCommitteesCount();
+    $foundingYear = 1992;
+    $years = (int)date('Y') - $foundingYear;
+    return [
+        'years'      => $years > 0 ? $years : (int)$ws['stats']['years'],
+        'committees' => $committees > 0 ? $committees : (int)$ws['stats']['committees'],
+        'members'    => $members > 0 ? '+' . $members : $ws['stats']['members'],
+    ];
 }

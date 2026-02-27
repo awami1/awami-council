@@ -1,11 +1,12 @@
 <?php
 /**
  * council.php — صفحة المجلس
- * تحتوي: الهيئة الإدارية، الفعاليات، اللجان
+ * تحتوي: الهيئة الإدارية، الفعاليات، اللجان (ديناميكية من قاعدة البيانات)
  */
 $ws = getWS();
 $meeting = getMeeting();
 $upcomingEvents = getUpcomingEvents();
+$committees = getCommittees();
 ?>
 
 <!-- العداد التنازلي -->
@@ -50,7 +51,7 @@ $upcomingEvents = getUpcomingEvents();
           if (($pos['type'] ?? '') === 'advisory')  $cardClass .= ' advisory';
         ?>
         <div class="<?= $cardClass ?>">
-          <div class="council-icon"><?= esc($pos['icon'] ?? '👤') ?></div>
+          <div class="council-icon"><?= esc($pos['icon'] ?? '&#128100;') ?></div>
           <div class="council-role"><?= esc($pos['role']) ?></div>
           <div class="council-name"><?= esc($pos['name']) ?></div>
           <?php if (!empty($pos['tasks'])): ?>
@@ -114,7 +115,7 @@ $upcomingEvents = getUpcomingEvents();
   <div class="events-grid">
     <?php foreach ($upcomingEvents as $ev): ?>
       <div class="event-card animate-in">
-        <div class="event-icon"><?= esc($ev['icon'] ?? '📅') ?></div>
+        <div class="event-icon"><?= esc($ev['icon'] ?? '&#128197;') ?></div>
         <div class="event-info">
           <div class="event-name"><?= esc($ev['name']) ?></div>
           <?php if (!empty($ev['event_date'])): ?>
@@ -131,23 +132,39 @@ $upcomingEvents = getUpcomingEvents();
 <?php endif; ?>
 
 <!-- اللجان -->
-<section id="committees" class="full-section" style="background:var(--bg-alt)">
+<?php
+  $committeeCount = count($committees);
+  $committeeBadge = $committeeCount > 0 ? $committeeCount . ' لجنة متخصصة' : 'لجان المجلس';
+?>
+<section id="committees" class="full-section"<?= empty($upcomingEvents) ? ' style="background:var(--bg-alt)"' : '' ?>>
   <div class="section-header">
-    <div class="section-badge">١٠ لجان متخصصة</div>
+    <div class="section-badge"><?= esc($committeeBadge) ?></div>
     <h2 class="section-title">لجان المجلس</h2>
     <p class="section-subtitle">لجان متخصصة لخدمة العائلة في مختلف المجالات</p>
   </div>
   <div class="committees-grid">
-    <div class="committee-card animate-in"><div class="committee-banner" style="background:linear-gradient(135deg,#1a6b3c,#2d9955)">&#x1F54B;</div><div class="committee-body"><div class="committee-title">لجنة العمرة الرجبية</div><div class="committee-desc">تنظيم رحلة العمرة السنوية في شهر رجب لأفراد العائلة</div><div class="committee-members">&#x1F465; ٨ أعضاء</div></div></div>
-    <div class="committee-card animate-in"><div class="committee-banner" style="background:linear-gradient(135deg,#c8a84b,#e8c96a)">&#x1F356;</div><div class="committee-body"><div class="committee-title">لجنة غداء العيدين</div><div class="committee-desc">تنظيم وإدارة غداء عيد الفطر وعيد الأضحى</div><div class="committee-members">&#x1F465; ٥ أعضاء</div></div></div>
-    <div class="committee-card animate-in"><div class="committee-banner" style="background:linear-gradient(135deg,#1a3a6b,#2d5ab9)">&#x1F319;</div><div class="committee-body"><div class="committee-title">لجنة المسابقة الرمضانية</div><div class="committee-desc">إعداد وتحكيم المسابقات الرمضانية للعائلة</div><div class="committee-members">&#x1F465; ٥ أعضاء</div></div></div>
-    <div class="committee-card animate-in"><div class="committee-banner" style="background:linear-gradient(135deg,#2980b9,#5dade2)">&#x1F3A1;</div><div class="committee-body"><div class="committee-title">لجنة الرحلات</div><div class="committee-desc">تخطيط وتنفيذ الرحلات الترفيهية للعائلة</div><div class="committee-members">&#x1F465; ١ عضو</div></div></div>
-    <div class="committee-card animate-in"><div class="committee-banner" style="background:linear-gradient(135deg,#4a235a,#8e44ad)">&#x2728;</div><div class="committee-body"><div class="committee-title">لجنة ليلة القدر</div><div class="committee-desc">إحياء ليلة القدر وتنظيم فعالياتها الروحانية</div><div class="committee-members">&#x1F465; ٧ أعضاء</div></div></div>
-    <div class="committee-card animate-in"><div class="committee-banner" style="background:linear-gradient(135deg,#117a65,#1abc9c)">&#x1F54C;</div><div class="committee-body"><div class="committee-title">لجنة تنظيف المساجد</div><div class="committee-desc">تنسيق حملات تنظيف وصيانة المساجد (العمل التطوعي)</div><div class="committee-members">&#x1F465; ٦ أعضاء</div></div></div>
-    <div class="committee-card animate-in"><div class="committee-banner" style="background:linear-gradient(135deg,#b7950b,#d4ac0d)">&#x1F3C6;</div><div class="committee-body"><div class="committee-title">لجنة مسابقة العيد</div><div class="committee-desc">تنظيم مسابقات وفعاليات العيد للأطفال والكبار</div><div class="committee-members">&#x1F465; ٨ أعضاء</div></div></div>
-    <div class="committee-card animate-in"><div class="committee-banner" style="background:linear-gradient(135deg,#1B3456,#2d5a85)">&#x1F4C8;</div><div class="committee-body"><div class="committee-title">لجنة الاستثمار</div><div class="committee-desc">إدارة واستثمار أموال الصندوق</div><div class="committee-members">&#x1F465; ٦ أعضاء</div></div></div>
-    <div class="committee-card animate-in"><div class="committee-banner" style="background:linear-gradient(135deg,#c0392b,#e74c3c)">&#x1F4E2;<div class="committee-badge">جديد</div></div><div class="committee-body"><div class="committee-title">اللجنة الإعلامية</div><div class="committee-desc">إدارة المنصات الإعلامية وتوثيق الفعاليات</div><div class="committee-members">&#x1F465; ٤ أعضاء</div></div></div>
-    <div class="committee-card animate-in"><div class="committee-banner" style="background:linear-gradient(135deg,#6b3a1a,#9b5a2d)">&#x1F411;<div class="committee-badge">جديد</div></div><div class="committee-body"><div class="committee-title">لجنة العقيقة الجماعية</div><div class="committee-desc">تنظيم مناسبات العقيقة الجماعية للعائلة</div><div class="committee-members">&#x1F465; ٤ أعضاء</div></div></div>
+    <?php if (!empty($committees)): ?>
+      <?php foreach ($committees as $c): ?>
+        <div class="committee-card animate-in">
+          <div class="committee-banner" style="background:<?= esc($c['color'] ?? 'linear-gradient(135deg,#47915C,#2d6b40)') ?>">
+            <?= esc($c['icon'] ?? '&#127970;') ?>
+          </div>
+          <div class="committee-body">
+            <div class="committee-title"><?= esc($c['name']) ?></div>
+            <?php if (!empty($c['description'])): ?>
+              <div class="committee-desc"><?= esc($c['description']) ?></div>
+            <?php endif; ?>
+            <div class="committee-members">&#x1F465; <?= (int)$c['member_count'] ?> <?= (int)$c['member_count'] === 1 ? 'عضو' : 'أعضاء' ?></div>
+          </div>
+        </div>
+      <?php endforeach; ?>
+    <?php else: ?>
+      <div style="grid-column:1/-1;text-align:center;padding:60px 20px;color:var(--text-muted)">
+        <div style="font-size:52px;margin-bottom:12px;opacity:.4">&#127970;</div>
+        <p>لم تُضف لجان بعد</p>
+        <p style="font-size:12px;margin-top:8px">يمكن إضافة اللجان من لوحة التحكم</p>
+      </div>
+    <?php endif; ?>
   </div>
 </section>
 

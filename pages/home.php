@@ -5,6 +5,8 @@
 $ws = getWS();
 $meeting = getMeeting();
 $upcomingEvents = getUpcomingEvents();
+$latestNews = getPublishedNews(3);
+$stats = getDynamicStats();
 ?>
 
 <!-- HERO -->
@@ -20,15 +22,15 @@ $upcomingEvents = getUpcomingEvents();
     </div>
     <div class="hero-meta">
       <div>
-        <div class="num" data-count="<?= (int)$ws['stats']['years'] ?>"><?= esc((string)$ws['stats']['years']) ?></div>
+        <div class="num" data-count="<?= (int)$stats['years'] ?>"><?= esc((string)$stats['years']) ?></div>
         <div class="lbl">عاماً من العطاء</div>
       </div>
       <div>
-        <div class="num" data-count="<?= (int)$ws['stats']['committees'] ?>"><?= esc((string)$ws['stats']['committees']) ?></div>
+        <div class="num" data-count="<?= (int)$stats['committees'] ?>"><?= esc((string)$stats['committees']) ?></div>
         <div class="lbl">لجنة متخصصة</div>
       </div>
       <div>
-        <div class="num" data-count="<?= (int)preg_replace('/\D/', '', $ws['stats']['members']) ?>" data-prefix="+"><?= esc((string)$ws['stats']['members']) ?></div>
+        <div class="num" data-count="<?= (int)preg_replace('/\D/', '', $stats['members']) ?>" data-prefix="+"><?= esc((string)$stats['members']) ?></div>
         <div class="lbl">عضو نشط</div>
       </div>
     </div>
@@ -79,6 +81,11 @@ $upcomingEvents = getUpcomingEvents();
       <div class="section-link-title">الأخبار</div>
       <div class="section-link-desc">آخر أخبار وفعاليات العائلة</div>
     </a>
+    <a href="/events" class="section-link-card animate-in">
+      <div class="section-link-icon">&#128197;</div>
+      <div class="section-link-title">الفعاليات</div>
+      <div class="section-link-desc">أنشطة وفعاليات المجلس المتنوعة</div>
+    </a>
     <a href="/gallery" class="section-link-card animate-in">
       <div class="section-link-icon">&#128247;</div>
       <div class="section-link-title">المعرض</div>
@@ -120,6 +127,41 @@ $upcomingEvents = getUpcomingEvents();
         </div>
       </div>
     <?php endforeach; ?>
+  </div>
+</section>
+<?php endif; ?>
+
+<?php if (!empty($latestNews)): ?>
+<!-- آخر الأخبار -->
+<section>
+  <div class="section-header">
+    <div class="section-badge">آخر المستجدات</div>
+    <h2 class="section-title">أخبار المجلس</h2>
+    <p class="section-subtitle">تابع آخر أخبار وفعاليات مجلس عائلة العوامي</p>
+  </div>
+  <div class="news-grid" style="max-width:1200px;margin:0 auto">
+    <?php foreach ($latestNews as $n): ?>
+      <article class="news-card animate-in">
+        <?php if (!empty($n['image'])): ?>
+          <div class="news-card-img"><img src="<?= esc($n['image']) ?>" alt="<?= esc($n['title']) ?>" loading="lazy"></div>
+        <?php else: ?>
+          <div class="news-card-img news-card-placeholder"><span>&#128240;</span></div>
+        <?php endif; ?>
+        <div class="news-card-body">
+          <div class="news-card-meta">
+            <span class="news-card-cat"><?= esc($n['category'] ?? 'عام') ?></span>
+            <span class="news-card-date">&#128197; <?= esc(substr($n['created_at'] ?? '', 0, 10)) ?></span>
+          </div>
+          <h3 class="news-card-title"><?= esc($n['title']) ?></h3>
+          <?php if (!empty($n['excerpt'])): ?>
+            <p class="news-card-excerpt"><?= esc($n['excerpt']) ?></p>
+          <?php endif; ?>
+        </div>
+      </article>
+    <?php endforeach; ?>
+  </div>
+  <div style="text-align:center;margin-top:28px">
+    <a href="/news" class="cta-btn cta-primary" style="display:inline-flex">&#128240; عرض جميع الأخبار</a>
   </div>
 </section>
 <?php endif; ?>

@@ -1,6 +1,9 @@
 RewriteEngine On
 RewriteBase /
 
+# Sitemap
+RewriteRule ^sitemap\.xml$ sitemap.php [L]
+
 # الحفاظ على الـ API endpoints
 RewriteRule ^api/ - [L]
 

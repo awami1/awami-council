@@ -116,6 +116,11 @@ function isSQLite(): bool
     return getPDO()->getAttribute(PDO::ATTR_DRIVER_NAME) === 'sqlite';
 }
 
+// ---- Security Headers ----
+header('X-Content-Type-Options: nosniff');
+header('X-Frame-Options: DENY');
+header('Referrer-Policy: strict-origin-when-cross-origin');
+
 // ---- JSON response ----
 function respond(int $code, array $body): never
 {

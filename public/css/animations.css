@@ -29,3 +29,15 @@
   animation: shimmer 1.5s infinite;
   border-radius: var(--radius);
 }
+
+/* AJAX page loading bar */
+@keyframes pageLoadBar { from { width: 0; } to { width: 70%; } }
+#page-content.page-loading::before {
+  content: '';
+  position: fixed;
+  top: 0; right: 0;
+  height: 3px;
+  background: var(--accent, #1A5C32);
+  animation: pageLoadBar .8s ease-out forwards;
+  z-index: 9999;
+}

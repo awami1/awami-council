@@ -1846,6 +1846,172 @@ function renderDashboard(){
   document.getElementById('d-events').innerHTML=upcoming.length?upcoming.map(ev=>{ const c=State.getCommittees().find(x=>x.id===ev.committeeId); return `<div style="display:flex;align-items:center;gap:10px;padding:7px 0;border-bottom:1px solid #f0f5f1"><div style="width:38px;height:38px;border-radius:10px;background:${c?c.color:'linear-gradient(135deg,var(--green-dark),var(--green))'};display:flex;align-items:center;justify-content:center;font-size:16px">${ev.icon||'🎉'}</div><div style="flex:1"><div style="font-size:13px;font-weight:600">${ev.name}</div><div style="font-size:11px;color:var(--text-muted)">${ev.date||'—'}</div></div><span class="badge ${sBadge(ev.status)}">${ev.status}</span></div>`; }).join(''):'<div class="empty-state"><div class="empty-icon">🗓️</div><p>لا فعاليات قادمة</p></div>';
   const activePolls=State.getPolls().filter(x=>x.active).slice(0,3);
   document.getElementById('d-polls').innerHTML=activePolls.length?activePolls.map(poll=>{ const total=poll.options.reduce((s,o)=>s+o.votes.length,0); return `<div style="padding:9px 0;border-bottom:1px solid #f0f5f1"><div style="font-size:13px;font-weight:600">${poll.title}</div><div style="font-size:11px;color:var(--text-muted)">${total} صوت</div></div>`; }).join(''):'<div class="empty-state"><div class="empty-icon">🗳️</div><p>لا تصويتات نشطة</p></div>';
+
+  // آخر الرسائل
+  var dMsgs = document.getElementById('d-messages');
+  var dMsgBadge = document.getElementById('d-msg-badge');
+  if (dMsgs && typeof getMessages === 'function') {
+    var msgs = getMessages().slice(0, 5);
+    dMsgs.innerHTML = msgs.length ? msgs.map(function(m) {
+      return '<div style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid #f0f5f1">' +
+        '<div style="width:34px;height:34px;border-radius:50%;background:' + (m.is_read ? '#f0f5f1' : '#dcfce7') + ';display:flex;align-items:center;justify-content:center;font-size:14px">' + (m.is_read ? '✉️' : '📩') + '</div>' +
+        '<div style="flex:1"><div style="font-size:13px;font-weight:' + (m.is_read ? '400' : '700') + '">' + (m.subject || m.name) + '</div>' +
+        '<div style="font-size:11px;color:var(--text-muted)">' + m.name + ' · ' + (m.created_at || '').substring(0, 10) + '</div></div></div>';
+    }).join('') : '<div class="empty-state"><div class="empty-icon">✉️</div><p>لا رسائل</p></div>';
+    if (dMsgBadge) dMsgBadge.textContent = getMessagesUnread() + ' جديدة';
+  }
+
+  // آخر الأخبار
+  var dNews = document.getElementById('d-news');
+  if (dNews && typeof getNews === 'function') {
+    var news = getNews().slice(0, 5);
+    dNews.innerHTML = news.length ? news.map(function(n) {
+      return '<div style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid #f0f5f1">' +
+        '<div style="width:34px;height:34px;border-radius:10px;background:#e8f5ec;display:flex;align-items:center;justify-content:center;font-size:14px">📰</div>' +
+        '<div style="flex:1"><div style="font-size:13px;font-weight:600">' + n.title + '</div>' +
+        '<div style="font-size:11px;color:var(--text-muted)">' + n.category + ' · ' + (n.created_at || '').substring(0, 10) + '</div></div>' +
+        '<span class="badge ' + (n.status === 'published' ? 'badge-success' : 'badge-warning') + '">' + (n.status === 'published' ? 'منشور' : 'مسودة') + '</span></div>';
+    }).join('') : '<div class="empty-state"><div class="empty-icon">📰</div><p>لا أخبار</p></div>';
+  }
+
+  updateMessageBadge();
+}
+
+// =================== NEWS ===================
+function renderNews(page) {
+  var search = (document.getElementById('news-search') || {}).value || '';
+  var fltStatus = (document.getElementById('news-flt-status') || {}).value || '';
+  var fltCat = (document.getElementById('news-flt-cat') || {}).value || '';
+  var all = getNews().filter(function(n) {
+    if (search && n.title.indexOf(search) === -1 && (n.content || '').indexOf(search) === -1) return false;
+    if (fltStatus && n.status !== fltStatus) return false;
+    if (fltCat && n.category !== fltCat) return false;
+    return true;
+  });
+  var info = paginate(all, 'news', page, 15);
+  var tbody = document.getElementById('news-tbody');
+  if (!tbody) return;
+  tbody.innerHTML = info.items.length ? info.items.map(function(n, i) {
+    return '<tr>' +
+      '<td data-label="#">' + (info.startIndex + i + 1) + '</td>' +
+      '<td data-label="العنوان"><strong>' + n.title + '</strong>' + (n.excerpt ? '<br><small style="color:var(--text-muted)">' + n.excerpt.substring(0, 60) + '...</small>' : '') + '</td>' +
+      '<td data-label="التصنيف"><span class="badge badge-info">' + (n.category || 'عام') + '</span></td>' +
+      '<td data-label="الحالة"><span class="badge ' + (n.status === 'published' ? 'badge-success' : 'badge-warning') + '">' + (n.status === 'published' ? 'منشور' : 'مسودة') + '</span></td>' +
+      '<td data-label="التاريخ">' + (n.created_at || '').substring(0, 10) + '</td>' +
+      '<td data-label="إجراءات"><button class="btn btn-primary btn-sm" onclick="editNews(\'' + n.id + '\')">تعديل</button> <button class="btn btn-danger btn-sm" onclick="NewsService.delete(\'' + n.id + '\')">حذف</button></td>' +
+      '</tr>';
+  }).join('') : '<tr><td colspan="6" style="text-align:center;padding:40px;color:var(--text-muted)">لا توجد أخبار</td></tr>';
+  document.getElementById('news-count').textContent = all.length + ' خبر';
+  document.getElementById('news-pagination').innerHTML = renderPaginationHTML(info, 'renderNews');
+}
+var debouncedRenderNews = debounce(function() { _pageState.news = 1; renderNews(); }, 300);
+
+function openAddNews() {
+  document.getElementById('news-modal-title').textContent = 'إضافة خبر جديد';
+  document.getElementById('news-edit-id').value = '';
+  document.getElementById('news-title').value = '';
+  document.getElementById('news-excerpt').value = '';
+  document.getElementById('news-content').value = '';
+  document.getElementById('news-category').value = 'عام';
+  document.getElementById('news-status').value = 'published';
+  document.getElementById('news-image').value = '';
+  document.getElementById('news-author').value = '';
+  clearValidation();
+  openModal('modal-news');
+}
+
+function editNews(id) {
+  var n = getNews().find(function(x) { return x.id === id; });
+  if (!n) return;
+  document.getElementById('news-modal-title').textContent = 'تعديل الخبر';
+  document.getElementById('news-edit-id').value = id;
+  document.getElementById('news-title').value = n.title || '';
+  document.getElementById('news-excerpt').value = n.excerpt || '';
+  document.getElementById('news-content').value = n.content || '';
+  document.getElementById('news-category').value = n.category || 'عام';
+  document.getElementById('news-status').value = n.status || 'published';
+  document.getElementById('news-image').value = n.image || '';
+  document.getElementById('news-author').value = n.author || '';
+  clearValidation();
+  openModal('modal-news');
+}
+
+async function saveNews() {
+  clearValidation();
+  if (!validateRequired('news-title', 'العنوان')) return;
+  var id = document.getElementById('news-edit-id').value;
+  var data = {
+    title:    document.getElementById('news-title').value.trim(),
+    excerpt:  document.getElementById('news-excerpt').value.trim(),
+    content:  document.getElementById('news-content').value.trim(),
+    category: document.getElementById('news-category').value,
+    status:   document.getElementById('news-status').value,
+    image:    document.getElementById('news-image').value.trim(),
+    author:   document.getElementById('news-author').value.trim(),
+  };
+  try {
+    if (id) { await NewsService.update(id, data); }
+    else { await NewsService.create(data); }
+  } catch (e) { toast(e.message, 'error'); }
+}
+
+// =================== MESSAGES ===================
+function renderMessages(page) {
+  var search = (document.getElementById('msg-search') || {}).value || '';
+  var fltRead = (document.getElementById('msg-flt-read') || {}).value;
+  var all = getMessages().filter(function(m) {
+    if (search && m.name.indexOf(search) === -1 && (m.subject || '').indexOf(search) === -1 && (m.message || '').indexOf(search) === -1) return false;
+    if (fltRead !== '' && fltRead !== undefined) {
+      if (fltRead === '0' && m.is_read) return false;
+      if (fltRead === '1' && !m.is_read) return false;
+    }
+    return true;
+  });
+  var info = paginate(all, 'messages', page, 15);
+  var tbody = document.getElementById('msg-tbody');
+  if (!tbody) return;
+  tbody.innerHTML = info.items.length ? info.items.map(function(m, i) {
+    var weight = m.is_read ? '400' : '700';
+    return '<tr style="font-weight:' + weight + '">' +
+      '<td data-label="#">' + (info.startIndex + i + 1) + '</td>' +
+      '<td data-label="المرسل">' + m.name + (m.email ? '<br><small style="color:var(--text-muted)">' + m.email + '</small>' : '') + '</td>' +
+      '<td data-label="الموضوع">' + (m.subject || '—') + '</td>' +
+      '<td data-label="الرسالة"><span style="font-weight:400">' + (m.message || '').substring(0, 50) + (m.message && m.message.length > 50 ? '...' : '') + '</span></td>' +
+      '<td data-label="التاريخ">' + (m.created_at || '').substring(0, 10) + '</td>' +
+      '<td data-label="الحالة"><span class="badge ' + (m.is_read ? 'badge-success' : 'badge-warning') + '">' + (m.is_read ? 'مقروءة' : 'جديدة') + '</span></td>' +
+      '<td data-label="إجراءات">' +
+        '<button class="btn btn-primary btn-sm" onclick="viewMessage(\'' + m.id + '\')">عرض</button> ' +
+        (m.is_read ? '' : '<button class="btn btn-outline btn-sm" onclick="MessageService.markRead(\'' + m.id + '\',true)">قراءة</button> ') +
+        '<button class="btn btn-danger btn-sm" onclick="MessageService.delete(\'' + m.id + '\')">حذف</button>' +
+      '</td></tr>';
+  }).join('') : '<tr><td colspan="7" style="text-align:center;padding:40px;color:var(--text-muted)">لا توجد رسائل</td></tr>';
+  document.getElementById('msg-count').textContent = all.length + ' رسالة';
+  document.getElementById('messages-pagination').innerHTML = renderPaginationHTML(info, 'renderMessages');
+}
+var debouncedRenderMessages = debounce(function() { _pageState.messages = 1; renderMessages(); }, 300);
+
+function viewMessage(id) {
+  var m = getMessages().find(function(x) { return x.id === id; });
+  if (!m) return;
+  var body = document.getElementById('msg-detail-body');
+  body.innerHTML =
+    '<div style="margin-bottom:12px"><strong>المرسل:</strong> ' + m.name + '</div>' +
+    (m.email ? '<div style="margin-bottom:12px"><strong>البريد:</strong> ' + m.email + '</div>' : '') +
+    (m.phone ? '<div style="margin-bottom:12px"><strong>الجوال:</strong> ' + m.phone + '</div>' : '') +
+    (m.subject ? '<div style="margin-bottom:12px"><strong>الموضوع:</strong> ' + m.subject + '</div>' : '') +
+    '<div style="margin-bottom:12px"><strong>التاريخ:</strong> ' + (m.created_at || '') + '</div>' +
+    '<div style="background:var(--bg);padding:16px;border-radius:10px;line-height:1.8;white-space:pre-wrap">' + m.message + '</div>';
+  openModal('modal-msg-detail');
+  // تحديد كمقروءة تلقائياً
+  if (!m.is_read) MessageService.markRead(id, true);
+}
+
+function updateMessageBadge() {
+  var badge = document.getElementById('msg-badge');
+  if (!badge || typeof getMessagesUnread !== 'function') return;
+  var count = getMessagesUnread();
+  badge.textContent = count;
+  badge.style.display = count > 0 ? 'inline-block' : 'none';
 }
 
 // =================== REPORTS ===================

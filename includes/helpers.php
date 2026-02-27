@@ -74,7 +74,7 @@ function getUpcomingEvents(): array {
         $pdo = getPDO();
         $dateFunc = isSQLite() ? "date('now')" : "CURDATE()";
         return $pdo->query("
-            SELECT id, name, icon, event_date, lead
+            SELECT id, name, icon, event_date, `lead`
             FROM events
             WHERE status = 'قادم'
               AND (event_date IS NULL OR event_date >= {$dateFunc})
@@ -151,7 +151,7 @@ function getAllEvents(int $limit = 20): array {
     try {
         $pdo = getPDO();
         $stmt = $pdo->prepare("
-            SELECT id, name, icon, event_date, status, lead, participants, notes
+            SELECT id, name, icon, event_date, status, `lead`, participants, notes
             FROM events
             ORDER BY event_date DESC, created_at DESC
             LIMIT ?

@@ -2,12 +2,48 @@
 /**
  * router.php — Front Controller لموقع عائلة العوامي
  * يوجّه الطلبات إلى الصفحات المناسبة ويدعم AJAX navigation
+ * يعمل مع: Apache (.htaccess) / nginx (try_files) / PHP Built-in Server
  */
-
-require_once __DIR__ . '/includes/helpers.php';
 
 $uri = parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH);
 $uri = rtrim($uri, '/') ?: '/';
+
+// ─── PHP Built-in Server: تمرير الملفات الثابتة و API و Admin ───
+if (php_sapi_name() === 'cli-server') {
+    $filePath = __DIR__ . $uri;
+    // ملفات ثابتة (CSS, JS, صور, خطوط)
+    if ($uri !== '/' && is_file($filePath)) {
+        return false; // دع PHP يخدم الملف مباشرة
+    }
+    // API requests
+    if (str_starts_with($uri, '/api/')) {
+        $apiFile = __DIR__ . $uri;
+        if (is_file($apiFile)) {
+            include $apiFile;
+            return;
+        }
+    }
+    // Admin panel
+    if (str_starts_with($uri, '/admin')) {
+        $adminPath = $uri === '/admin' || $uri === '/admin/' ? '/admin/index.php' : $uri;
+        $adminFile = __DIR__ . $adminPath;
+        if (is_file($adminFile)) {
+            if (str_ends_with($adminFile, '.php')) {
+                include $adminFile;
+            } else {
+                return false;
+            }
+            return;
+        }
+    }
+    // Sitemap
+    if ($uri === '/sitemap.xml') {
+        include __DIR__ . '/sitemap.php';
+        return;
+    }
+}
+
+require_once __DIR__ . '/includes/helpers.php';
 
 // خريطة التوجيه
 $routes = [

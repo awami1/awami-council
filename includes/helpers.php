@@ -137,7 +137,9 @@ function getCommittees(): array {
             foreach ($rows as $r) $counts[$r['committee_id']] = (int)$r['cnt'];
         } catch (Throwable $e) {}
         foreach ($committees as &$c) {
-            $c['member_count'] = $counts[$c['id']] ?? 0;
+            $linkedCount = $counts[$c['id']] ?? 0;
+            $manualCount = (int) ($c['members_count'] ?? 0);
+            $c['member_count'] = max($linkedCount, $manualCount);
         }
         unset($c);
         return $committees;

@@ -31,10 +31,12 @@ if ($method === 'GET') {
         $row = $stmt->fetch();
         if (!$row) respond(404, ['error' => 'اللجنة غير موجودة']);
 
-        // Get member count
+        // Get linked member count
         $cntStmt = $pdo->prepare('SELECT COUNT(*) FROM committee_members WHERE committee_id = :cid');
         $cntStmt->execute([':cid' => $id]);
-        $row['member_count'] = (int) $cntStmt->fetchColumn();
+        $linkedCount = (int) $cntStmt->fetchColumn();
+        $manualCount = (int) ($row['members_count'] ?? 0);
+        $row['member_count'] = max($linkedCount, $manualCount);
 
         // Get event count
         $evStmt = $pdo->prepare('SELECT COUNT(*) FROM events WHERE committee_id = :cid');
@@ -63,9 +65,12 @@ if ($method === 'GET') {
     } catch (PDOException $e) {}
 
     foreach ($committees as &$c) {
-        $c['member_count'] = $counts[$c['id']] ?? 0;
-        $c['event_count']  = $eventCounts[$c['id']] ?? 0;
-        $c['advisory']     = (bool) ($c['advisory'] ?? false);
+        $linkedCount = $counts[$c['id']] ?? 0;
+        $manualCount = (int) ($c['members_count'] ?? 0);
+        $c['member_count']  = max($linkedCount, $manualCount);
+        $c['members_count'] = $manualCount;
+        $c['event_count']   = $eventCounts[$c['id']] ?? 0;
+        $c['advisory']      = (bool) ($c['advisory'] ?? false);
     }
     unset($c);
 
@@ -81,8 +86,8 @@ if ($method === 'POST') {
 
     $id = uid();
     $pdo->prepare(
-        'INSERT INTO committees (id, name, icon, color, description, advisory, sort_order)
-         VALUES (:id, :name, :icon, :color, :desc, :adv, :sort)'
+        'INSERT INTO committees (id, name, icon, color, description, advisory, members_count, sort_order)
+         VALUES (:id, :name, :icon, :color, :desc, :adv, :mcnt, :sort)'
     )->execute([
         ':id'    => $id,
         ':name'  => $name,
@@ -90,6 +95,7 @@ if ($method === 'POST') {
         ':color' => $body['color']       ?? 'linear-gradient(135deg,#47915C,#2d6b40)',
         ':desc'  => $body['description'] ?? '',
         ':adv'   => ($body['advisory'] ?? false) ? 1 : 0,
+        ':mcnt'  => (int) ($body['members_count'] ?? 0),
         ':sort'  => (int) ($body['sort_order'] ?? 0),
     ]);
 
@@ -112,12 +118,15 @@ if ($method === 'PUT') {
     $fields = [];
     $params = [':id' => $id];
 
-    $allowed = ['name', 'icon', 'color', 'description', 'advisory', 'sort_order'];
+    $allowed = ['name', 'icon', 'color', 'description', 'advisory', 'members_count', 'sort_order'];
     foreach ($allowed as $col) {
         if (array_key_exists($col, $body)) {
             if ($col === 'advisory') {
                 $fields[] = "advisory = :advisory";
                 $params[':advisory'] = $body['advisory'] ? 1 : 0;
+            } elseif ($col === 'members_count') {
+                $fields[] = "members_count = :members_count";
+                $params[':members_count'] = (int) $body['members_count'];
             } else {
                 $fields[] = "{$col} = :{$col}";
                 $params[":{$col}"] = $body[$col];
@@ -174,9 +183,12 @@ function ensureCommitteesTable(PDO $pdo): void
             color VARCHAR(200) NOT NULL DEFAULT 'linear-gradient(135deg,#47915C,#2d6b40)',
             description TEXT DEFAULT '',
             advisory INTEGER NOT NULL DEFAULT 0,
+            members_count INTEGER NOT NULL DEFAULT 0,
             sort_order INTEGER NOT NULL DEFAULT 0,
             created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
         )");
+        // Migration: add members_count if missing
+        try { $pdo->exec("ALTER TABLE committees ADD COLUMN members_count INTEGER NOT NULL DEFAULT 0"); } catch (PDOException $e) {}
     } else {
         $pdo->exec("CREATE TABLE IF NOT EXISTS `committees` (
             `id` VARCHAR(36) NOT NULL,
@@ -185,10 +197,13 @@ function ensureCommitteesTable(PDO $pdo): void
             `color` VARCHAR(200) NOT NULL DEFAULT 'linear-gradient(135deg,#47915C,#2d6b40)',
             `description` TEXT DEFAULT NULL,
             `advisory` TINYINT(1) NOT NULL DEFAULT 0,
+            `members_count` INT NOT NULL DEFAULT 0,
             `sort_order` INT NOT NULL DEFAULT 0,
             `created_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
             PRIMARY KEY (`id`)
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci");
+        // Migration: add members_count if missing
+        try { $pdo->exec("ALTER TABLE `committees` ADD COLUMN `members_count` INT NOT NULL DEFAULT 0"); } catch (PDOException $e) {}
     }
 
     // Seed from COMMITTEES_DATA if table is empty

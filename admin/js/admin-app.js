@@ -298,7 +298,7 @@ function showPage(name,el){
   document.getElementById('topbar-title').innerHTML=t+` <span>${s}</span>`;
   const A={members:`<button class="btn btn-primary" onclick="openAddMember()">+ إضافة عضو</button>`,budget:`<button class="btn btn-primary" onclick="openModal('modal-tx')">+ معاملة</button>`,events:`<button class="btn btn-primary" onclick="openAddEvent()">+ فعالية</button>`};
   document.getElementById('topbar-action').innerHTML=A[name]||'';
-  const renderers={dashboard:renderDashboard,council:renderCouncil,members:renderMembers,fees:renderFees,reminders:renderReminders,committees:renderCommittees,orgchart:renderOrgChart,budget:renderBudget,events:renderEvents,calendar:renderCalendar,familytree:renderFamilyTree,voting:renderVoting,portal:renderPortalSelect,'smart-reports':function(){},reports:renderReports,audit:renderAuditLog,'export':function(){},websettings:renderWebsiteSettings,settings:renderSettings};
+  const renderers={dashboard:renderDashboard,council:renderCouncil,members:renderMembers,fees:renderFees,reminders:renderReminders,committees:renderCommittees,orgchart:renderOrgChart,budget:renderBudget,events:renderEvents,calendar:renderCalendar,familytree:renderFamilyTree,voting:renderVoting,portal:renderPortalSelect,'smart-reports':function(){},reports:renderReports,audit:renderAuditLog,'export':function(){},websettings:renderWebsiteSettings,settings:renderSettings,messages:renderMessages,news:renderNews};
   if(renderers[name]) renderers[name]();
   updateSidebar();
 }

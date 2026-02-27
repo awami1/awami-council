@@ -17,5 +17,6 @@
 <?php foreach ($pageScripts ?? [] as $script): ?>
   <script src="<?= $script ?>"></script>
 <?php endforeach; ?>
+<script src="/public/js/ajax-nav.js"></script>
 </body>
 </html>

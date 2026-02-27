@@ -9,8 +9,10 @@
 }
 .hero::before {
   content: 'العوامي'; position: absolute; top: 50%; left: 50%;
-  transform: translate(-50%,-50%); font-size: 200px; font-weight: 900;
+  transform: translate(-50%, calc(-50% + var(--parallax-y, 0px)));
+  font-size: 200px; font-weight: 900;
   opacity: .018; font-family: var(--font-heading); pointer-events: none; white-space: nowrap;
+  transition: none;
 }
 .hero-content { max-width: 800px; margin: 0 auto; position: relative; z-index: 1; }
 .hero h2 { font-size: 42px; font-weight: 900; color: var(--green-dark); margin-bottom: 18px; font-family: var(--font-heading); line-height: 1.3; }
@@ -198,6 +200,35 @@
 .section-link-icon { font-size: 42px; margin-bottom: 14px; }
 .section-link-title { font-size: 17px; font-weight: 800; color: var(--green-dark); margin-bottom: 8px; }
 .section-link-desc { font-size: 14px; color: var(--text-muted); line-height: 1.7; }
+
+/* ─── ACCORDION ─── */
+.accordion { max-width: 800px; margin: 0 auto; }
+.accordion-item {
+  background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius);
+  margin-bottom: 12px; overflow: hidden; transition: all .3s;
+}
+.accordion-item:hover { border-color: var(--green); }
+.accordion-header {
+  width: 100%; background: none; border: none; padding: 20px 24px;
+  display: flex; align-items: center; justify-content: space-between; gap: 16px;
+  cursor: pointer; font-family: inherit; font-size: 15px; font-weight: 700;
+  color: var(--green-dark); text-align: right; transition: all .25s;
+}
+.accordion-header:hover { background: var(--bg-alt); }
+.accordion-icon {
+  flex-shrink: 0; width: 28px; height: 28px; border-radius: 50%;
+  background: var(--green-light); color: var(--green); display: flex;
+  align-items: center; justify-content: center; font-size: 16px;
+  transition: transform .3s cubic-bezier(.22,1,.36,1);
+}
+.accordion-item.open .accordion-icon { transform: rotate(45deg); }
+.accordion-item.open .accordion-header { color: var(--green); }
+.accordion-body {
+  max-height: 0; overflow: hidden; transition: max-height .35s cubic-bezier(.22,1,.36,1);
+}
+.accordion-body-inner {
+  padding: 0 24px 20px; font-size: 14px; color: var(--text-muted); line-height: 1.8;
+}
 
 /* ─── RESPONSIVE ─── */
 @media (max-width: 900px) {

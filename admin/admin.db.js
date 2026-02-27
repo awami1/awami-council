@@ -61,7 +61,7 @@ FamilyTreeAPI.getAll(),
     var committeesRes   = safeVal(results[10], {data:[]});
     var newsRes         = safeVal(results[11], {data:[]});
     var messagesRes     = safeVal(results[12], {data:[], unread:0});
-    var ftRes           = safeVal(results[13], {data:[]});
+    var ftRes           = safeVal(results[13], {members:[]});
 
     DB.settings     = settingsRes.settings  ?? {};
     DB.members      = membersRes.data        ?? [];
@@ -77,7 +77,7 @@ FamilyTreeAPI.getAll(),
     DB.news         = newsRes.data           ?? [];
     DB.messages     = messagesRes.data       ?? [];
     DB.messagesUnread = messagesRes.unread   ?? 0;
-    DB.familyTreeMembers = ftRes.data        ?? [];
+    DB.familyTreeMembers = ftRes.members      ?? [];
 
     // بناء خريطة أعضاء اللجان
     buildCommitteeMembersMap();
@@ -469,14 +469,14 @@ async delete(id) {
 const AdminFamilyTree = {
 async create(data) {
     const r = await FamilyTreeAPI.create(data);
-    DB.familyTreeMembers.push(r.data);
-    return r.data;
+    DB.familyTreeMembers.push(r.member);
+    return r.member;
 },
 async update(id, data) {
     const r = await FamilyTreeAPI.update(id, data);
     const idx = DB.familyTreeMembers.findIndex(m => m.id === id);
-    if (idx >= 0) DB.familyTreeMembers[idx] = r.data;
-    return r.data;
+    if (idx >= 0) DB.familyTreeMembers[idx] = r.member;
+    return r.member;
 },
 async delete(id) {
     await FamilyTreeAPI.delete(id);

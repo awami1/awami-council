@@ -1,0 +1,85 @@
+/**
+ * base.css — أساسيات التصميم وإعادة التعيين
+ */
+
+/* Reset */
+*, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+body {
+  font-family: var(--font-body);
+  background: var(--bg);
+  color: var(--text);
+  line-height: 1.7;
+  overflow-x: hidden;
+}
+
+/* Typography */
+h1, h2, h3, h4 { line-height: 1.3; }
+a { color: inherit; text-decoration: none; }
+img { max-width: 100%; height: auto; }
+
+/* Container */
+.container { max-width: 1200px; margin: 0 auto; padding: 0 24px; }
+
+/* Sections */
+section { max-width: 1200px; margin: 0 auto; padding: 70px 24px; }
+.full-section { padding: 70px 24px; }
+
+/* Section Header */
+.section-header { text-align: center; margin-bottom: 48px; }
+.section-badge {
+  display: inline-block; padding: 6px 18px; border-radius: 20px;
+  font-size: 12px; font-weight: 700; margin-bottom: 12px;
+  background: var(--green-light); color: var(--green-dark);
+}
+.section-title {
+  font-size: 34px; font-weight: 900; color: var(--green-dark); margin-bottom: 10px;
+}
+.section-subtitle {
+  font-size: 15px; color: var(--text-muted); max-width: 500px; margin: 0 auto; line-height: 1.7;
+}
+
+/* Skip Link */
+.skip-link {
+  position: absolute; top: -100%; left: 50%; transform: translateX(-50%);
+  background: var(--green); color: #fff; padding: 8px 20px;
+  border-radius: 0 0 8px 8px; z-index: 9999; font-weight: 700; font-size: 14px;
+}
+.skip-link:focus { top: 0; }
+
+/* Scroll Top Button */
+.scroll-top {
+  position: fixed; bottom: 24px; left: 24px; width: 48px; height: 48px;
+  background: var(--green); color: #fff; border: none; border-radius: 14px;
+  font-size: 20px; cursor: pointer; opacity: 0; transform: translateY(20px);
+  transition: all .3s; z-index: 999; box-shadow: 0 4px 16px rgba(45,107,64,.3);
+}
+.scroll-top.show { opacity: 1; transform: translateY(0); }
+.scroll-top:hover { background: var(--green-dark); transform: translateY(-2px) !important; }
+
+/* CTA Buttons */
+.hero-cta { display: flex; gap: 16px; justify-content: center; flex-wrap: wrap; margin-top: 24px; animation: fadeInUp .8s ease-out .45s both; }
+.cta-btn {
+  padding: 14px 32px; border-radius: 12px; font-weight: 800; font-size: 15px;
+  text-decoration: none; transition: all .3s; font-family: var(--font-body);
+  display: inline-flex; align-items: center; gap: 8px; cursor: pointer; border: none;
+}
+.cta-primary { background: var(--green); color: #fff; box-shadow: 0 4px 16px rgba(45,107,64,.35); }
+.cta-primary:hover { background: var(--green-dark); transform: translateY(-2px); box-shadow: 0 8px 24px rgba(45,107,64,.45); }
+.cta-secondary { background: rgba(255,255,255,.12); color: #fff; border: 2px solid rgba(255,255,255,.3); }
+.cta-secondary:hover { background: rgba(255,255,255,.22); transform: translateY(-2px); }
+
+/* Responsive */
+@media (max-width: 768px) {
+  section, .full-section { padding: 48px 20px; }
+  .section-title { font-size: 26px; }
+  .hero-cta { flex-direction: column; align-items: center; }
+  .cta-btn { width: 100%; max-width: 320px; justify-content: center; }
+}
+
+/* Reduced motion */
+@media (prefers-reduced-motion: reduce) {
+  *, .animate-in { transition: none !important; animation: none !important; }
+  html { scroll-behavior: auto; }
+  .animate-in { opacity: 1; transform: none; }
+}

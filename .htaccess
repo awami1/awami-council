@@ -1,0 +1,21 @@
+RewriteEngine On
+RewriteBase /
+
+# الحفاظ على الـ API endpoints
+RewriteRule ^api/ - [L]
+
+# الحفاظ على لوحة التحكم
+RewriteRule ^admin/ - [L]
+
+# الحفاظ على الملفات الثابتة
+RewriteRule ^public/ - [L]
+RewriteRule ^assets/ - [L]
+RewriteRule ^core/ - [L]
+
+# إذا كان ملف أو مجلد موجود فعلياً، اخدمه مباشرة
+RewriteCond %{REQUEST_FILENAME} -f [OR]
+RewriteCond %{REQUEST_FILENAME} -d
+RewriteRule ^ - [L]
+
+# توجيه كل شيء آخر إلى router.php
+RewriteRule ^(.*)$ router.php [L,QSA]

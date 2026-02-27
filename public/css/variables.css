@@ -1,0 +1,87 @@
+/**
+ * variables.css — متغيرات التصميم والألوان
+ * الهوية البصرية: الأخضر الزمردي مع دعم الوضع الداكن
+ */
+
+/* خطوط سعودية */
+@font-face { font-family: 'Saudi'; src: url('/public/fonts/saudi-normal.ttf') format('truetype'); font-weight: normal; font-display: swap; }
+@font-face { font-family: 'Saudi'; src: url('/public/fonts/saudi-bold.ttf') format('truetype'); font-weight: bold; font-display: swap; }
+
+/* ─── الوضع الفاتح (الافتراضي) ─── */
+:root {
+  /* الألوان الأساسية */
+  --green-dark:   #1A5C32;
+  --green:        #3D8B37;
+  --green-light:  #e8f5ec;
+  --accent:       #c8a84b;
+  --primary:      #1B3456;
+
+  /* الخلفيات والأسطح */
+  --bg:           #FDFCF8;
+  --bg-alt:       #f5f9f6;
+  --surface:      #fff;
+
+  /* النصوص */
+  --text:         #1a2a1e;
+  --text-muted:   #6b7c6e;
+
+  /* الحدود والظلال */
+  --border:       #d4ddd6;
+  --shadow-sm:    0 2px 12px rgba(0,0,0,.06);
+  --shadow-md:    0 8px 28px rgba(45,107,64,.12);
+  --shadow-lg:    0 12px 32px rgba(71,145,92,.18);
+  --shadow-card:  0 4px 16px rgba(0,0,0,.08);
+
+  /* الخطوط */
+  --font-body:    'Cairo', sans-serif;
+  --font-heading: 'Amiri', serif;
+  --font-saudi:   'Saudi', 'Tajawal', sans-serif;
+
+  /* التباعد */
+  --radius:       12px;
+  --radius-lg:    18px;
+  --radius-xl:    24px;
+
+  /* الانتقالات */
+  --transition-fast:  all .25s cubic-bezier(.22,1,.36,1);
+  --transition-theme: background-color .3s ease, color .3s ease, border-color .3s ease, box-shadow .3s ease;
+
+  /* تدرجات */
+  --gradient-header:  linear-gradient(135deg, #1A5C32, #0f3d22 50%, #1B3456);
+  --gradient-hero:    linear-gradient(170deg, rgba(61,139,55,.06), rgba(27,52,86,.03) 50%, rgba(200,168,75,.04));
+  --gradient-green:   linear-gradient(135deg, #3D8B37, #1A5C32);
+  --gradient-card:    linear-gradient(145deg, #fffbf0, #fff);
+}
+
+/* ─── الوضع الداكن ─── */
+[data-theme="dark"] {
+  --green-dark:   #2A7A44;
+  --green:        #4CAF6A;
+  --green-light:  #1a3d28;
+  --accent:       #d4b85c;
+
+  --bg:           #0A0F0C;
+  --bg-alt:       #111e14;
+  --surface:      #1a2a1e;
+
+  --text:         #e8f0ea;
+  --text-muted:   #a8bfac;
+
+  --border:       #2d4a35;
+  --shadow-sm:    0 2px 12px rgba(0,0,0,.2);
+  --shadow-md:    0 8px 28px rgba(0,0,0,.3);
+  --shadow-lg:    0 12px 32px rgba(0,0,0,.35);
+  --shadow-card:  0 4px 16px rgba(0,0,0,.25);
+
+  --gradient-header:  linear-gradient(135deg, #0f2d18, #0a1f10 50%, #0f1a2e);
+  --gradient-hero:    linear-gradient(170deg, rgba(76,175,106,.08), rgba(27,52,86,.06) 50%, rgba(200,168,75,.05));
+  --gradient-green:   linear-gradient(135deg, #4CAF6A, #2A7A44);
+  --gradient-card:    linear-gradient(145deg, #2a2010, #1a2a1e);
+}
+
+/* انتقال سلس عند تغيير الثيم */
+*,
+*::before,
+*::after {
+  transition: var(--transition-theme);
+}

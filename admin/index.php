@@ -267,6 +267,12 @@ if (!isAuthenticated()) {
 
     <!-- EVENTS -->
     <div class="page" id="page-events">
+      <div class="card" style="margin-bottom:16px">
+        <div class="card-header">
+          <div class="card-title">🗓️ الفعاليات</div>
+          <button class="btn btn-primary btn-sm" onclick="openAddEvent()">+ فعالية جديدة</button>
+        </div>
+      </div>
       <div id="events-grid" style="display:grid;grid-template-columns:repeat(3,1fr);gap:14px"></div>
     </div>
 

@@ -86,10 +86,17 @@ MessagesAPI.getAll(),
     DB.polls = DB.polls.map(normalizePoll);
 
     // عرض تحذير للبيانات التي فشل تحميلها
-    var failedCount = results.filter(function(r){ return r.status === 'rejected'; }).length;
-    if (failedCount > 0) {
-        console.warn('فشل تحميل ' + failedCount + ' من مصادر البيانات');
-        if (typeof toast === 'function') toast('تم تحميل البيانات جزئياً (' + failedCount + ' خطأ)', 'warning');
+    var apiNames = ['Settings','Members','Periods','Payments','Transactions','Events','Polls','Branches','Meeting','Media','Committees','News','Messages'];
+    var failedNames = [];
+    results.forEach(function(r, i){
+        if (r.status === 'rejected') {
+            failedNames.push(apiNames[i] || ('API #' + i));
+            console.error('فشل تحميل ' + (apiNames[i] || ('API #' + i)) + ':', r.reason);
+        }
+    });
+    if (failedNames.length > 0) {
+        console.warn('فشل تحميل ' + failedNames.length + ' من مصادر البيانات: ' + failedNames.join(', '));
+        if (typeof toast === 'function') toast('تم تحميل البيانات جزئياً — فشل: ' + failedNames.join(', '), 'warning');
     }
 
 } catch (e) {

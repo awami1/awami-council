@@ -298,7 +298,7 @@ function showPage(name,el){
   document.getElementById('topbar-title').innerHTML=t+` <span>${s}</span>`;
   const A={members:`<button class="btn btn-primary" onclick="openAddMember()">+ إضافة عضو</button>`,budget:`<button class="btn btn-primary" onclick="openModal('modal-tx')">+ معاملة</button>`,events:`<button class="btn btn-primary" onclick="openAddEvent()">+ فعالية</button>`};
   document.getElementById('topbar-action').innerHTML=A[name]||'';
-  const renderers={dashboard:renderDashboard,council:renderCouncil,members:renderMembers,fees:renderFees,reminders:renderReminders,committees:renderCommittees,orgchart:renderOrgChart,budget:renderBudget,events:renderEvents,calendar:renderCalendar,familytree:renderFamilyTree,voting:renderVoting,portal:renderPortalSelect,'smart-reports':function(){},reports:renderReports,audit:renderAuditLog,'export':function(){},websettings:renderWebsiteSettings,settings:renderSettings,messages:renderMessages,news:renderNews};
+  const renderers={dashboard:renderDashboard,council:renderCouncil,members:renderMembers,fees:renderFees,reminders:renderReminders,committees:renderCommittees,orgchart:renderOrgChart,budget:renderBudget,events:renderEvents,calendar:renderCalendar,familytree:renderFamilyTree,voting:renderVoting,portal:renderPortalSelect,'smart-reports':typeof renderAIPage==='function'?renderAIPage:function(){},reports:renderReports,audit:renderAuditLog,'export':function(){},websettings:renderWebsiteSettings,settings:renderSettings,messages:renderMessages,news:renderNews};
   if(renderers[name]) renderers[name]();
   updateSidebar();
 }
@@ -2382,9 +2382,9 @@ function generateAIInsights(data) {
   return insights;
 }
 
-function syncAIDataToDB() {
+async function syncAIDataToDB() {
   if (!aiAnalysisData) {
-    alert('لا توجد بيانات للمزامنة');
+    toast('لا توجد بيانات للمزامنة', 'warning');
     return;
   }
 
@@ -2392,52 +2392,37 @@ function syncAIDataToDB() {
     return;
   }
 
-  var synced = 0;
-  var duplicates = 0;
-
-  // إضافة المعاملات إلى قاعدة البيانات
-  for (var i = 0; i < aiAnalysisData.transactions.length; i++) {
-    var tx = aiAnalysisData.transactions[i];
-    
-    // التحقق من التكرار (بسيط)
-    var isDuplicate = false;
-    for (var j = 0; j < State.getBudget().length; j++) {
-      var existing = State.getBudget()[j];
-      if (existing.description === tx.description && 
-          Math.abs(existing.amount - tx.amount) < 0.01 &&
-          existing.date === tx.date) {
-        isDuplicate = true;
-        duplicates++;
-        break;
-      }
-    }
-
-    if (!isDuplicate) {
-      State.getBudget().push({
-        id: uid(),
-        type: tx.type,
-        category: tx.category,
-        amount: tx.amount,
+  try {
+    // Prepare transactions for bulk insert
+    var txList = aiAnalysisData.transactions.map(function(tx) {
+      return {
+        type:        tx.type === 'income' ? 'إيراد' : 'مصروف',
+        amount:      tx.amount,
+        category:    tx.category || 'أخرى',
         description: tx.description,
-        date: tx.date,
-        createdAt: new Date().toISOString()
-      });
-      synced++;
-    }
-  }
+        tx_date:     tx.date || new Date().toISOString().split('T')[0],
+      };
+    });
 
-  saveDB();
-  
-  var message = 'تمت المزامنة بنجاح!\n\n';
-  message += '✅ تمت إضافة: ' + synced + ' معاملة\n';
-  if (duplicates > 0) {
-    message += '⚠️ تم تجاهل: ' + duplicates + ' معاملة مكررة';
+    var result = await TransactionsAPI.bulkCreate({ transactions: txList });
+
+    // Update local cache
+    var txRes = await TransactionsAPI.getAll();
+    DB.transactions = (txRes.data || []).map(normalizeTx);
+
+    var message = 'تمت المزامنة بنجاح!\n\n';
+    message += '✅ تمت إضافة: ' + (result.inserted || 0) + ' معاملة\n';
+    if (result.duplicates_skipped > 0) {
+      message += '⚠️ تم تجاهل: ' + result.duplicates_skipped + ' معاملة مكررة';
+    }
+
+    toast(message.replace(/\n/g, ' '), 'success');
+    renderBudget();
+    renderDashboard();
+    updateSidebar();
+  } catch (err) {
+    toast('فشل المزامنة: ' + err.message, 'error');
   }
-  
-  alert(message);
-  
-  // تحديث لوحة التحكم
-  renderDashboard();
 }
 
 function downloadAIReport() {

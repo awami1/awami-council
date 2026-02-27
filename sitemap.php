@@ -19,6 +19,7 @@ $staticPages = [
     ['url' => '/council', 'priority' => '0.8', 'changefreq' => 'weekly'],
     ['url' => '/tree',    'priority' => '0.7', 'changefreq' => 'monthly'],
     ['url' => '/news',    'priority' => '0.9', 'changefreq' => 'daily'],
+    ['url' => '/events',  'priority' => '0.8', 'changefreq' => 'weekly'],
     ['url' => '/gallery', 'priority' => '0.7', 'changefreq' => 'weekly'],
     ['url' => '/contact', 'priority' => '0.6', 'changefreq' => 'monthly'],
     ['url' => '/eid',     'priority' => '0.5', 'changefreq' => 'yearly'],

@@ -323,10 +323,11 @@ renderFamilyTree();
 }
 
 // –– فعاليات ––
-async function addEvent() {
+async function saveEvent() {
 const name = document.getElementById('ev-name').value.trim();
 if (!name) { toast('الاسم مطلوب', 'error'); return; }
 
+const editId = document.getElementById('ev-edit-id').value;
 const imgFiles = document.getElementById('ev-images').files;
 const images   = [];
 
@@ -339,25 +340,44 @@ for (const file of imgFiles) {
     });
 }
 
+// Keep existing images when not uploading new ones
+let finalImages = images;
+if (!imgFiles.length && editId) {
+    const existing = State.getEvents().find(e => e.id === editId);
+    if (existing) finalImages = existing.images || [];
+}
+
+const data = {
+    name,
+    committeeId:  document.getElementById('ev-committee').value,
+    status:       document.getElementById('ev-status').value,
+    date:         document.getElementById('ev-date').value || '',
+    budget:       parseFloat(document.getElementById('ev-budget').value) || 0,
+    participants: parseInt(document.getElementById('ev-participants').value) || 0,
+    lead:         document.getElementById('ev-lead').value,
+    notes:        document.getElementById('ev-notes').value,
+    icon:         '🎉',
+    images:       finalImages,
+};
+
 try {
-    await AdminEvent.create({
-        name,
-        committeeId:  document.getElementById('ev-committee').value,
-        status:       document.getElementById('ev-status').value,
-        date:         document.getElementById('ev-date').value || '',
-        budget:       parseFloat(document.getElementById('ev-budget').value) || 0,
-        participants: parseInt(document.getElementById('ev-participants').value) || 0,
-        lead:         document.getElementById('ev-lead').value,
-        notes:        document.getElementById('ev-notes').value,
-        icon:         '🎉',
-        images,
-    });
+    if (editId) {
+        await AdminEvent.update(editId, data);
+        toast('تم تحديث الفعالية ✅');
+    } else {
+        await AdminEvent.create(data);
+        toast('تم إضافة الفعالية ✅');
+    }
     closeModal('modal-event');
-    toast('تم ✅');
-    renderEvents();
-    renderCalendar();
-    renderDashboard();
+    renderEvents(); renderCalendar(); renderDashboard();
 } catch (e) { toast('فشل: ' + e.message, 'error'); }
+}
+
+function deleteEventFromModal() {
+const id = document.getElementById('ev-edit-id').value;
+if (!id) return;
+deleteEvent(id);
+closeModal('modal-event');
 }
 
 async function deleteEvent(id) {

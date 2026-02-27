@@ -9,6 +9,7 @@
     '/tree':    ['/public/js/tree.js'],
     '/gallery': ['/public/js/media.js'],
     '/news':    ['/public/js/news.js'],
+    '/events':  [],
     '/eid':     ['/public/js/eid.js']
   };
 

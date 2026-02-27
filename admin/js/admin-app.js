@@ -1170,37 +1170,92 @@ const evBg={'أخرى':'linear-gradient(135deg,#47915C,#2d6b40)'};
 const evIcon={'رحلة عمرة':'🕋','غداء العيد':'🍖','رحلة ترفيهية':'🎡','اجتماع':'🤝','مسابقة':'🏆','عقيقة':'🐑','أخرى':'🎉'};
 
 function openAddEvent(){
+  document.getElementById('ev-edit-id').value='';
   document.getElementById('ev-committee').innerHTML='<option value="">غير محدد</option>'+committeeSelectOptions();
   ['ev-name','ev-budget','ev-participants','ev-lead','ev-notes'].forEach(id=>document.getElementById(id).value='');
   document.getElementById('ev-date').value=today();
+  document.getElementById('ev-status').value='قادم';
   document.getElementById('ev-images-preview').innerHTML='';
+  document.getElementById('ev-images').value='';
+  document.getElementById('event-modal-title').textContent='🎉 إضافة فعالية';
+  document.getElementById('ev-delete-btn').style.display='none';
   openModal('modal-event');
 }
 
-function addEvent(){
+function openEditEvent(id){
+  const ev=State.getEvents().find(e=>e.id===id); if(!ev)return;
+  document.getElementById('ev-edit-id').value=id;
+  document.getElementById('ev-committee').innerHTML='<option value="">غير محدد</option>'+committeeSelectOptions();
+  document.getElementById('ev-name').value=ev.name||'';
+  document.getElementById('ev-committee').value=ev.committeeId||'';
+  document.getElementById('ev-status').value=ev.status||'قادم';
+  document.getElementById('ev-date').value=ev.date||'';
+  document.getElementById('ev-budget').value=ev.budget||'';
+  document.getElementById('ev-participants').value=ev.participants||'';
+  document.getElementById('ev-lead').value=ev.lead||'';
+  document.getElementById('ev-notes').value=ev.notes||'';
+  document.getElementById('ev-images').value='';
+  // Show existing images preview
+  const preview=document.getElementById('ev-images-preview');
+  const imgs=ev.images||[];
+  preview.innerHTML=imgs.map(img=>{
+    const src=typeof img==='string'?img:(img.data||'');
+    return src?`<div style="width:60px;height:60px;border-radius:8px;overflow:hidden;border:2px solid var(--border)"><img src="${src}" style="width:100%;height:100%;object-fit:cover"></div>`:'';
+  }).join('');
+  document.getElementById('event-modal-title').textContent='🎉 تعديل الفعالية';
+  document.getElementById('ev-delete-btn').style.display='';
+  openModal('modal-event');
+}
+
+async function saveEvent(){
   const name=document.getElementById('ev-name').value.trim(); if(!name){toast('الاسم مطلوب','error');return;}
+  const editId=document.getElementById('ev-edit-id').value;
+  const data={
+    name,
+    committeeId:document.getElementById('ev-committee').value,
+    status:document.getElementById('ev-status').value,
+    date:document.getElementById('ev-date').value||'',
+    budget:parseFloat(document.getElementById('ev-budget').value)||0,
+    participants:parseInt(document.getElementById('ev-participants').value)||0,
+    lead:document.getElementById('ev-lead').value,
+    notes:document.getElementById('ev-notes').value,
+    icon:'🎉',
+    images:[]
+  };
+
+  // Read new image files if any
   const imgFiles=document.getElementById('ev-images').files;
-  const images=[];
-  
-  // Convert images to base64
-  const readImages = async () => {
+  if(imgFiles.length){
     for(let file of imgFiles){
       if(file.size > 2*1024*1024){toast('حجم الصورة أكبر من 2MB','error');continue;}
       const reader = new FileReader();
       await new Promise((resolve) => {
-        reader.onload = (e) => {
-          images.push({name:file.name, data:e.target.result});
-          resolve();
-        };
+        reader.onload = (e) => { data.images.push({name:file.name, data:e.target.result}); resolve(); };
         reader.readAsDataURL(file);
       });
     }
-    
-    State.getEvents().push({id:uid(),name,committeeId:document.getElementById('ev-committee').value,status:document.getElementById('ev-status').value,date:document.getElementById('ev-date').value||'',budget:parseFloat(document.getElementById('ev-budget').value)||0,participants:parseInt(document.getElementById('ev-participants').value)||0,lead:document.getElementById('ev-lead').value,notes:document.getElementById('ev-notes').value,icon:'🎉',images});
-    log(`فعالية: ${name}`,'🎉'); saveDB(); closeModal('modal-event'); toast('تم'); renderEvents(); renderCalendar(); renderDashboard();
-  };
-  
-  readImages();
+  } else if(editId) {
+    // Keep existing images when not uploading new ones
+    const existing=State.getEvents().find(e=>e.id===editId);
+    if(existing) data.images=existing.images||[];
+  }
+
+  try {
+    if(editId){
+      await EventService.update(editId, data);
+      log(`تعديل فعالية: ${name}`,'✏️');
+    } else {
+      await EventService.create(data);
+      log(`فعالية جديدة: ${name}`,'🎉');
+    }
+    closeModal('modal-event');
+  } catch(e){ toast('حدث خطأ: '+e.message,'error'); }
+}
+
+function deleteEventFromModal(){
+  const id=document.getElementById('ev-edit-id').value; if(!id)return;
+  EventService.delete(id);
+  closeModal('modal-event');
 }
 
 // Preview images on selection
@@ -1224,28 +1279,22 @@ document.addEventListener('DOMContentLoaded', () => {
 function renderEvents(){
   const el=document.getElementById('events-grid');
   if(!State.getEvents().length){el.innerHTML='<div style="grid-column:1/-1"><div class="empty-state"><div class="empty-icon">🗓️</div><p>لا فعاليات</p></div></div>';return;}
-  el.innerHTML=State.getEvents().map(ev=>{ 
-    const c=State.getCommittees().find(x=>x.id===ev.committeeId); 
+  el.innerHTML=State.getEvents().map(ev=>{
+    const c=State.getCommittees().find(x=>x.id===ev.committeeId);
     const imgs=(ev.images||[]).slice(0,3);
-    return `<div class="committee-card">
+    const imgSrc=img=>typeof img==='string'?img:(img.data||'');
+    return `<div class="committee-card" style="cursor:pointer" onclick="openEditEvent('${ev.id}')">
     <div class="committee-banner" style="background:${c?c.color:evBg['أخرى']};position:relative">
-      ${imgs.length?`<div style="position:absolute;inset:0;display:flex;gap:2px">${imgs.map(img=>`<div style="flex:1;background:url('${img.data}') center/cover"></div>`).join('')}</div>`:`${ev.icon||'🎉'}`}
+      ${imgs.length?`<div style="position:absolute;inset:0;display:flex;gap:2px">${imgs.map(img=>`<div style="flex:1;background:url('${imgSrc(img)}') center/cover"></div>`).join('')}</div>`:`${ev.icon||'🎉'}`}
       <div style="position:absolute;top:8px;right:8px"><span class="badge ${sBadge(ev.status)}">${ev.status}</span></div>
       ${imgs.length?`<div style="position:absolute;bottom:8px;left:8px;background:rgba(0,0,0,.6);color:#fff;padding:3px 8px;border-radius:12px;font-size:18px">${ev.icon||'🎉'}</div>`:''}
     </div>
-    <div class="committee-body"><div class="committee-title">${ev.name}</div><div class="committee-meta">${c?'🏛️ '+c.name:''}${ev.date?' • 📅 '+ev.date:''}</div>${imgs.length?`<div style="font-size:10px;color:var(--text-muted);margin-top:4px">📸 ${imgs.length} صورة</div>`:''}</div>
-    <div class="committee-footer"><span style="font-size:11px;color:var(--text-muted)">${ev.budget?'💰 '+fmt(ev.budget)+' ريال':''} ${ev.participants?'👥 '+ev.participants:''}</span><button class="btn btn-danger btn-xs" onclick="deleteEvent('${ev.id}')">🗑️</button></div>
+    <div class="committee-body"><div class="committee-title">${ev.name}</div><div class="committee-meta">${c?'🏛️ '+c.name:''}${ev.date?' • 📅 '+ev.date:''}</div>${ev.lead?`<div style="font-size:11px;color:var(--text-muted);margin-top:2px">👤 ${ev.lead}</div>`:''}${imgs.length?`<div style="font-size:10px;color:var(--text-muted);margin-top:4px">📸 ${imgs.length} صورة</div>`:''}</div>
+    <div class="committee-footer"><span style="font-size:11px;color:var(--text-muted)">${ev.budget?'💰 '+fmt(ev.budget)+' ريال':''} ${ev.participants?'👥 '+ev.participants:''}</span><div style="display:flex;gap:4px"><button class="btn btn-outline btn-xs" onclick="event.stopPropagation();openEditEvent('${ev.id}')">✏️</button><button class="btn btn-danger btn-xs" onclick="event.stopPropagation();deleteEvent('${ev.id}')">🗑️</button></div></div>
   </div>`; }).join('');
 }
 function deleteEvent(id){
-  confirm2('حذف الفعالية؟',()=>{
-    State.setEvents(State.getEvents().filter(x=>x.id!==id));
-    saveDB();
-    renderEvents();
-    renderCalendar();
-    renderDashboard();
-    toast('تم');
-  });
+  EventService.delete(id);
 }
 
 // =================== FAMILY TREE ===================

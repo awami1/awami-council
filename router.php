@@ -15,6 +15,7 @@ $routes = [
     '/council' => ['file' => 'pages/council.php',  'page' => 'council', 'title' => 'المجلس',              'scripts' => ['/public/js/countdown.js']],
     '/tree'    => ['file' => 'pages/tree.php',     'page' => 'tree',    'title' => 'شجرة العائلة',        'scripts' => ['/public/js/tree.js']],
     '/news'    => ['file' => 'pages/news.php',     'page' => 'news',    'title' => 'الأخبار',             'scripts' => ['/public/js/news.js']],
+    '/events'  => ['file' => 'pages/events.php',   'page' => 'events',  'title' => 'الفعاليات',            'scripts' => []],
     '/gallery' => ['file' => 'pages/gallery.php',  'page' => 'gallery', 'title' => 'المعرض',              'scripts' => ['/public/js/media.js']],
     '/contact' => ['file' => 'pages/contact.php',  'page' => 'contact', 'title' => 'تواصل معنا',          'scripts' => []],
     '/eid'     => ['file' => 'pages/eid.php',      'page' => 'eid',     'title' => 'تهنئة العيد',         'scripts' => ['/public/js/eid.js']],

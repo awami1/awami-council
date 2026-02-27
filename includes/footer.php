@@ -16,6 +16,7 @@
       <a href="/council">المجلس</a>
       <a href="/tree">شجرة العائلة</a>
       <a href="/news">الأخبار</a>
+      <a href="/events">الفعاليات</a>
       <a href="/gallery">المعرض</a>
       <a href="/contact">تواصل معنا</a>
     </nav>

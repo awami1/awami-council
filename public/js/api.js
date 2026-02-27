@@ -108,6 +108,23 @@ update: (id, data)  => api.put('committees.php', data, id),
 delete: (id)        => api.del('committees.php', id),
 };
 
+// –– News ––
+const NewsAPI = {
+getAll: (params = {})  => { const qs = new URLSearchParams(params).toString(); return api.get('news.php' + (qs ? '?' + qs : '')); },
+get:    (id)           => apiFetch(`${API_BASE}/news.php?id=${id}`),
+create: (data)         => api.post('news.php', data),
+update: (id, data)     => api.put('news.php', data, id),
+delete: (id)           => api.del('news.php', id),
+};
+
+// –– Messages ––
+const MessagesAPI = {
+getAll: (params = {})  => { const qs = new URLSearchParams(params).toString(); return api.get('messages.php' + (qs ? '?' + qs : '')); },
+send:   (data)         => api.post('messages.php', data),
+markRead: (id, isRead) => api.put('messages.php', { is_read: isRead ? 1 : 0 }, id),
+delete: (id)           => api.del('messages.php', id),
+};
+
 // –– Reminders ––
 const RemindersAPI = {
 getUnpaid: (periodId) => {
@@ -147,3 +164,4 @@ async function loadBranches()  { const r = await BranchesAPI.getAll();  return r
 async function loadMedia()     { const r = await MediaAPI.getAll();      return r.media; }
 async function loadMeeting()   { const r = await MeetingAPI.get();       return r.nextMeeting; }
 async function loadMembers()   { const r = await MembersAPI.getAll();    return r.data ?? []; }
+async function loadNews()      { const r = await NewsAPI.getAll();       return r.data ?? []; }

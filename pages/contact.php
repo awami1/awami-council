@@ -107,6 +107,7 @@ $ws = getWS();
 function handleContactSubmit(e) {
   e.preventDefault();
   var form = e.target;
+  var btn = form.querySelector('button[type="submit"]');
   var status = document.getElementById('contact-status');
   var data = {
     name: form.name.value.trim(),
@@ -114,13 +115,35 @@ function handleContactSubmit(e) {
     subject: form.subject.value.trim(),
     message: form.message.value.trim()
   };
-  if (!data.name || !data.subject || !data.message) return false;
+  if (!data.name || !data.message) return false;
 
-  status.style.display = 'block';
-  status.style.background = 'var(--green-light)';
-  status.style.color = 'var(--green-dark)';
-  status.textContent = 'شكراً لتواصلك! تم استلام رسالتك بنجاح.';
-  form.reset();
+  btn.disabled = true;
+  btn.textContent = 'جاري الإرسال...';
+
+  fetch('/api/messages.php', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(data)
+  })
+  .then(function(res) { return res.json(); })
+  .then(function(result) {
+    if (result.error) throw new Error(result.error);
+    status.style.display = 'block';
+    status.style.background = 'var(--green-light)';
+    status.style.color = 'var(--green-dark)';
+    status.textContent = result.message || 'شكراً لتواصلك! تم استلام رسالتك بنجاح.';
+    form.reset();
+  })
+  .catch(function(err) {
+    status.style.display = 'block';
+    status.style.background = '#fee2e2';
+    status.style.color = '#991b1b';
+    status.textContent = err.message || 'حدث خطأ أثناء الإرسال. حاول مرة أخرى.';
+  })
+  .finally(function() {
+    btn.disabled = false;
+    btn.innerHTML = '&#9993; إرسال الرسالة';
+  });
   return false;
 }
 </script>

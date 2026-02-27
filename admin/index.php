@@ -70,8 +70,11 @@ if (!isAuthenticated()) {
     <div class="nav-item" onclick="showPage('budget',this)"><span class="icon">💰</span>الميزانية والمصاريف</div>
     <div class="nav-section">الأنشطة</div>
     <div class="nav-item" onclick="showPage('events',this)"><span class="icon">🗓️</span>الفعاليات</div>
+    <div class="nav-item" onclick="showPage('news',this)"><span class="icon">📰</span>الأخبار</div>
     <div class="nav-item" onclick="showPage('calendar',this)"><span class="icon">📅</span>التقويم</div>
     <div class="nav-item" onclick="showPage('voting',this)"><span class="icon">🗳️</span>التصويت</div>
+    <div class="nav-section">التواصل</div>
+    <div class="nav-item" onclick="showPage('messages',this)"><span class="icon">✉️</span>الرسائل <span id="msg-badge" class="nav-badge" style="display:none">0</span></div>
     <div class="nav-section">العائلة</div>
     <div class="nav-item" onclick="showPage('familytree',this)"><span class="icon">🌳</span>شجرة العائلة</div>
     <div class="nav-section">التقارير</div>
@@ -139,6 +142,10 @@ if (!isAuthenticated()) {
       <div class="grid-2">
         <div class="card"><div class="card-header"><div class="card-title">الفعاليات القادمة</div></div><div id="d-events" style="padding:10px"></div></div>
         <div class="card"><div class="card-header"><div class="card-title">التصويتات النشطة</div></div><div id="d-polls" style="padding:10px"></div></div>
+      </div>
+      <div class="grid-2" style="margin-top:16px">
+        <div class="card"><div class="card-header"><div class="card-title">آخر الرسائل الواردة</div><span class="badge badge-info" id="d-msg-badge">0 جديدة</span></div><div id="d-messages" style="padding:10px"></div></div>
+        <div class="card"><div class="card-header"><div class="card-title">آخر الأخبار</div></div><div id="d-news" style="padding:10px"></div></div>
       </div>
     </div>
 
@@ -286,6 +293,34 @@ if (!isAuthenticated()) {
           <div class="card-header"><div class="card-title">فعاليات قادمة</div></div>
           <div id="upcoming-events-list" style="padding:10px"></div>
         </div>
+      </div>
+    </div>
+
+    <!-- NEWS -->
+    <div class="page" id="page-news">
+      <div class="card">
+        <div class="search-bar">
+          <button class="btn btn-primary btn-sm" onclick="openAddNews()">+ إضافة خبر</button>
+          <input class="search-input" id="news-search" placeholder="بحث في الأخبار..." oninput="debouncedRenderNews()">
+          <select class="filter-select" style="width:130px" id="news-flt-status" onchange="_pageState.news=1;renderNews()"><option value="">كل الحالات</option><option value="published">منشور</option><option value="draft">مسودة</option></select>
+          <select class="filter-select" style="width:130px" id="news-flt-cat" onchange="_pageState.news=1;renderNews()"><option value="">كل التصنيفات</option><option>عام</option><option>فعاليات</option><option>إعلانات</option><option>اجتماعات</option><option>مالية</option><option>اجتماعية</option></select>
+        </div>
+        <div class="table-wrap mobile-cards"><table><thead><tr><th>#</th><th>العنوان</th><th>التصنيف</th><th>الحالة</th><th>التاريخ</th><th>إجراءات</th></tr></thead><tbody id="news-tbody"></tbody></table></div>
+        <div id="news-pagination"></div>
+        <div style="padding:12px 18px;border-top:1px solid var(--border)"><span style="font-size:12px;color:var(--text-muted)" id="news-count">0 خبر</span></div>
+      </div>
+    </div>
+
+    <!-- MESSAGES -->
+    <div class="page" id="page-messages">
+      <div class="card">
+        <div class="search-bar">
+          <input class="search-input" id="msg-search" placeholder="بحث في الرسائل..." oninput="debouncedRenderMessages()">
+          <select class="filter-select" style="width:130px" id="msg-flt-read" onchange="_pageState.messages=1;renderMessages()"><option value="">كل الرسائل</option><option value="0">غير مقروءة</option><option value="1">مقروءة</option></select>
+        </div>
+        <div class="table-wrap mobile-cards"><table><thead><tr><th>#</th><th>المرسل</th><th>الموضوع</th><th>الرسالة</th><th>التاريخ</th><th>الحالة</th><th>إجراءات</th></tr></thead><tbody id="msg-tbody"></tbody></table></div>
+        <div id="messages-pagination"></div>
+        <div style="padding:12px 18px;border-top:1px solid var(--border)"><span style="font-size:12px;color:var(--text-muted)" id="msg-count">0 رسالة</span></div>
       </div>
     </div>
 
@@ -894,6 +929,45 @@ if (!isAuthenticated()) {
 
 <!-- MODALS -->
 <?php include __DIR__ . '/pages/modals.php'; ?>
+
+<!-- Modal: News -->
+<div class="modal-overlay" id="modal-news">
+  <div class="modal" style="max-width:600px">
+    <div class="modal-header"><span id="news-modal-title">إضافة خبر جديد</span><button onclick="closeModal('modal-news')">&times;</button></div>
+    <div class="modal-body">
+      <label class="form-label">العنوان *</label>
+      <input class="form-control" id="news-title" placeholder="عنوان الخبر">
+      <label class="form-label">المقتطف</label>
+      <input class="form-control" id="news-excerpt" placeholder="ملخص قصير للخبر">
+      <label class="form-label">المحتوى</label>
+      <textarea class="form-control" id="news-content" rows="5" placeholder="نص الخبر كاملاً"></textarea>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+        <div><label class="form-label">التصنيف</label><select class="form-control" id="news-category"><option>عام</option><option>فعاليات</option><option>إعلانات</option><option>اجتماعات</option><option>مالية</option><option>اجتماعية</option></select></div>
+        <div><label class="form-label">الحالة</label><select class="form-control" id="news-status"><option value="published">منشور</option><option value="draft">مسودة</option></select></div>
+      </div>
+      <label class="form-label">صورة (رابط URL)</label>
+      <input class="form-control" id="news-image" placeholder="https://example.com/image.jpg">
+      <label class="form-label">الكاتب</label>
+      <input class="form-control" id="news-author" placeholder="اسم الكاتب">
+      <input type="hidden" id="news-edit-id">
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-outline" onclick="closeModal('modal-news')">إلغاء</button>
+      <button class="btn btn-primary" onclick="saveNews()">حفظ</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: Message Detail -->
+<div class="modal-overlay" id="modal-msg-detail">
+  <div class="modal" style="max-width:500px">
+    <div class="modal-header"><span>تفاصيل الرسالة</span><button onclick="closeModal('modal-msg-detail')">&times;</button></div>
+    <div class="modal-body" id="msg-detail-body"></div>
+    <div class="modal-footer">
+      <button class="btn btn-outline" onclick="closeModal('modal-msg-detail')">إغلاق</button>
+    </div>
+  </div>
+</div>
 
 <div id="toast-container"></div>
 <div id="toast" style="display:none"></div>

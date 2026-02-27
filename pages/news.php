@@ -12,11 +12,19 @@ $ws = getWS();
     <p class="section-subtitle">تابع آخر أخبار وفعاليات مجلس عائلة العوامي</p>
   </div>
 
-  <div id="news-container" style="max-width:900px;margin:0 auto">
+  <!-- تبويبات التصنيفات -->
+  <div class="media-tabs" id="news-tabs">
+    <button class="media-tab active news-tab" data-category="">الكل</button>
+    <button class="media-tab news-tab" data-category="إعلانات">إعلانات</button>
+    <button class="media-tab news-tab" data-category="فعاليات">فعاليات</button>
+    <button class="media-tab news-tab" data-category="اجتماعات">اجتماعات</button>
+    <button class="media-tab news-tab" data-category="اجتماعية">اجتماعية</button>
+  </div>
+
+  <div id="news-container" style="max-width:1000px;margin:0 auto">
     <div style="text-align:center;padding:60px 20px;color:var(--text-muted)">
       <div style="font-size:52px;margin-bottom:12px;opacity:.4">&#128240;</div>
-      <p>لا توجد أخبار حالياً</p>
-      <p style="font-size:13px;margin-top:8px">ترقبوا قريباً آخر أخبار وفعاليات العائلة</p>
+      <p>جاري تحميل الأخبار...</p>
     </div>
   </div>
 </section>

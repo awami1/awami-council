@@ -36,6 +36,7 @@ body{font-family:'Cairo',sans-serif;background:var(--bg);color:var(--text);min-h
 .nav-item:hover{background:rgba(255,255,255,.08);color:#fff;}
 .nav-item.active{background:linear-gradient(135deg,rgba(71,145,92,.35),rgba(71,145,92,.15));color:#a8e6bb;border-color:rgba(71,145,92,.3);}
 .nav-item .icon{width:20px;text-align:center;font-size:15px;}
+.nav-badge{background:#e74c3c;color:#fff;font-size:10px;font-weight:700;padding:2px 7px;border-radius:10px;margin-right:auto;}
 .sidebar-footer{padding:12px;border-top:1px solid rgba(255,255,255,.08);}
 .stats-mini{background:rgba(255,255,255,.05);border-radius:10px;padding:10px;display:flex;justify-content:space-around;}
 .stat-mini-val{color:#a8e6bb;font-size:15px;font-weight:700;text-align:center;}

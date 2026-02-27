@@ -8,6 +8,7 @@
     '/council': ['/public/js/countdown.js'],
     '/tree':    ['/public/js/tree.js'],
     '/gallery': ['/public/js/media.js'],
+    '/news':    ['/public/js/news.js'],
     '/eid':     ['/public/js/eid.js']
   };
 

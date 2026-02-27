@@ -17,6 +17,9 @@ media:       [],
 committees:  [],
 committeeMembersMap: {}, // { committeeId: [memberId, ...] }
 nextMeeting: null,
+news:        [],
+messages:    [],
+messagesUnread: 0,
 };
 
 // ============================================================
@@ -37,6 +40,8 @@ BranchesAPI.getAll(),
 MeetingAPI.get(),
 MediaAPI.getAll(),
 CommitteesAPI.getAll(),
+NewsAPI.getAll(),
+MessagesAPI.getAll(),
 ]);
 
     function safeVal(r, fallback) { return r.status === 'fulfilled' ? r.value : (fallback || {}); }
@@ -52,6 +57,8 @@ CommitteesAPI.getAll(),
     var meetingRes      = safeVal(results[8]);
     var mediaRes        = safeVal(results[9], {media:[]});
     var committeesRes   = safeVal(results[10], {data:[]});
+    var newsRes         = safeVal(results[11], {data:[]});
+    var messagesRes     = safeVal(results[12], {data:[], unread:0});
 
     DB.settings     = settingsRes.settings  ?? {};
     DB.members      = membersRes.data        ?? [];
@@ -64,6 +71,9 @@ CommitteesAPI.getAll(),
     DB.nextMeeting  = meetingRes.nextMeeting ?? null;
     DB.media        = mediaRes.media         ?? [];
     DB.committees   = (committeesRes.data    ?? []).map(normalizeCommittee);
+    DB.news         = newsRes.data           ?? [];
+    DB.messages     = messagesRes.data       ?? [];
+    DB.messagesUnread = messagesRes.unread   ?? 0;
 
     // بناء خريطة أعضاء اللجان
     buildCommitteeMembersMap();
@@ -644,6 +654,61 @@ resetDB(committees) {
     _activity = [];
     if (committees) _committees = committees;
 },
+};
+
+// ============================================================
+// NEWS
+// ============================================================
+const AdminNews = {
+async create(data) {
+    const r = await NewsAPI.create(data);
+    DB.news.unshift(r.data);
+    return r.data;
+},
+async update(id, data) {
+    const r = await NewsAPI.update(id, data);
+    const idx = DB.news.findIndex(n => n.id === id);
+    if (idx >= 0) DB.news[idx] = r.data;
+    return r.data;
+},
+async delete(id) {
+    await NewsAPI.delete(id);
+    DB.news = DB.news.filter(n => n.id !== id);
+},
+};
+
+// ============================================================
+// MESSAGES
+// ============================================================
+const AdminMessage = {
+async markRead(id, isRead) {
+    const r = await MessagesAPI.markRead(id, isRead);
+    const idx = DB.messages.findIndex(m => m.id === id);
+    if (idx >= 0) DB.messages[idx] = r.data;
+    DB.messagesUnread = DB.messages.filter(m => !m.is_read).length;
+    return r.data;
+},
+async delete(id) {
+    await MessagesAPI.delete(id);
+    DB.messages = DB.messages.filter(m => m.id !== id);
+    DB.messagesUnread = DB.messages.filter(m => !m.is_read).length;
+},
+};
+
+function getNews()         { return DB.news; }
+function getMessages()     { return DB.messages; }
+function getMessagesUnread(){ return DB.messagesUnread; }
+
+// Services compatibility
+const NewsService = {
+create: async (data) => { await AdminNews.create(data); closeModal('modal-news'); toast('تم نشر الخبر ✅'); renderNews(); renderDashboard(); },
+update: async (id, data) => { await AdminNews.update(id, data); closeModal('modal-news'); toast('تم تحديث الخبر ✅'); renderNews(); renderDashboard(); },
+delete: async (id) => { confirm2('هل تريد حذف هذا الخبر؟', async () => { await AdminNews.delete(id); toast('تم حذف الخبر'); renderNews(); renderDashboard(); }); },
+};
+
+const MessageService = {
+markRead: async (id, isRead) => { await AdminMessage.markRead(id, isRead); renderMessages(); updateMessageBadge(); renderDashboard(); },
+delete: async (id) => { confirm2('هل تريد حذف هذه الرسالة؟', async () => { await AdminMessage.delete(id); toast('تم حذف الرسالة'); renderMessages(); updateMessageBadge(); renderDashboard(); }); },
 };
 
 // Services compatibility

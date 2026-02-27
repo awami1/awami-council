@@ -73,6 +73,26 @@ body{font-family:'Cairo',sans-serif;background:var(--bg);color:var(--text);min-h
 /* AI Upload Area */
 #upload-area:hover{background-color:#f8fffe;border-color:var(--green);}
 #upload-area:active{transform:scale(0.98);}
+[data-theme="dark"] #upload-area:hover{background-color:rgba(71,145,92,.08);}
+
+/* AI Tabs */
+.ai-tab:hover{color:var(--green-dark) !important;background:rgba(71,145,92,.05);border-radius:8px 8px 0 0;}
+[data-theme="dark"] .ai-tab:hover{color:var(--green-light) !important;background:rgba(90,173,114,.1);}
+.ai-tab-content{animation:fadeIn .3s ease;}
+
+/* AI Import Sections */
+.ai-section-confirmed{border-color:#86efac !important;}
+.ai-section-review{border-color:#fde047 !important;}
+[data-theme="dark"] .ai-section-confirmed .card-header{background:#14532d !important;}
+[data-theme="dark"] .ai-section-confirmed .card-title{color:#86efac !important;}
+[data-theme="dark"] .ai-section-review .card-header{background:#78350f !important;}
+[data-theme="dark"] .ai-section-review .card-title{color:#fde047 !important;}
+
+/* AI Status Banner dark mode */
+[data-theme="dark"] #ai-status-banner{border-color:rgba(255,255,255,.1) !important;}
+
+/* AI Report Summary Cards dark mode */
+[data-theme="dark"] #ai-report-results div[style*="background:linear-gradient"]{border-color:var(--border) !important;}
 
 /* CARDS */
 .card{background:var(--bg-card);border-radius:var(--radius);border:1px solid var(--border);box-shadow:var(--shadow);}

@@ -233,7 +233,7 @@ function handlePost(): void
     $pdo->prepare(
         'INSERT INTO events
             (id, name, committee_id, status, event_date, budget,
-             participants, lead, notes, icon, images)
+             participants, `lead`, notes, icon, images)
          VALUES
             (:id, :name, :committee_id, :status, :event_date, :budget,
              :participants, :lead, :notes, :icon, :images)'
@@ -277,7 +277,7 @@ function handlePut(string $id): void
     $params     = [':id' => $id];
 
     foreach ($fields as $col => $val) {
-        $setClauses[]      = "{$col} = :{$col}";
+        $setClauses[]      = "`{$col}` = :{$col}";
         $params[":{$col}"] = $val;
     }
 

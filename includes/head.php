@@ -52,4 +52,7 @@
 <link rel="stylesheet" href="/public/css/layout.css">
 <link rel="stylesheet" href="/public/css/components.css">
 <link rel="stylesheet" href="/public/css/animations.css">
+<?php if (isset($currentPage) && $currentPage === 'tree'): ?>
+<script src="https://d3js.org/d3.v7.min.js"></script>
+<?php endif; ?>
 </head>

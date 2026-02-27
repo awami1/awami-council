@@ -91,6 +91,14 @@ save:   (data) => api.post('branches.php', data),
 delete: (id)   => api.del('branches.php', id),
 };
 
+// –– Family Tree (hierarchical) ––
+const FamilyTreeAPI = {
+getAll: ()          => api.get('family-tree.php'),
+create: (data)      => api.post('family-tree.php', data),
+update: (id, data)  => api.put('family-tree.php', data, id),
+delete: (id)        => api.del('family-tree.php', id),
+};
+
 // –– Media ––
 const MediaAPI = {
 getAll: ()          => api.get('media.php'),

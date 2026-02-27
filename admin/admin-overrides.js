@@ -285,7 +285,51 @@ typeInput.addEventListener('change', () => {
 });
 });
 
-// –– شجرة العائلة ––
+// –– شجرة العائلة (أعضاء الشجرة الهرمية) ––
+async function saveTreeMember() {
+const name = document.getElementById('ftm-name').value.trim();
+if (!name) { toast('الاسم مطلوب', 'error'); return; }
+
+const id = document.getElementById('ftm-id').value;
+const gender = document.querySelector('input[name="ftm-gender"]:checked').value;
+const data = {
+    name,
+    parent_id:   document.getElementById('ftm-parent').value || null,
+    gender,
+    is_alive:    document.getElementById('ftm-alive').checked ? 1 : 0,
+    spouse_name: document.getElementById('ftm-spouse').value.trim(),
+    sort_order:  parseInt(document.getElementById('ftm-sort').value) || 0,
+};
+
+try {
+    if (id) {
+        await AdminFamilyTree.update(id, data);
+        toast('تم التحديث ✅');
+    } else {
+        await AdminFamilyTree.create(data);
+        toast('تمت الإضافة ✅');
+    }
+    closeModal('modal-tree-member');
+    renderFamilyTreeList();
+    renderTreePreview();
+} catch (e) { toast('فشل: ' + e.message, 'error'); }
+}
+
+async function deleteTreeMemberConfirm() {
+const id = document.getElementById('ftm-id').value;
+const m  = DB.familyTreeMembers.find(x => x.id === id);
+confirm2(`حذف "${m?.name}" من الشجرة؟`, async () => {
+try {
+    await AdminFamilyTree.delete(id);
+    closeModal('modal-tree-member');
+    toast('تم الحذف');
+    renderFamilyTreeList();
+    renderTreePreview();
+} catch (e) { toast('فشل: ' + e.message, 'error'); }
+});
+}
+
+// –– الأفرع القديمة ––
 async function saveBranch() {
 const name = document.getElementById('branch-name').value.trim();
 if (!name) { toast('اسم الفرع مطلوب', 'error'); return; }

@@ -332,27 +332,45 @@ if (!isAuthenticated()) {
 
     <!-- FAMILY TREE -->
     <div class="page" id="page-familytree">
+      <!-- إدارة أفراد الشجرة -->
       <div class="card" style="margin-bottom:16px">
         <div class="card-header">
-          <div class="card-title">🌳 إدارة شجرة عائلة العوامي</div>
-          <div style="display:flex;gap:8px">
-            <button class="btn btn-primary btn-sm" onclick="openAddBranch()">+ إضافة فرع جديد</button>
-            <button class="btn btn-outline btn-sm" onclick="exportTree()">📥 تصدير</button>
+          <div class="card-title">🌳 شجرة عائلة العوامي</div>
+          <div style="display:flex;gap:8px;flex-wrap:wrap">
+            <button class="btn btn-primary btn-sm" onclick="openAddTreeMember()">+ إضافة شخص</button>
+            <button class="btn btn-outline btn-sm" onclick="exportTreeJSON()">📥 تصدير JSON</button>
           </div>
         </div>
-        <div class="card-body"></div>
+        <div class="card-body">
+          <div class="search-bar" style="margin-bottom:12px">
+            <input class="search-input" id="ftm-search" placeholder="بحث بالاسم..." oninput="renderFamilyTreeList()">
+          </div>
+          <div id="ftm-list"></div>
+          <div style="padding:8px 0;font-size:12px;color:var(--text-muted)" id="ftm-count">0 شخص</div>
+        </div>
       </div>
 
+      <!-- معاينة الشجرة -->
       <div class="card">
         <div class="card-header">
           <div class="card-title">👁️ معاينة الشجرة</div>
-          <select class="form-control btn-sm" style="width:140px" id="tree-view" onchange="renderFamilyTreePreview()">
-            <option value="vertical">عمودي</option>
-            <option value="horizontal">أفقي</option>
-            <option value="list">قائمة</option>
-          </select>
+          <div style="display:flex;gap:8px">
+            <button class="btn btn-outline btn-sm" onclick="treePreviewExpandAll()">توسيع</button>
+            <button class="btn btn-outline btn-sm" onclick="treePreviewCollapseAll()">طي</button>
+          </div>
         </div>
-        <div class="card-body" id="tree-container" style="overflow:auto;padding:30px"></div>
+        <div class="card-body" id="tree-container" style="overflow:auto;padding:20px;max-height:500px"></div>
+      </div>
+
+      <!-- الأفرع القديمة (ثانوي) -->
+      <div class="card" style="margin-top:16px">
+        <div class="card-header">
+          <div class="card-title">🌿 الأفرع العائلية (قديم)</div>
+          <div style="display:flex;gap:8px">
+            <button class="btn btn-outline btn-sm" onclick="openAddBranch()">+ إضافة فرع</button>
+          </div>
+        </div>
+        <div class="card-body" id="branches-list"></div>
       </div>
     </div>
 

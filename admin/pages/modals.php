@@ -134,6 +134,43 @@
   </div>
 </div>
 
+<!-- TREE MEMBER MODAL -->
+<div class="modal-overlay" id="modal-tree-member">
+  <div class="modal">
+    <div class="modal-header"><div class="modal-title" id="tree-member-modal-title">🌳 إضافة شخص للشجرة</div><button class="modal-close" onclick="closeModal('modal-tree-member')">✕</button></div>
+    <div class="modal-body">
+      <input type="hidden" id="ftm-id">
+      <div class="form-grid">
+        <div class="form-group"><label class="form-label">الاسم الكامل *</label><input class="form-control" id="ftm-name" placeholder="مثال: محمد علي العوامي"></div>
+        <div class="form-group">
+          <label class="form-label">الأب / الأم (الوالد في الشجرة)</label>
+          <select class="form-control" id="ftm-parent">
+            <option value="">-- بدون (جذر الشجرة) --</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">الجنس</label>
+          <div style="display:flex;gap:16px;padding:8px 0">
+            <label style="display:flex;align-items:center;gap:6px;cursor:pointer"><input type="radio" name="ftm-gender" value="ذكر" checked> ذكر</label>
+            <label style="display:flex;align-items:center;gap:6px;cursor:pointer"><input type="radio" name="ftm-gender" value="أنثى"> أنثى</label>
+          </div>
+        </div>
+        <div class="form-group">
+          <label class="form-label">على قيد الحياة</label>
+          <div style="padding:8px 0"><label style="display:flex;align-items:center;gap:6px;cursor:pointer"><input type="checkbox" id="ftm-alive" checked> نعم</label></div>
+        </div>
+        <div class="form-group"><label class="form-label">اسم الزوج / الزوجة</label><input class="form-control" id="ftm-spouse" placeholder="اختياري"></div>
+        <div class="form-group"><label class="form-label">ترتيب العرض</label><input class="form-control" id="ftm-sort" type="number" value="0" min="0"></div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-outline" onclick="closeModal('modal-tree-member')">إلغاء</button>
+      <button class="btn btn-danger" id="ftm-delete-btn" onclick="deleteTreeMemberConfirm()" style="display:none">🗑 حذف</button>
+      <button class="btn btn-primary" onclick="saveTreeMember()">💾 حفظ</button>
+    </div>
+  </div>
+</div>
+
 <!-- ADD BRANCH MODAL -->
 <div class="modal-overlay" id="modal-add-branch">
   <div class="modal modal-wide">

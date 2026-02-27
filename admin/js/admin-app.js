@@ -1297,7 +1297,191 @@ function deleteEvent(id){
   EventService.delete(id);
 }
 
-// =================== FAMILY TREE ===================
+// =================== FAMILY TREE (شجرة العائلة الهرمية) ===================
+
+// فتح modal إضافة شخص جديد
+function openAddTreeMember(parentId){
+  document.getElementById('ftm-id').value = '';
+  document.getElementById('ftm-name').value = '';
+  document.querySelector('input[name="ftm-gender"][value="ذكر"]').checked = true;
+  document.getElementById('ftm-alive').checked = true;
+  document.getElementById('ftm-spouse').value = '';
+  document.getElementById('ftm-sort').value = '0';
+  document.getElementById('tree-member-modal-title').textContent = '🌳 إضافة شخص للشجرة';
+  document.getElementById('ftm-delete-btn').style.display = 'none';
+  populateParentSelect(parentId || '');
+  openModal('modal-tree-member');
+}
+
+// فتح modal تعديل شخص
+function editTreeMember(id){
+  const m = getFamilyTreeMembers().find(x => x.id === id);
+  if(!m) return;
+  document.getElementById('ftm-id').value = m.id;
+  document.getElementById('ftm-name').value = m.name;
+  const genderRadio = document.querySelector(`input[name="ftm-gender"][value="${m.gender || 'ذكر'}"]`);
+  if(genderRadio) genderRadio.checked = true;
+  document.getElementById('ftm-alive').checked = m.is_alive == 1;
+  document.getElementById('ftm-spouse').value = m.spouse_name || '';
+  document.getElementById('ftm-sort').value = m.sort_order || 0;
+  document.getElementById('tree-member-modal-title').textContent = '✏️ تعديل: ' + m.name;
+  document.getElementById('ftm-delete-btn').style.display = 'inline-flex';
+  populateParentSelect(m.parent_id || '', m.id);
+  openModal('modal-tree-member');
+}
+
+// بناء قائمة الآباء
+function populateParentSelect(selectedId, excludeId){
+  const select = document.getElementById('ftm-parent');
+  const all = getFamilyTreeMembers();
+  select.innerHTML = '<option value="">-- بدون (جذر الشجرة) --</option>';
+  all.forEach(function(m){
+    if(m.id === excludeId) return;
+    const sel = m.id === selectedId ? ' selected' : '';
+    select.innerHTML += `<option value="${m.id}"${sel}>${m.name}</option>`;
+  });
+}
+
+// حفظ (إضافة أو تعديل)
+function saveTreeMember(){
+  const name = document.getElementById('ftm-name').value.trim();
+  if(!name){ toast('الاسم مطلوب','error'); return; }
+  const id = document.getElementById('ftm-id').value;
+  const gender = document.querySelector('input[name="ftm-gender"]:checked').value;
+  const data = {
+    name,
+    parent_id:   document.getElementById('ftm-parent').value || null,
+    gender,
+    is_alive:    document.getElementById('ftm-alive').checked ? 1 : 0,
+    spouse_name: document.getElementById('ftm-spouse').value.trim(),
+    sort_order:  parseInt(document.getElementById('ftm-sort').value) || 0,
+  };
+  if(id){
+    FamilyTreeService.update(id, data);
+  }else{
+    FamilyTreeService.create(data);
+  }
+}
+
+// حذف شخص
+function deleteTreeMemberConfirm(){
+  const id = document.getElementById('ftm-id').value;
+  const m = getFamilyTreeMembers().find(x => x.id === id);
+  if(!m) return;
+  confirm2(`حذف "${m.name}" من الشجرة؟`, async ()=>{
+    try{
+      await AdminFamilyTree.delete(id);
+      closeModal('modal-tree-member');
+      toast('تم الحذف');
+      renderFamilyTreeList();
+      renderTreePreview();
+    }catch(e){ toast('فشل: '+e.message,'error'); }
+  });
+}
+
+// عرض قائمة الأعضاء
+function renderFamilyTreeList(){
+  const el = document.getElementById('ftm-list');
+  const countEl = document.getElementById('ftm-count');
+  if(!el) return;
+
+  const q = (document.getElementById('ftm-search')?.value || '').trim().toLowerCase();
+  let all = getFamilyTreeMembers();
+  if(q) all = all.filter(m => m.name.toLowerCase().includes(q) || (m.spouse_name||'').toLowerCase().includes(q));
+
+  countEl.textContent = all.length + ' شخص';
+
+  if(!all.length){
+    el.innerHTML = '<div class="empty-state"><div class="empty-icon">🌳</div><p>لا أشخاص في الشجرة بعد</p></div>';
+    return;
+  }
+
+  // بناء map للأب
+  const nameMap = {};
+  getFamilyTreeMembers().forEach(m => { nameMap[m.id] = m.name; });
+
+  el.innerHTML = `<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:8px">
+    ${all.map(m => {
+      const gIcon = m.gender === 'أنثى' ? '👩' : '👨';
+      const alive = m.is_alive == 1;
+      const bg = m.gender === 'أنثى' ? '#f5f0ff' : '#f0fdf4';
+      const border = m.gender === 'أنثى' ? '#d8b4fe' : '#86efac';
+      const parentName = m.parent_id ? nameMap[m.parent_id] || '' : '';
+      return `<div style="background:${bg};border:1.5px solid ${border};border-radius:10px;padding:10px 12px;cursor:pointer;transition:transform .15s;${!alive?'opacity:.6;':''}" onclick="editTreeMember('${m.id}')" onmouseover="this.style.transform='translateY(-2px)'" onmouseout="this.style.transform=''">
+        <div style="display:flex;align-items:center;gap:6px;margin-bottom:4px">
+          <span style="font-size:16px">${gIcon}</span>
+          <span style="font-weight:700;font-size:13px;flex:1">${m.name}</span>
+          ${!alive?'<span style="font-size:10px;color:#888">متوفى</span>':''}
+        </div>
+        ${parentName ? `<div style="font-size:11px;color:var(--text-muted)">👤 ${parentName}</div>` : '<div style="font-size:11px;color:var(--green);font-weight:600">🌳 جذر</div>'}
+        ${m.spouse_name ? `<div style="font-size:11px;color:var(--text-muted)">💑 ${m.spouse_name}</div>` : ''}
+      </div>`;
+    }).join('')}
+  </div>`;
+}
+
+// معاينة شجرية بسيطة (HTML)
+function renderTreePreview(){
+  const container = document.getElementById('tree-container');
+  if(!container) return;
+
+  const all = getFamilyTreeMembers();
+  if(!all.length){
+    container.innerHTML = '<div class="empty-state"><div class="empty-icon">🌳</div><p>لا أشخاص في الشجرة بعد</p></div>';
+    return;
+  }
+
+  // بناء شجرة
+  const map = {};
+  all.forEach(m => { map[m.id] = Object.assign({}, m, { kids: [] }); });
+  const roots = [];
+  all.forEach(m => {
+    if(m.parent_id && map[m.parent_id]) map[m.parent_id].kids.push(map[m.id]);
+    else roots.push(map[m.id]);
+  });
+
+  function renderNode(n, depth){
+    const gColor = n.gender === 'أنثى' ? '#8e44ad' : '#1a6b3c';
+    const alive = n.is_alive == 1;
+    const childCount = n.kids.length;
+    let html = `<div style="margin-right:${depth*24}px;margin-bottom:4px;display:flex;align-items:center;gap:6px;${!alive?'opacity:.55':''}">`;
+    if(depth > 0) html += `<span style="color:var(--border)">├─</span>`;
+    html += `<span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:${gColor};flex-shrink:0"></span>`;
+    html += `<span style="font-size:12px;font-weight:600;cursor:pointer" onclick="editTreeMember('${n.id}')">${n.name}</span>`;
+    if(n.spouse_name) html += `<span style="font-size:10px;color:var(--text-muted)">💑 ${n.spouse_name}</span>`;
+    if(childCount) html += `<span style="font-size:10px;color:var(--text-muted)">(${childCount})</span>`;
+    html += '</div>';
+    n.kids.sort((a,b) => (a.sort_order||0)-(b.sort_order||0));
+    n.kids.forEach(k => { html += renderNode(k, depth+1); });
+    return html;
+  }
+
+  let preview = '<div style="font-family:monospace;direction:ltr;text-align:left">';
+  roots.sort((a,b) => (a.sort_order||0)-(b.sort_order||0));
+  roots.forEach(r => { preview += renderNode(r, 0); });
+  preview += '</div>';
+  container.innerHTML = preview;
+}
+
+// أزرار التحكم بالمعاينة
+var _treePreviewExpanded = true;
+function treePreviewExpandAll(){ _treePreviewExpanded=true; renderTreePreview(); }
+function treePreviewCollapseAll(){ _treePreviewExpanded=false; renderTreePreview(); }
+
+// تصدير JSON
+function exportTreeJSON(){
+  const dataStr = JSON.stringify({familyTree: getFamilyTreeMembers()}, null, 2);
+  const dataBlob = new Blob([dataStr], {type:'application/json'});
+  const url = URL.createObjectURL(dataBlob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `awami-family-tree-${new Date().toISOString().split('T')[0]}.json`;
+  a.click();
+  URL.revokeObjectURL(url);
+  toast('تم تصدير الشجرة 🌳');
+}
+
+// ── الأفرع القديمة (backward compat) ──
 function openAddBranch(){
   document.getElementById('branch-id').value = '';
   document.getElementById('branch-name').value = '';
@@ -1310,10 +1494,31 @@ function openAddBranch(){
   openModal('modal-add-branch');
 }
 
+function renderFamilyTree(){
+  // عرض الأفرع القديمة
+  const container = document.getElementById('branches-list');
+  if(!container) return;
+
+  if(!State.getFamilyBranches().length){
+    container.innerHTML = '<div class="empty-state"><div class="empty-icon">🌿</div><p>لا أفرع</p></div>';
+    return;
+  }
+  container.innerHTML = `<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:10px">
+    ${State.getFamilyBranches().map(b=>`
+      <div style="border:2px solid ${b.color||'#47915C'};border-radius:10px;padding:12px;cursor:pointer" onclick="editBranch('${b.id}')">
+        <div style="font-weight:700;font-size:13px;color:var(--green-dark)">${b.name}</div>
+        <div style="font-size:11px;color:var(--text-muted)">${(b.members||[]).length} فرد</div>
+      </div>`).join('')}
+  </div>`;
+
+  // عرض شجرة الأعضاء الجديدة
+  renderFamilyTreeList();
+  renderTreePreview();
+}
+
 function editBranch(id){
   const b = State.getFamilyBranches().find(x => x.id === id);
   if(!b) return;
-  
   document.getElementById('branch-id').value = id;
   document.getElementById('branch-name').value = b.name;
   document.getElementById('branch-head').value = b.head || '';
@@ -1325,186 +1530,18 @@ function editBranch(id){
   openModal('modal-add-branch');
 }
 
-function saveBranch(){
-  const name = document.getElementById('branch-name').value.trim();
-  if(!name){ toast('اسم الفرع مطلوب','error'); return; }
-  
-  const id = document.getElementById('branch-id').value;
-  const membersText = document.getElementById('branch-members').value.trim();
-  const members = membersText ? membersText.split('\n').map(m => m.trim()).filter(Boolean) : [];
-  
-  const data = {
-    name,
-    head: document.getElementById('branch-head').value.trim(),
-    color: document.getElementById('branch-color').value,
-    members,
-    count: members.length,
-    notes: document.getElementById('branch-notes').value.trim()
-  };
-  
-  if(id){
-    // Edit existing
-    const b = State.getFamilyBranches().find(x => x.id === id);
-    if(b) Object.assign(b, data);
-    log(`تعديل فرع: ${name}`,'✏️');
-  }else{
-    // Add new
-    State.getFamilyBranches().push({id:uid(), ...data});
-    log(`إضافة فرع: ${name}`,'🌳');
-  }
-  
-  saveDB();
-  closeModal('modal-add-branch');
-  toast(id ? 'تم التحديث ✅' : 'تم الإضافة ✅');
-  renderFamilyTree();
-}
-
-function deleteBranchConfirm(){
-  const id = document.getElementById('branch-id').value;
-  const b = State.getFamilyBranches().find(x => x.id === id);
-  if(!b) return;
-  
-  confirm2(`حذف فرع "${b.name}" نهائياً؟`, () => {
-    State.setFamilyBranches(State.getFamilyBranches().filter(x => x.id !== id));
-    log(`حذف فرع: ${b.name}`,'🗑️');
-    saveDB();
-    closeModal('modal-add-branch');
-    toast('تم الحذف');
-    renderFamilyTree();
-  });
-}
-
-function exportTree(){
-  const dataStr = JSON.stringify({familyBranches: State.getFamilyBranches()}, null, 2);
-  const dataBlob = new Blob([dataStr], {type: 'application/json'});
-  const url = URL.createObjectURL(dataBlob);
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = `awami-family-tree-${new Date().toISOString().split('T')[0]}.json`;
-  a.click();
-  URL.revokeObjectURL(url);
-  toast('تم تصدير الشجرة 🌳');
-}
-
-function renderFamilyTree(){
-  const container = document.querySelector('#page-familytree .card-body');
-  if(!container) return;
-  
-  if(!State.getFamilyBranches().length){
-    container.innerHTML = '<div class="empty-state"><div class="empty-icon">🌳</div><p>لا توجد أفرع. اضغط "إضافة فرع جديد"</p></div>';
-    return;
-  }
-  
-  container.innerHTML = `<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:10px">
-    ${State.getFamilyBranches().map(b=>`
-      <div style="border:2px solid ${b.color};border-radius:10px;padding:12px;cursor:pointer;transition:all .2s" onclick="editBranch('${b.id}')" onmouseover="this.style.transform='translateY(-2px)'" onmouseout="this.style.transform='translateY(0)'">
-        <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
-          <div style="width:30px;height:30px;background:${b.color};border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:14px">🌿</div>
-          <div style="flex:1;font-weight:700;font-size:13px;color:var(--green-dark)">${b.name}</div>
-        </div>
-        <div style="font-size:11px;color:var(--text-muted);margin-bottom:4px">👤 ${b.head || 'غير محدد'}</div>
-        <div style="font-size:11px;color:var(--text-muted)">${(b.members||[]).length} فرد مُدخل</div>
-      </div>
-    `).join('')}
-  </div>`;
-  
-  renderFamilyTreePreview();
-}
-
-function renderFamilyTreePreview(){
-  const view=document.getElementById('tree-view').value;
-  const container=document.getElementById('tree-container');
-  
-  if(!State.getFamilyBranches().length){
-    container.innerHTML='<div class="empty-state"><div class="empty-icon">🌳</div><p>لا توجد أفرع عائلية</p></div>';
-    return;
-  }
-  
-  if(view==='list'){
-    container.innerHTML=`<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:14px">${State.getFamilyBranches().map(b=>`
-      <div style="background:#fff;border-radius:12px;border:2px solid ${b.color};padding:18px">
-        <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px">
-          <div style="width:42px;height:42px;background:${b.color};border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:18px">🌿</div>
-          <div style="flex:1"><div style="font-size:15px;font-weight:700;color:var(--green-dark)">${b.name}</div>${b.head?`<div style="font-size:11px;color:var(--text-muted)">👤 ${b.head}</div>`:''}</div>
-        </div>
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;text-align:center;margin-top:10px">
-          <div style="background:${b.color}11;padding:8px;border-radius:8px"><div style="font-size:16px;font-weight:700;color:${b.color}">${b.count||0}</div><div style="font-size:10px;color:var(--text-muted)">فرد</div></div>
-          <div style="background:${b.color}11;padding:8px;border-radius:8px"><button class="btn btn-outline btn-xs" onclick="showBranchMembers('${b.id}')">👁️ عرض</button></div>
-        </div>
-        ${b.notes?`<div style="margin-top:8px;font-size:11px;color:var(--text-muted);padding-top:8px;border-top:1px solid #f0f0f0">${b.notes}</div>`:''}
-      </div>`).join('')}</div>`;
-  }else if(view==='vertical'){
-    container.innerHTML=`<div style="text-align:center">
-      <div style="background:linear-gradient(135deg,var(--green-dark),var(--green));color:#fff;border-radius:14px;padding:18px 32px;display:inline-block;margin-bottom:30px">
-        <div style="font-size:24px;font-weight:900;font-family:'Amiri',serif">عائلة العوامي</div>
-        <div style="font-size:12px;opacity:.7;margin-top:4px">AL AWAMI • ١٩٩٢</div>
-      </div>
-      <div style="width:3px;height:30px;background:var(--border);margin:0 auto"></div>
-      <div style="display:flex;justify-content:center;gap:20px;flex-wrap:wrap">
-        ${State.getFamilyBranches().map(b=>`
-          <div style="text-align:center;cursor:pointer" onclick="showBranchMembers('${b.id}')">
-            <div style="width:3px;height:20px;background:var(--border);margin:0 auto"></div>
-            <div style="background:${b.color};color:#fff;border-radius:12px;padding:14px 20px;min-width:140px;transition:transform .2s" onmouseover="this.style.transform='scale(1.05)'" onmouseout="this.style.transform='scale(1)'">
-              <div style="font-size:20px;margin-bottom:6px">🌿</div>
-              <div style="font-size:14px;font-weight:700">${b.name}</div>
-              ${b.head?`<div style="font-size:10px;opacity:.8;margin-top:3px">${b.head}</div>`:''}
-              <div style="font-size:11px;margin-top:6px;padding-top:6px;border-top:1px solid rgba(255,255,255,.2)">${b.count||0} فرد</div>
-            </div>
-          </div>`).join('')}
-      </div>
-    </div>`;
-  }else{
-    // horizontal
-    container.innerHTML=`<div style="display:flex;align-items:center;gap:24px;overflow-x:auto;padding-bottom:20px">
-      <div style="background:linear-gradient(135deg,var(--green-dark),var(--green));color:#fff;border-radius:14px;padding:20px 28px;flex-shrink:0">
-        <div style="font-size:20px;font-weight:900;font-family:'Amiri',serif">عائلة<br>العوامي</div>
-        <div style="font-size:10px;opacity:.7;margin-top:4px">١٩٩٢</div>
-      </div>
-      ${State.getFamilyBranches().map((b,i)=>`
-        <div style="display:flex;align-items:center;gap:8px">
-          <div style="width:30px;height:2px;background:var(--border)"></div>
-          <div style="background:${b.color};color:#fff;border-radius:12px;padding:12px 18px;min-width:130px;flex-shrink:0;cursor:pointer;transition:transform .2s" onclick="showBranchMembers('${b.id}')" onmouseover="this.style.transform='translateY(-4px)'" onmouseout="this.style.transform='translateY(0)'">
-            <div style="font-size:18px;margin-bottom:4px">🌿</div>
-            <div style="font-size:13px;font-weight:700">${b.name}</div>
-            ${b.head?`<div style="font-size:9px;opacity:.8">${b.head}</div>`:''}
-            <div style="font-size:10px;margin-top:4px">${b.count||0} فرد</div>
-          </div>
-        </div>`).join('')}
-    </div>`;
-  }
-}
-
 function showBranchMembers(bid){
   const b = State.getFamilyBranches().find(x => x.id === bid);
   if(!b) return;
-  
   const members = b.members || [];
   document.getElementById('branch-detail-title').textContent = b.name;
   document.getElementById('branch-detail-body').innerHTML = `
-    <div style="background:linear-gradient(135deg,${b.color},${b.color}aa);color:#fff;border-radius:12px;padding:18px;margin-bottom:16px">
-      <div style="font-size:18px;font-weight:700;margin-bottom:6px">${b.name}</div>
-      <div style="font-size:13px;opacity:.9">رب العائلة: ${b.head}</div>
+    <div style="background:${b.color||'#47915C'};color:#fff;border-radius:12px;padding:18px;margin-bottom:16px">
+      <div style="font-size:18px;font-weight:700">${b.name}</div>
       <div style="font-size:13px;opacity:.9;margin-top:4px">عدد الأفراد: ${b.count || members.length}</div>
     </div>
-    ${members.length ? `
-      <div style="font-size:14px;font-weight:700;margin-bottom:10px">👥 أفراد الفرع:</div>
-      <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:8px">
-        ${members.map(m => `<div style="background:${b.color}11;border:1px solid ${b.color}44;padding:10px;border-radius:8px;font-size:13px;font-weight:600">• ${m}</div>`).join('')}
-      </div>
-    ` : '<div style="text-align:center;padding:20px;color:var(--text-muted)">لم يتم إضافة الأفراد بعد</div>'}
-  `;
+    ${members.length ? `<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:8px">${members.map(m=>`<div style="padding:8px;border:1px solid var(--border);border-radius:8px;font-size:13px">• ${m}</div>`).join('')}</div>` : '<div style="text-align:center;padding:20px;color:var(--text-muted)">لا أفراد</div>'}`;
   openModal('modal-branch-detail');
-}
-
-function deleteBranch(id){
-  const b=State.getFamilyBranches().find(x=>x.id===id);
-  confirm2(`حذف فرع "${b?.name}"؟`,()=>{
-    State.setFamilyBranches(State.getFamilyBranches().filter(x=>x.id!==id));
-    log(`حذف فرع: ${b?.name}`,'🗑️');
-    saveDB();
-    toast('تم الحذف');
-    renderFamilyTree();
-  });
 }
 
 // =================== VOTING ===================

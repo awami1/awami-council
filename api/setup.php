@@ -149,6 +149,20 @@ if ($sqlite) {
   updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
 )",
 
+"CREATE TABLE IF NOT EXISTS family_tree (
+  id VARCHAR(36) NOT NULL PRIMARY KEY,
+  name VARCHAR(200) NOT NULL,
+  parent_id VARCHAR(36) DEFAULT NULL,
+  gender TEXT NOT NULL DEFAULT 'ذكر' CHECK(gender IN ('ذكر','أنثى')),
+  is_alive INTEGER NOT NULL DEFAULT 1,
+  spouse_name VARCHAR(200) DEFAULT NULL,
+  sort_order INTEGER NOT NULL DEFAULT 0,
+  created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (parent_id) REFERENCES family_tree(id) ON DELETE SET NULL
+)",
+
+"CREATE INDEX IF NOT EXISTS idx_ft_parent ON family_tree(parent_id)",
+
     ]; // end SQLite
 } else {
     $statements = [
@@ -299,6 +313,20 @@ if ($sqlite) {
   `visible` TINYINT(1) NOT NULL DEFAULT 1,
   `updated_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci",
+
+"CREATE TABLE IF NOT EXISTS `family_tree` (
+  `id` VARCHAR(36) NOT NULL,
+  `name` VARCHAR(200) NOT NULL,
+  `parent_id` VARCHAR(36) DEFAULT NULL,
+  `gender` ENUM('ذكر','أنثى') NOT NULL DEFAULT 'ذكر',
+  `is_alive` TINYINT(1) NOT NULL DEFAULT 1,
+  `spouse_name` VARCHAR(200) DEFAULT NULL,
+  `sort_order` INT NOT NULL DEFAULT 0,
+  `created_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  INDEX `idx_ft_parent` (`parent_id`),
+  CONSTRAINT `fk_ft_parent` FOREIGN KEY (`parent_id`) REFERENCES `family_tree` (`id`) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci",
 
     ]; // end MySQL

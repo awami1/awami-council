@@ -145,6 +145,16 @@ function getCommittees(): array {
 }
 
 /**
+ * جلب أعضاء شجرة العائلة
+ */
+function getFamilyTree(): array {
+    try {
+        $pdo = getPDO();
+        return $pdo->query("SELECT * FROM family_tree ORDER BY sort_order ASC, name ASC")->fetchAll();
+    } catch (Throwable $e) { return []; }
+}
+
+/**
  * جلب جميع الفعاليات
  */
 function getAllEvents(int $limit = 20): array {

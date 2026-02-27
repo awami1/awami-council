@@ -20,6 +20,7 @@ nextMeeting: null,
 news:        [],
 messages:    [],
 messagesUnread: 0,
+familyTreeMembers: [],
 };
 
 // ============================================================
@@ -42,6 +43,7 @@ MediaAPI.getAll(),
 CommitteesAPI.getAll(),
 NewsAPI.getAll(),
 MessagesAPI.getAll(),
+FamilyTreeAPI.getAll(),
 ]);
 
     function safeVal(r, fallback) { return r.status === 'fulfilled' ? r.value : (fallback || {}); }
@@ -59,6 +61,7 @@ MessagesAPI.getAll(),
     var committeesRes   = safeVal(results[10], {data:[]});
     var newsRes         = safeVal(results[11], {data:[]});
     var messagesRes     = safeVal(results[12], {data:[], unread:0});
+    var ftRes           = safeVal(results[13], {data:[]});
 
     DB.settings     = settingsRes.settings  ?? {};
     DB.members      = membersRes.data        ?? [];
@@ -74,6 +77,7 @@ MessagesAPI.getAll(),
     DB.news         = newsRes.data           ?? [];
     DB.messages     = messagesRes.data       ?? [];
     DB.messagesUnread = messagesRes.unread   ?? 0;
+    DB.familyTreeMembers = ftRes.data        ?? [];
 
     // بناء خريطة أعضاء اللجان
     buildCommitteeMembersMap();
@@ -86,7 +90,7 @@ MessagesAPI.getAll(),
     DB.polls = DB.polls.map(normalizePoll);
 
     // عرض تحذير للبيانات التي فشل تحميلها
-    var apiNames = ['Settings','Members','Periods','Payments','Transactions','Events','Polls','Branches','Meeting','Media','Committees','News','Messages'];
+    var apiNames = ['Settings','Members','Periods','Payments','Transactions','Events','Polls','Branches','Meeting','Media','Committees','News','Messages','FamilyTree'];
     var failedNames = [];
     results.forEach(function(r, i){
         if (r.status === 'rejected') {
@@ -460,6 +464,33 @@ async delete(id) {
 };
 
 // ============================================================
+// FAMILY TREE (شجرة العائلة الهرمية)
+// ============================================================
+const AdminFamilyTree = {
+async create(data) {
+    const r = await FamilyTreeAPI.create(data);
+    DB.familyTreeMembers.push(r.data);
+    return r.data;
+},
+async update(id, data) {
+    const r = await FamilyTreeAPI.update(id, data);
+    const idx = DB.familyTreeMembers.findIndex(m => m.id === id);
+    if (idx >= 0) DB.familyTreeMembers[idx] = r.data;
+    return r.data;
+},
+async delete(id) {
+    await FamilyTreeAPI.delete(id);
+    DB.familyTreeMembers = DB.familyTreeMembers.filter(m => m.id !== id);
+},
+};
+
+const FamilyTreeService = {
+create: async (data) => { await AdminFamilyTree.create(data); closeModal('modal-tree-member'); toast('تمت الإضافة ✅'); renderFamilyTreeList(); renderTreePreview(); },
+update: async (id, data) => { await AdminFamilyTree.update(id, data); closeModal('modal-tree-member'); toast('تم التحديث ✅'); renderFamilyTreeList(); renderTreePreview(); },
+delete: async (id) => { confirm2('هل تريد حذف هذا الشخص من الشجرة؟', async () => { await AdminFamilyTree.delete(id); toast('تم الحذف'); renderFamilyTreeList(); renderTreePreview(); }); },
+};
+
+// ============================================================
 // MEETING
 // ============================================================
 const AdminMeeting = {
@@ -581,6 +612,7 @@ function getMedia()        { return DB.media ?? []; }
 function getSettings()     { return DB.settings; }
 function getNextMeeting()  { return DB.nextMeeting; }
 function getCommitteeMembersMap() { return DB.committeeMembersMap; }
+function getFamilyTreeMembers() { return DB.familyTreeMembers ?? []; }
 
 function curPeriod() { return DB.periods[DB.periods.length - 1] ?? null; }
 

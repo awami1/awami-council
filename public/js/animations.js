@@ -63,11 +63,96 @@
   }
 
   /**
+   * Accordion — أكورديون قابل للطي
+   */
+  function initAccordions() {
+    document.querySelectorAll('.accordion-header').forEach(function(btn) {
+      if (btn.dataset.accordionInit) return;
+      btn.dataset.accordionInit = '1';
+
+      btn.addEventListener('click', function() {
+        var item = btn.closest('.accordion-item');
+        var body = item.querySelector('.accordion-body');
+        var inner = item.querySelector('.accordion-body-inner');
+        if (!body || !inner) return;
+
+        var isOpen = item.classList.contains('open');
+
+        // إغلاق جميع العناصر المفتوحة في نفس الأكورديون
+        var accordion = item.closest('.accordion');
+        if (accordion) {
+          accordion.querySelectorAll('.accordion-item.open').forEach(function(openItem) {
+            if (openItem !== item) {
+              openItem.classList.remove('open');
+              openItem.querySelector('.accordion-body').style.maxHeight = '0';
+            }
+          });
+        }
+
+        if (isOpen) {
+          item.classList.remove('open');
+          body.style.maxHeight = '0';
+        } else {
+          item.classList.add('open');
+          body.style.maxHeight = inner.scrollHeight + 'px';
+        }
+      });
+    });
+  }
+
+  /**
+   * Parallax scrolling للأقسام الكبيرة
+   */
+  function initParallax() {
+    var hero = document.querySelector('.hero');
+    var aboutVisual = document.querySelector('.about-visual');
+    if (!hero && !aboutVisual) return;
+
+    // التحقق من تفضيل تقليل الحركة
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+
+    var ticking = false;
+
+    function updateParallax() {
+      var scrollY = window.pageYOffset;
+
+      if (hero) {
+        // تحريك النص الخلفي (::before) عبر CSS variable
+        var heroBottom = hero.offsetTop + hero.offsetHeight;
+        if (scrollY < heroBottom) {
+          var offset = scrollY * 0.3;
+          hero.style.setProperty('--parallax-y', offset + 'px');
+        }
+      }
+
+      if (aboutVisual) {
+        var rect = aboutVisual.getBoundingClientRect();
+        if (rect.top < window.innerHeight && rect.bottom > 0) {
+          var progress = (window.innerHeight - rect.top) / (window.innerHeight + rect.height);
+          var shift = (progress - 0.5) * 40;
+          aboutVisual.style.transform = 'translateY(' + shift + 'px)';
+        }
+      }
+
+      ticking = false;
+    }
+
+    window.addEventListener('scroll', function() {
+      if (!ticking) {
+        requestAnimationFrame(updateParallax);
+        ticking = true;
+      }
+    });
+  }
+
+  /**
    * تفعيل جميع الحركات
    */
   function initAnimations() {
     initScrollReveal();
     initCounters();
+    initAccordions();
+    initParallax();
   }
 
   // تصدير للاستخدام مع AJAX navigation

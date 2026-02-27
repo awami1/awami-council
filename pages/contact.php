@@ -47,6 +47,62 @@ $ws = getWS();
   </div>
 </section>
 
+<!-- الأسئلة الشائعة -->
+<section>
+  <div class="section-header">
+    <div class="section-badge">نساعدك</div>
+    <h2 class="section-title">الأسئلة الشائعة</h2>
+    <p class="section-subtitle">إجابات على أكثر الأسئلة تكراراً</p>
+  </div>
+  <div class="accordion">
+    <div class="accordion-item animate-in">
+      <button class="accordion-header">
+        <span>كيف يمكنني الانضمام لمجلس عائلة العوامي؟</span>
+        <span class="accordion-icon">+</span>
+      </button>
+      <div class="accordion-body">
+        <div class="accordion-body-inner">يمكنك التواصل مع أحد أعضاء المجلس أو إرسال رسالة عبر نموذج التواصل أعلاه أو عبر الواتساب. سيتم التواصل معك وإرشادك لإجراءات التسجيل.</div>
+      </div>
+    </div>
+    <div class="accordion-item animate-in">
+      <button class="accordion-header">
+        <span>ما هي اشتراكات العضوية؟</span>
+        <span class="accordion-icon">+</span>
+      </button>
+      <div class="accordion-body">
+        <div class="accordion-body-inner">تُحدد قيمة الاشتراك السنوي من قبل الهيئة الإدارية في الاجتماع العمومي. يمكنك الاستفسار عن التفاصيل من خلال التواصل المباشر مع أمين الصندوق.</div>
+      </div>
+    </div>
+    <div class="accordion-item animate-in">
+      <button class="accordion-header">
+        <span>كيف أطلع على شجرة العائلة؟</span>
+        <span class="accordion-icon">+</span>
+      </button>
+      <div class="accordion-body">
+        <div class="accordion-body-inner">يمكنك زيارة صفحة <a href="/tree" style="color:var(--green);font-weight:700">شجرة العائلة</a> للاطلاع على الأفرع الرئيسية. كما يمكنك التواصل مع لجنة التوثيق للحصول على مزيد من التفاصيل.</div>
+      </div>
+    </div>
+    <div class="accordion-item animate-in">
+      <button class="accordion-header">
+        <span>كيف يمكنني المشاركة في الفعاليات والأنشطة؟</span>
+        <span class="accordion-icon">+</span>
+      </button>
+      <div class="accordion-body">
+        <div class="accordion-body-inner">يتم الإعلان عن الفعاليات والأنشطة عبر الموقع وقنوات التواصل الخاصة بالمجلس. يمكنك متابعة صفحة الأخبار أو التسجيل في القائمة البريدية للحصول على التحديثات.</div>
+      </div>
+    </div>
+    <div class="accordion-item animate-in">
+      <button class="accordion-header">
+        <span>هل يمكنني اقتراح فعالية أو نشاط جديد؟</span>
+        <span class="accordion-icon">+</span>
+      </button>
+      <div class="accordion-body">
+        <div class="accordion-body-inner">بالطبع! نرحب بجميع الاقتراحات والأفكار البناءة. يمكنك إرسال اقتراحك عبر نموذج التواصل أو مباشرة عبر الواتساب وسيتم دراسته من قبل اللجنة المختصة.</div>
+      </div>
+    </div>
+  </div>
+</section>
+
 <script>
 function handleContactSubmit(e) {
   e.preventDefault();

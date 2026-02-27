@@ -7,6 +7,11 @@ header {
   background: var(--gradient-header); color: #fff;
   position: sticky; top: 0; z-index: 1000;
   box-shadow: 0 4px 24px rgba(0,0,0,.2);
+  transition: transform .35s cubic-bezier(.22,1,.36,1), box-shadow .35s ease;
+}
+header.header-hidden {
+  transform: translateY(-100%);
+  box-shadow: none;
 }
 .header-content {
   max-width: 1200px; margin: 0 auto; padding: 14px 24px;

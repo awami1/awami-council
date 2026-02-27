@@ -344,6 +344,21 @@ var searchInput   = document.getElementById('tree-search');
 var searchResults = document.getElementById('tree-search-results');
 var _highlightedId = null;
 
+/* بناء سلسلة النسب: "حسن بن محمد بن علي" */
+function getLineage(member) {
+  var parts = [member.name];
+  var current = member;
+  var depth = 0;
+  while (current.parent_id && depth < 2) {
+    var parent = rawData.find(function (m) { return m.id === current.parent_id; });
+    if (!parent) break;
+    parts.push(parent.name);
+    current = parent;
+    depth++;
+  }
+  return parts.join(' بن ');
+}
+
 if (searchInput) {
   searchInput.addEventListener('input', function () {
     var q = this.value.trim();
@@ -353,7 +368,7 @@ if (searchInput) {
       return;
     }
     var matches = rawData.filter(function (m) {
-      return m.name.indexOf(q) !== -1 || (m.spouse_name && m.spouse_name.indexOf(q) !== -1);
+      return m.name.indexOf(q) !== -1;
     }).slice(0, 12);
 
     if (!matches.length) {
@@ -364,7 +379,7 @@ if (searchInput) {
 
     searchResults.innerHTML = matches.map(function (m) {
       var icon = m.gender === 'أنثى' ? '👩' : '👨';
-      return '<div class="tree-search-item" data-id="' + m.id + '">' + icon + ' ' + m.name + '</div>';
+      return '<div class="tree-search-item" data-id="' + m.id + '">' + icon + ' ' + getLineage(m) + '</div>';
     }).join('');
     searchResults.style.display = 'block';
   });

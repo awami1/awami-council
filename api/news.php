@@ -25,17 +25,18 @@ function ensureNewsTable(): void
             updated_at TEXT NOT NULL DEFAULT (datetime('now'))
         )");
     } else {
-        $pdo->exec("CREATE TABLE IF NOT EXISTS news (
-            id VARCHAR(64) PRIMARY KEY,
-            title VARCHAR(500) NOT NULL,
-            content TEXT NOT NULL DEFAULT '',
-            excerpt VARCHAR(500) NOT NULL DEFAULT '',
-            image VARCHAR(500) NOT NULL DEFAULT '',
-            category VARCHAR(100) NOT NULL DEFAULT 'عام',
-            author VARCHAR(200) NOT NULL DEFAULT '',
-            status ENUM('published','draft') NOT NULL DEFAULT 'published',
-            created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-            updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+        $pdo->exec("CREATE TABLE IF NOT EXISTS `news` (
+            `id` VARCHAR(64) NOT NULL,
+            `title` VARCHAR(500) NOT NULL,
+            `content` TEXT,
+            `excerpt` VARCHAR(500) NOT NULL DEFAULT '',
+            `image` VARCHAR(500) NOT NULL DEFAULT '',
+            `category` VARCHAR(100) NOT NULL DEFAULT 'عام',
+            `author` VARCHAR(200) NOT NULL DEFAULT '',
+            `status` ENUM('published','draft') NOT NULL DEFAULT 'published',
+            `created_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            `updated_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+            PRIMARY KEY (`id`)
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci");
     }
 }

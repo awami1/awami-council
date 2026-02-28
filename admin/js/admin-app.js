@@ -20,7 +20,7 @@ function showPage(name,el){
   document.getElementById('topbar-title').innerHTML=t+` <span>${s}</span>`;
   const A={members:`<button class="btn btn-primary" onclick="openAddMember()">+ إضافة عضو</button>`,budget:`<button class="btn btn-primary" onclick="openModal('modal-tx')">+ معاملة</button>`,events:`<button class="btn btn-primary" onclick="openAddEvent()">+ فعالية</button>`};
   document.getElementById('topbar-action').innerHTML=A[name]||'';
-  const renderers={dashboard:renderDashboard,council:renderCouncil,members:renderMembers,fees:renderFees,reminders:renderReminders,committees:renderCommittees,orgchart:renderOrgChart,budget:renderBudget,events:renderEvents,calendar:renderCalendar,familytree:renderFamilyTree,voting:renderVoting,portal:renderPortalSelect,'smart-reports':function(){},reports:renderReports,audit:renderAuditLog,'export':function(){},websettings:renderWebsiteSettings,settings:renderSettings,messages:renderMessages,news:renderNews};
+  const renderers={dashboard:renderDashboard,council:renderCouncil,members:renderMembers,fees:renderFees,reminders:renderReminders,committees:renderCommittees,orgchart:renderOrgChart,budget:renderBudget,events:renderEvents,calendar:renderCalendar,familytree:renderFamilyTree,voting:renderVoting,portal:renderPortalSelect,'smart-reports':function(){ srLoadSavedReports('active'); },reports:renderReports,audit:renderAuditLog,'export':function(){},websettings:renderWebsiteSettings,settings:renderSettings,messages:renderMessages,news:renderNews};
   if(renderers[name]) renderers[name]();
   updateSidebar();
 }
@@ -1835,361 +1835,816 @@ function updateMessageBadge() {
 // =====================================================
 
 var aiAnalysisData = null;
+var srWorkbook = null;
+var srRawData = null;
+var srFileName = '';
+var srSelectedRows = new Set();
 
+// ---- Stepper ----
+function srSetStep(step) {
+  document.querySelectorAll('.sr-step').forEach(function(el) {
+    var s = parseInt(el.dataset.step);
+    el.classList.remove('active', 'done');
+    if (s < step) el.classList.add('done');
+    if (s === step) el.classList.add('active');
+  });
+  document.querySelectorAll('.sr-step-line').forEach(function(el, i) {
+    el.classList.toggle('done', i < step - 1);
+  });
+}
+
+// ---- Drag & Drop ----
+function handleAIDragOver(e) {
+  e.preventDefault();
+  e.stopPropagation();
+  document.getElementById('upload-area').classList.add('drag-over');
+}
+function handleAIDragLeave(e) {
+  e.preventDefault();
+  document.getElementById('upload-area').classList.remove('drag-over');
+}
+function handleAIDrop(e) {
+  e.preventDefault();
+  e.stopPropagation();
+  document.getElementById('upload-area').classList.remove('drag-over');
+  var file = e.dataTransfer.files[0];
+  if (file) srProcessFile(file);
+}
+
+// ---- File Upload ----
 function handleAIFileUpload(event) {
   var file = event.target.files[0];
-  if (!file) return;
+  if (file) srProcessFile(file);
+}
 
-  // التحقق من نوع الملف
-  var validTypes = ['application/vnd.ms-excel', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', 'text/csv'];
-  if (!validTypes.includes(file.type) && !file.name.match(/\.(xlsx|xls|csv)$/i)) {
-    alert('نوع الملف غير مدعوم. يرجى رفع ملف Excel أو CSV');
+function srProcessFile(file) {
+  if (!file.name.match(/\.(xlsx|xls|csv)$/i)) {
+    showToast('نوع الملف غير مدعوم. يرجى رفع ملف Excel أو CSV', 'error');
     return;
   }
-
-  // التحقق من حجم الملف (10MB)
   if (file.size > 10 * 1024 * 1024) {
-    alert('حجم الملف يتجاوز 10 ميجابايت');
+    showToast('حجم الملف يتجاوز 10 ميجابايت', 'error');
     return;
   }
 
-  // عرض حالة المعالجة
-  document.getElementById('upload-area').style.display = 'none';
-  document.getElementById('ai-processing').style.display = 'block';
-  document.getElementById('ai-results').style.display = 'none';
-  document.getElementById('ai-status-text').textContent = 'جاري قراءة الملف...';
-  document.getElementById('ai-progress-bar').style.width = '20%';
+  srFileName = file.name;
+  var infoEl = document.getElementById('upload-file-info');
+  infoEl.style.display = 'block';
+  infoEl.textContent = '📄 ' + file.name + ' (' + (file.size / 1024).toFixed(1) + ' KB)';
 
-  // قراءة الملف
   var reader = new FileReader();
   reader.onload = function(e) {
     try {
       var data = new Uint8Array(e.target.result);
-      var workbook = XLSX.read(data, {type: 'array'});
-      
-      // الحصول على أول ورقة
-      var firstSheet = workbook.Sheets[workbook.SheetNames[0]];
-      var jsonData = XLSX.utils.sheet_to_json(firstSheet, {raw: false});
-
-      if (!jsonData || jsonData.length === 0) {
-        alert('الملف فارغ أو لا يحتوي على بيانات');
-        resetAIAnalysis();
-        return;
-      }
-
-      // بدء التحليل
-      document.getElementById('ai-status-text').textContent = 'جاري التحليل الذكي...';
-      document.getElementById('ai-progress-bar').style.width = '50%';
-
-      setTimeout(function() {
-        analyzeWithAI(jsonData);
-      }, 1000);
-
+      srWorkbook = XLSX.read(data, {type: 'array'});
+      srShowPreview(0);
     } catch (error) {
-      console.error('خطأ في قراءة الملف:', error);
-      alert('حدث خطأ في قراءة الملف: ' + error.message);
+      showToast('حدث خطأ في قراءة الملف: ' + error.message, 'error');
       resetAIAnalysis();
     }
   };
-
   reader.onerror = function() {
-    alert('فشل قراءة الملف');
+    showToast('فشل قراءة الملف', 'error');
     resetAIAnalysis();
   };
-
   reader.readAsArrayBuffer(file);
 }
 
-function analyzeWithAI(rawData) {
-  document.getElementById('ai-status-text').textContent = 'جاري التصنيف الذكي...';
-  document.getElementById('ai-progress-bar').style.width = '70%';
+// ---- Preview & Column Mapping ----
+function srShowPreview(sheetIdx) {
+  var sheetNames = srWorkbook.SheetNames;
 
-  var transactions = [];
-  var categories = {};
-  var totalIncome = 0;
-  var totalExpense = 0;
-
-  // استخراج وتحليل البيانات
-  for (var i = 0; i < rawData.length; i++) {
-    var row = rawData[i];
-    
-    // اكتشاف الأعمدة (مرن)
-    var description = row['الوصف'] || row['البيان'] || row['Description'] || row['وصف'] || row['تفاصيل'] || '';
-    var amountStr = row['المبلغ'] || row['القيمة'] || row['Amount'] || row['Value'] || row['مبلغ'] || '0';
-    var dateStr = row['التاريخ'] || row['Date'] || row['تاريخ'] || '';
-    var typeStr = row['النوع'] || row['Type'] || row['نوع'] || '';
-
-    // تنظيف المبلغ
-    var amount = parseFloat(String(amountStr).replace(/[^\d.-]/g, '')) || 0;
-    if (amount === 0) continue;
-
-    // تحديد النوع (إيراد/مصروف)
-    var type = 'expense';
-    var lowerType = String(typeStr).toLowerCase();
-    var lowerDesc = String(description).toLowerCase();
-    
-    if (lowerType.includes('دخل') || lowerType.includes('إيراد') || lowerType.includes('income') || 
-        lowerType.includes('دائن') || lowerType.includes('credit') ||
-        lowerDesc.includes('اشتراك') || lowerDesc.includes('تبرع')) {
-      type = 'income';
-    }
-
-    // التصنيف الذكي بناءً على الوصف
-    var category = smartCategorize(description, type);
-    
-    // إضافة المعاملة
-    var transaction = {
-      date: dateStr || new Date().toISOString().split('T')[0],
-      description: description,
-      amount: Math.abs(amount),
-      type: type,
-      category: category
-    };
-    
-    transactions.push(transaction);
-
-    // تجميع حسب الفئة
-    if (!categories[category]) {
-      categories[category] = {income: 0, expense: 0, count: 0};
-    }
-    categories[category].count++;
-    
-    if (type === 'income') {
-      totalIncome += Math.abs(amount);
-      categories[category].income += Math.abs(amount);
-    } else {
-      totalExpense += Math.abs(amount);
-      categories[category].expense += Math.abs(amount);
-    }
+  // Multi-sheet selector
+  var sel = document.getElementById('sr-sheet-select');
+  if (sheetNames.length > 1) {
+    sel.style.display = 'block';
+    sel.innerHTML = sheetNames.map(function(n, i) {
+      return '<option value="' + i + '"' + (i === sheetIdx ? ' selected' : '') + '>' + n + '</option>';
+    }).join('');
+  } else {
+    sel.style.display = 'none';
   }
 
-  // حفظ النتائج
-  aiAnalysisData = {
-    transactions: transactions,
-    categories: categories,
-    totalIncome: totalIncome,
-    totalExpense: totalExpense,
-    netProfit: totalIncome - totalExpense,
-    analyzedAt: new Date().toISOString()
-  };
+  var sheet = srWorkbook.Sheets[sheetNames[sheetIdx]];
+  srRawData = XLSX.utils.sheet_to_json(sheet, {raw: false});
 
-  // إنهاء المعالجة
-  document.getElementById('ai-progress-bar').style.width = '100%';
-  
-  setTimeout(function() {
-    displayAIResults();
-  }, 500);
+  if (!srRawData || srRawData.length === 0) {
+    showToast('الملف فارغ أو لا يحتوي على بيانات', 'error');
+    resetAIAnalysis();
+    return;
+  }
+
+  // Data cleaning report
+  var cleanResult = srCleanData(srRawData);
+  srRawData = cleanResult.data;
+
+  if (cleanResult.removedCount > 0) {
+    var info = document.getElementById('sr-cleaning-info');
+    info.style.display = 'block';
+    info.innerHTML = '🧹 <strong>تنظيف تلقائي:</strong> تم إزالة ' + cleanResult.removedCount + ' صف (إجماليات/فارغة)' +
+      (cleanResult.fixedAmounts > 0 ? ' • تصحيح ' + cleanResult.fixedAmounts + ' مبلغ' : '') +
+      (cleanResult.fixedDates > 0 ? ' • تحويل ' + cleanResult.fixedDates + ' تاريخ' : '');
+  }
+
+  // Auto-detect columns
+  var cols = Object.keys(srRawData[0] || {});
+  var detected = srAutoDetectColumns(cols);
+
+  // Populate mapping dropdowns
+  var fields = [
+    {id: 'sr-col-desc', detected: detected.desc},
+    {id: 'sr-col-amount', detected: detected.amount},
+    {id: 'sr-col-date', detected: detected.date},
+    {id: 'sr-col-type', detected: detected.type}
+  ];
+
+  fields.forEach(function(f) {
+    var select = document.getElementById(f.id);
+    select.innerHTML = '<option value="">-- غير محدد --</option>' +
+      cols.map(function(c) {
+        return '<option value="' + c + '"' + (c === f.detected ? ' selected' : '') + '>' + c + '</option>';
+      }).join('');
+  });
+
+  // Detection info
+  var detectedCount = [detected.desc, detected.amount, detected.date, detected.type].filter(Boolean).length;
+  document.getElementById('sr-detection-info').innerHTML =
+    '🔍 تم كشف <strong>' + detectedCount + '/4</strong> أعمدة تلقائياً من أصل <strong>' + cols.length + '</strong> عمود';
+
+  // Preview table (first 5 rows)
+  var previewRows = srRawData.slice(0, 5);
+  var thead = '<tr>' + cols.map(function(c) { return '<th>' + c + '</th>'; }).join('') + '</tr>';
+  var tbody = previewRows.map(function(row) {
+    return '<tr>' + cols.map(function(c) { return '<td>' + (row[c] || '') + '</td>'; }).join('') + '</tr>';
+  }).join('');
+
+  document.querySelector('#sr-preview-table thead').innerHTML = thead;
+  document.querySelector('#sr-preview-table tbody').innerHTML = tbody;
+
+  // Show preview, hide upload
+  document.getElementById('sr-upload-card').style.display = 'none';
+  document.getElementById('sr-preview-card').style.display = 'block';
+  srSetStep(2);
 }
 
+function srSelectSheet(idx) {
+  srShowPreview(parseInt(idx));
+}
+
+// ---- Column Auto-Detection ----
+function srAutoDetectColumns(cols) {
+  var descWords = ['الوصف', 'البيان', 'بيان', 'description', 'desc', 'وصف', 'تفاصيل', 'الملاحظات', 'ملاحظة', 'note'];
+  var amountWords = ['المبلغ', 'القيمة', 'amount', 'value', 'مبلغ', 'قيمة', 'debit', 'credit', 'مدين', 'دائن', 'الرصيد'];
+  var dateWords = ['التاريخ', 'date', 'تاريخ', 'تاريخ العملية', 'تاريخ المعاملة'];
+  var typeWords = ['النوع', 'type', 'نوع', 'تصنيف'];
+
+  function findCol(words) {
+    for (var i = 0; i < cols.length; i++) {
+      var lc = cols[i].toLowerCase().trim();
+      for (var j = 0; j < words.length; j++) {
+        if (lc === words[j]) return cols[i];
+      }
+    }
+    for (var i = 0; i < cols.length; i++) {
+      var lc = cols[i].toLowerCase().trim();
+      for (var j = 0; j < words.length; j++) {
+        if (lc.includes(words[j]) || words[j].includes(lc)) return cols[i];
+      }
+    }
+    return '';
+  }
+
+  return { desc: findCol(descWords), amount: findCol(amountWords), date: findCol(dateWords), type: findCol(typeWords) };
+}
+
+// ---- Data Cleaning Pipeline ----
+function srCleanData(data) {
+  var removedCount = 0, fixedAmounts = 0, fixedDates = 0;
+  var skipWords = ['المجموع', 'الإجمالي', 'total', 'subtotal', 'الرصيد النهائي', 'grand total', 'مجموع'];
+
+  var cleaned = data.filter(function(row) {
+    var vals = Object.values(row).join(' ').toLowerCase();
+    for (var i = 0; i < skipWords.length; i++) {
+      if (vals.includes(skipWords[i])) { removedCount++; return false; }
+    }
+    var hasValue = Object.values(row).some(function(v) { return v && String(v).trim(); });
+    if (!hasValue) { removedCount++; return false; }
+    return true;
+  });
+
+  cleaned.forEach(function(row) {
+    Object.keys(row).forEach(function(key) {
+      var val = String(row[key] || '');
+      var arabicNums = val.replace(/[٠-٩]/g, function(d) { return '٠١٢٣٤٥٦٧٨٩'.indexOf(d); });
+      if (arabicNums !== val) { row[key] = arabicNums; fixedAmounts++; }
+    });
+  });
+
+  return { data: cleaned, removedCount: removedCount, fixedAmounts: fixedAmounts, fixedDates: fixedDates };
+}
+
+// ---- Start Analysis ----
+function srStartAnalysis() {
+  var descCol = document.getElementById('sr-col-desc').value;
+  var amountCol = document.getElementById('sr-col-amount').value;
+
+  if (!descCol && !amountCol) {
+    showToast('يرجى تحديد عمود الوصف والمبلغ على الأقل', 'error');
+    return;
+  }
+
+  document.getElementById('sr-preview-card').style.display = 'none';
+  document.getElementById('ai-processing').style.display = 'block';
+  srSetStep(3);
+
+  var dateCol = document.getElementById('sr-col-date').value;
+  var typeCol = document.getElementById('sr-col-type').value;
+
+  var pct = 0;
+  var progressInterval = setInterval(function() {
+    pct = Math.min(pct + 3, 90);
+    document.getElementById('ai-progress-bar').style.width = pct + '%';
+    document.getElementById('ai-progress-pct').textContent = pct + '%';
+    if (pct <= 30) document.getElementById('ai-status-text').textContent = 'جاري قراءة البيانات...';
+    else if (pct <= 60) document.getElementById('ai-status-text').textContent = 'جاري التصنيف الذكي...';
+    else document.getElementById('ai-status-text').textContent = 'جاري إعداد النتائج...';
+  }, 80);
+
+  setTimeout(function() {
+    analyzeWithAI(srRawData, descCol, amountCol, dateCol, typeCol);
+    clearInterval(progressInterval);
+    document.getElementById('ai-progress-bar').style.width = '100%';
+    document.getElementById('ai-progress-pct').textContent = '100%';
+    document.getElementById('ai-status-text').textContent = 'اكتمل التحليل!';
+    setTimeout(function() { displayAIResults(); }, 400);
+  }, 1500);
+}
+
+// ---- Smart Categorization with Confidence ----
 function smartCategorize(description, type) {
   var desc = String(description).toLowerCase();
-  
-  // قاموس الكلمات المفتاحية
   var keywords = {
-    'رواتب': ['راتب', 'مرتب', 'أجر', 'salary', 'wage'],
-    'إيجار': ['إيجار', 'rent', 'lease'],
-    'مرافق': ['كهرباء', 'ماء', 'غاز', 'electricity', 'water', 'utility'],
-    'تسويق': ['تسويق', 'إعلان', 'marketing', 'advertising', 'دعاية'],
-    'قرطاسية': ['قرطاسية', 'مكتب', 'طباعة', 'office', 'supplies', 'stationery'],
-    'صيانة': ['صيانة', 'إصلاح', 'maintenance', 'repair'],
-    'اشتراكات': ['اشتراك', 'عضوية', 'subscription', 'membership'],
-    'تبرعات': ['تبرع', 'donation', 'هبة'],
-    'مبيعات': ['مبيعات', 'sales'],
-    'خدمات': ['خدمة', 'service']
+    'رواتب':     ['راتب', 'مرتب', 'أجر', 'salary', 'wage', 'payroll'],
+    'إيجار':     ['إيجار', 'rent', 'lease', 'استئجار'],
+    'مرافق':     ['كهرباء', 'ماء', 'غاز', 'electricity', 'water', 'utility', 'هاتف', 'انترنت', 'internet'],
+    'تسويق':     ['تسويق', 'إعلان', 'marketing', 'advertising', 'دعاية', 'ترويج'],
+    'قرطاسية':   ['قرطاسية', 'مكتب', 'طباعة', 'office', 'supplies', 'stationery', 'أدوات'],
+    'صيانة':     ['صيانة', 'إصلاح', 'maintenance', 'repair', 'ترميم'],
+    'اشتراكات':  ['اشتراك', 'عضوية', 'subscription', 'membership'],
+    'تبرعات':    ['تبرع', 'donation', 'هبة', 'صدقة', 'زكاة'],
+    'مبيعات':    ['مبيعات', 'sales', 'بيع'],
+    'خدمات':     ['خدمة', 'service', 'استشارة', 'خدمات'],
+    'ضيافة':     ['ضيافة', 'مأكولات', 'مشروبات', 'catering', 'food', 'قهوة', 'عشاء', 'غداء', 'بوفيه', 'أكل'],
+    'نقل':       ['نقل', 'مواصلات', 'transport', 'باص', 'سيارة', 'بنزين', 'وقود', 'تذكرة', 'طيران'],
+    'إعلام':     ['إعلام', 'تصوير', 'فيديو', 'media', 'photography', 'فوتو'],
+    'هدايا':     ['هدية', 'هدايا', 'جائزة', 'جوائز', 'مسابقة', 'gift', 'prize'],
+    'تعليم':     ['تعليم', 'تدريب', 'دورة', 'ورشة', 'education', 'training', 'محاضرة'],
+    'رحلات':     ['رحلة', 'عمرة', 'حج', 'سفر', 'trip', 'travel', 'فندق', 'حجز'],
+    'مناسبات':   ['عيد', 'زواج', 'عزاء', 'مناسبة', 'حفل', 'event', 'احتفال'],
+    'رسوم عضوية':['رسوم', 'fee', 'اشتراك سنوي', 'رسوم سنوية', 'رسم عضوية']
   };
 
   for (var category in keywords) {
     var words = keywords[category];
     for (var i = 0; i < words.length; i++) {
-      if (desc.includes(words[i])) {
-        return category;
+      if (desc.includes(words[i])) return { category: category, confidence: 'high' };
+    }
+  }
+
+  for (var category in keywords) {
+    var words = keywords[category];
+    for (var i = 0; i < words.length; i++) {
+      if (words[i].length >= 3 && desc.split(/\s+/).some(function(w) {
+        return w.length >= 3 && (w.includes(words[i].substring(0, 3)) || words[i].includes(w.substring(0, 3)));
+      })) {
+        return { category: category, confidence: 'medium' };
       }
     }
   }
 
-  return type === 'income' ? 'مبيعات' : 'أخرى';
+  return { category: type === 'income' ? 'إيرادات عامة' : 'أخرى', confidence: 'low' };
 }
 
+// ---- Analysis Engine ----
+function analyzeWithAI(rawData, descCol, amountCol, dateCol, typeCol) {
+  var transactions = [];
+  var categories = {};
+  var totalIncome = 0;
+  var totalExpense = 0;
+
+  for (var i = 0; i < rawData.length; i++) {
+    var row = rawData[i];
+    var description = String(row[descCol] || '').trim();
+    var amountStr = String(row[amountCol] || '0');
+    var dateStr = dateCol ? String(row[dateCol] || '') : '';
+    var typeStr = typeCol ? String(row[typeCol] || '') : '';
+
+    var amount = parseFloat(amountStr.replace(/[^\d.\-]/g, '')) || 0;
+    if (amount === 0) continue;
+
+    var type = 'expense';
+    var lowerType = typeStr.toLowerCase();
+    var lowerDesc = description.toLowerCase();
+    if (lowerType.includes('دخل') || lowerType.includes('إيراد') || lowerType.includes('income') ||
+        lowerType.includes('دائن') || lowerType.includes('credit') ||
+        lowerDesc.includes('اشتراك') || lowerDesc.includes('تبرع') || lowerDesc.includes('إيراد')) {
+      type = 'income';
+    }
+
+    var catResult = smartCategorize(description, type);
+
+    var date = dateStr || new Date().toISOString().split('T')[0];
+    if (date.match(/^\d{1,2}[\/\-]\d{1,2}[\/\-]\d{2,4}$/)) {
+      var parts = date.split(/[\/\-]/);
+      if (parts[2] && parts[2].length === 4) date = parts[2] + '-' + parts[1].padStart(2,'0') + '-' + parts[0].padStart(2,'0');
+    }
+
+    transactions.push({
+      id: uid(), date: date, description: description, amount: Math.abs(amount),
+      type: type, category: catResult.category, confidence: catResult.confidence
+    });
+
+    if (!categories[catResult.category]) categories[catResult.category] = {income:0, expense:0, count:0};
+    categories[catResult.category].count++;
+    if (type === 'income') { totalIncome += Math.abs(amount); categories[catResult.category].income += Math.abs(amount); }
+    else { totalExpense += Math.abs(amount); categories[catResult.category].expense += Math.abs(amount); }
+  }
+
+  aiAnalysisData = {
+    transactions: transactions, categories: categories,
+    totalIncome: totalIncome, totalExpense: totalExpense,
+    netProfit: totalIncome - totalExpense,
+    analyzedAt: new Date().toISOString(), fileName: srFileName
+  };
+}
+
+// ---- Display Results ----
 function displayAIResults() {
   document.getElementById('ai-processing').style.display = 'none';
   document.getElementById('ai-results').style.display = 'block';
+  srSetStep(4);
+  srSelectedRows.clear();
+  srRecalcStats();
+  document.getElementById('ai-insights').innerHTML = generateAIInsights(aiAnalysisData);
+  srRenderCategories(aiAnalysisData);
+  srRenderTransactionTable(aiAnalysisData.transactions);
+  srLoadSavedReports('active');
+}
 
+function srRecalcStats() {
   var data = aiAnalysisData;
+  data.totalIncome = 0; data.totalExpense = 0; data.categories = {};
+  data.transactions.forEach(function(tx) {
+    if (tx.type === 'income') data.totalIncome += tx.amount; else data.totalExpense += tx.amount;
+    if (!data.categories[tx.category]) data.categories[tx.category] = {income:0, expense:0, count:0};
+    data.categories[tx.category].count++;
+    if (tx.type === 'income') data.categories[tx.category].income += tx.amount;
+    else data.categories[tx.category].expense += tx.amount;
+  });
+  data.netProfit = data.totalIncome - data.totalExpense;
 
-  // عرض الإحصائيات
   document.getElementById('ai-total-count').textContent = data.transactions.length.toLocaleString();
   document.getElementById('ai-total-income').textContent = data.totalIncome.toLocaleString('ar-SA', {maximumFractionDigits: 0});
   document.getElementById('ai-total-expense').textContent = data.totalExpense.toLocaleString('ar-SA', {maximumFractionDigits: 0});
   document.getElementById('ai-net-profit').textContent = data.netProfit.toLocaleString('ar-SA', {maximumFractionDigits: 0});
+  document.getElementById('ai-net-profit').style.color = data.netProfit >= 0 ? 'var(--green)' : 'var(--danger)';
+  document.getElementById('sr-tx-count-label').textContent = data.transactions.length + ' معاملة';
+}
 
-  // تغيير لون صافي الربح
-  var profitEl = document.getElementById('ai-net-profit');
-  profitEl.style.color = data.netProfit >= 0 ? 'var(--green)' : 'var(--red)';
+function srRenderCategories(data) {
+  var cats = Object.entries(data.categories).sort(function(a, b) { return (b[1].income + b[1].expense) - (a[1].income + a[1].expense); });
+  var grandTotal = data.totalIncome + data.totalExpense || 1;
+  var html = '<div style="display:grid;gap:10px">';
+  cats.forEach(function(entry) {
+    var cat = entry[0], cd = entry[1], total = cd.income + cd.expense;
+    var pct = ((total / grandTotal) * 100).toFixed(1);
+    html += '<div style="padding:12px;background:var(--bg);border-radius:10px">' +
+      '<div style="display:flex;justify-content:space-between;margin-bottom:6px">' +
+      '<div style="font-weight:700;font-size:13px">' + cat + '</div>' +
+      '<div style="font-weight:700;color:var(--green)">' + total.toLocaleString('ar-SA',{maximumFractionDigits:0}) + ' ريال</div></div>' +
+      '<div class="progress-bar" style="margin-bottom:6px"><div class="progress-fill" style="width:' + Math.min((total/grandTotal)*100,100) + '%"></div></div>' +
+      '<div style="font-size:11px;color:var(--text-muted)">المعاملات: ' + cd.count + ' • النسبة: ' + pct + '%' +
+      (cd.income > 0 ? ' • إيراد: ' + cd.income.toLocaleString('ar-SA',{maximumFractionDigits:0}) : '') +
+      (cd.expense > 0 ? ' • مصروف: ' + cd.expense.toLocaleString('ar-SA',{maximumFractionDigits:0}) : '') + '</div></div>';
+  });
+  html += '</div>';
+  document.getElementById('ai-categories').innerHTML = html;
+}
 
-  // إنشاء رؤى ذكية
-  var insights = generateAIInsights(data);
-  document.getElementById('ai-insights').innerHTML = insights;
+// ---- Transaction Table (Editable) ----
+function srRenderTransactionTable(txList) {
+  var catOptions = Object.keys(aiAnalysisData.categories);
+  var bulkCatSel = document.getElementById('sr-bulk-category');
+  bulkCatSel.innerHTML = '<option value="">تغيير الفئة...</option>' + catOptions.map(function(c) { return '<option value="' + c + '">' + c + '</option>'; }).join('');
 
-  // عرض التصنيفات
-  var categoriesHTML = '<div style="display:grid;gap:12px">';
-  var sortedCategories = Object.keys(data.categories).sort(function(a, b) {
-    var totalA = data.categories[a].income + data.categories[a].expense;
-    var totalB = data.categories[b].income + data.categories[b].expense;
-    return totalB - totalA;
+  var tbody = document.getElementById('sr-transactions-tbody');
+  tbody.innerHTML = txList.map(function(tx, i) {
+    var confClass = 'confidence-' + tx.confidence;
+    var confLabel = tx.confidence === 'high' ? 'عالي' : tx.confidence === 'medium' ? 'متوسط' : 'منخفض';
+    var typeLabel = tx.type === 'income' ? 'إيراد' : 'مصروف';
+    var typeColor = tx.type === 'income' ? 'var(--green)' : 'var(--danger)';
+    return '<tr data-idx="' + i + '">' +
+      '<td><input type="checkbox" class="sr-row-check" data-idx="' + i + '" onchange="srToggleRow(' + i + ', this.checked)"></td>' +
+      '<td style="color:var(--text-muted)">' + (i + 1) + '</td>' +
+      '<td class="sr-editable" onclick="srInlineEdit(this,' + i + ',\'date\')">' + tx.date + '</td>' +
+      '<td class="sr-editable" onclick="srInlineEdit(this,' + i + ',\'description\')" style="max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="' + (tx.description||'').replace(/"/g,'&quot;') + '">' + tx.description + '</td>' +
+      '<td class="sr-editable" onclick="srInlineEdit(this,' + i + ',\'amount\')" style="font-weight:700">' + tx.amount.toLocaleString('ar-SA',{maximumFractionDigits:2}) + '</td>' +
+      '<td class="sr-editable" onclick="srInlineEditType(this,' + i + ')" style="color:' + typeColor + ';font-weight:600">' + typeLabel + '</td>' +
+      '<td class="sr-editable" onclick="srInlineEditCategory(this,' + i + ')">' + tx.category + '</td>' +
+      '<td><span class="' + confClass + '">' + confLabel + '</span></td></tr>';
+  }).join('');
+}
+
+// ---- Inline Editing ----
+function srInlineEdit(td, idx, field) {
+  if (td.querySelector('input')) return;
+  var tx = aiAnalysisData.transactions[idx];
+  var oldVal = field === 'amount' ? tx.amount.toLocaleString('ar-SA',{maximumFractionDigits:2}) : tx[field];
+  var input = document.createElement('input');
+  input.className = 'sr-edit-input';
+  input.value = field === 'amount' ? tx.amount : tx[field];
+  if (field === 'amount') input.type = 'number';
+  td.textContent = '';
+  td.appendChild(input);
+  input.focus();
+  input.select();
+  function save() {
+    var newVal = input.value.trim();
+    if (field === 'amount') {
+      var num = parseFloat(newVal);
+      if (isNaN(num) || num <= 0) { td.textContent = oldVal; return; }
+      tx.amount = num;
+      td.textContent = num.toLocaleString('ar-SA',{maximumFractionDigits:2});
+    } else {
+      if (!newVal) { td.textContent = tx[field]; return; }
+      tx[field] = newVal;
+      td.textContent = newVal;
+    }
+    srRecalcStats();
+    srRenderCategories(aiAnalysisData);
+  }
+  input.onblur = save;
+  input.onkeydown = function(e) { if (e.key === 'Enter') input.blur(); if (e.key === 'Escape') { td.textContent = tx[field]; } };
+}
+
+function srInlineEditType(td, idx) {
+  if (td.querySelector('select')) return;
+  var tx = aiAnalysisData.transactions[idx];
+  var sel = document.createElement('select');
+  sel.className = 'sr-edit-select';
+  sel.innerHTML = '<option value="income"' + (tx.type==='income'?' selected':'') + '>إيراد</option><option value="expense"' + (tx.type==='expense'?' selected':'') + '>مصروف</option>';
+  td.textContent = '';
+  td.appendChild(sel);
+  sel.focus();
+  function save() {
+    tx.type = sel.value;
+    td.textContent = tx.type === 'income' ? 'إيراد' : 'مصروف';
+    td.style.color = tx.type === 'income' ? 'var(--green)' : 'var(--danger)';
+    srRecalcStats(); srRenderCategories(aiAnalysisData);
+  }
+  sel.onblur = save;
+  sel.onchange = function() { sel.blur(); };
+}
+
+function srInlineEditCategory(td, idx) {
+  if (td.querySelector('select')) return;
+  var tx = aiAnalysisData.transactions[idx];
+  var cats = Object.keys(aiAnalysisData.categories);
+  var sel = document.createElement('select');
+  sel.className = 'sr-edit-select';
+  sel.innerHTML = cats.map(function(c) { return '<option value="' + c + '"' + (c === tx.category ? ' selected' : '') + '>' + c + '</option>'; }).join('') +
+    '<option value="__custom__">+ فئة جديدة...</option>';
+  td.textContent = '';
+  td.appendChild(sel);
+  sel.focus();
+  function save() {
+    if (sel.value === '__custom__') {
+      var newCat = prompt('اسم الفئة الجديدة:');
+      if (!newCat) { td.textContent = tx.category; return; }
+      tx.category = newCat;
+    } else { tx.category = sel.value; }
+    td.textContent = tx.category;
+    tx.confidence = 'high';
+    srRecalcStats(); srRenderCategories(aiAnalysisData); srRenderTransactionTable(aiAnalysisData.transactions);
+  }
+  sel.onblur = save;
+  sel.onchange = function() { sel.blur(); };
+}
+
+// ---- Row Selection & Bulk Actions ----
+function srToggleRow(idx, checked) {
+  if (checked) srSelectedRows.add(idx); else srSelectedRows.delete(idx);
+  var tr = document.querySelector('#sr-transactions-tbody tr[data-idx="' + idx + '"]');
+  if (tr) tr.classList.toggle('selected', checked);
+  srUpdateBulkToolbar();
+}
+
+function srToggleSelectAll(checked) {
+  srSelectedRows.clear();
+  document.querySelectorAll('.sr-row-check').forEach(function(cb) {
+    cb.checked = checked;
+    var idx = parseInt(cb.dataset.idx);
+    if (checked) srSelectedRows.add(idx);
+    var tr = cb.closest('tr');
+    if (tr) tr.classList.toggle('selected', checked);
+  });
+  srUpdateBulkToolbar();
+}
+
+function srUpdateBulkToolbar() {
+  var toolbar = document.getElementById('sr-bulk-toolbar');
+  toolbar.style.display = srSelectedRows.size > 0 ? 'flex' : 'none';
+  document.getElementById('sr-selected-count').textContent = srSelectedRows.size + ' محدد';
+}
+
+function srApplyBulkEdit() {
+  var newCat = document.getElementById('sr-bulk-category').value;
+  var newType = document.getElementById('sr-bulk-type').value;
+  if (!newCat && !newType) { showToast('اختر فئة أو نوع للتطبيق', 'error'); return; }
+  srSelectedRows.forEach(function(idx) {
+    var tx = aiAnalysisData.transactions[idx];
+    if (newCat) { tx.category = newCat; tx.confidence = 'high'; }
+    if (newType) tx.type = newType;
+  });
+  showToast('تم تحديث ' + srSelectedRows.size + ' معاملة', 'success');
+  srSelectedRows.clear();
+  document.getElementById('sr-select-all').checked = false;
+  srRecalcStats(); srRenderCategories(aiAnalysisData); srRenderTransactionTable(aiAnalysisData.transactions);
+}
+
+function srDeleteSelected() {
+  if (srSelectedRows.size === 0) return;
+  if (!confirm('حذف ' + srSelectedRows.size + ' معاملة؟')) return;
+  var indices = Array.from(srSelectedRows).sort(function(a, b) { return b - a; });
+  indices.forEach(function(idx) { aiAnalysisData.transactions.splice(idx, 1); });
+  showToast('تم حذف ' + indices.length + ' معاملة', 'success');
+  srSelectedRows.clear();
+  document.getElementById('sr-select-all').checked = false;
+  srRecalcStats(); srRenderCategories(aiAnalysisData); srRenderTransactionTable(aiAnalysisData.transactions);
+}
+
+// ---- Confidence Filter ----
+function srFilterByConfidence(level) {
+  if (!aiAnalysisData) return;
+  var filtered = level === 'all' ? aiAnalysisData.transactions :
+    aiAnalysisData.transactions.filter(function(tx) { return tx.confidence === level; });
+  srRenderTransactionTable(filtered);
+}
+
+// ---- Insights ----
+function generateAIInsights(data) {
+  var html = '<div style="background:#f0f9ff;border-right:4px solid #3b82f6;padding:16px;border-radius:8px;margin-bottom:16px">';
+  html += '<div style="font-weight:700;color:#1e40af;margin-bottom:8px">📊 الملخص التنفيذي</div>';
+  html += '<div style="font-size:14px;color:#1e3a8a;line-height:1.8">';
+  html += 'تم تحليل <strong>' + data.transactions.length + '</strong> معاملة مالية ';
+  html += 'بإجمالي إيرادات <strong>' + data.totalIncome.toLocaleString('ar-SA',{maximumFractionDigits:0}) + '</strong> ريال ';
+  html += 'ومصروفات <strong>' + data.totalExpense.toLocaleString('ar-SA',{maximumFractionDigits:0}) + '</strong> ريال، ';
+  if (data.netProfit >= 0)
+    html += 'بصافي ربح قدره <strong style="color:var(--green)">' + data.netProfit.toLocaleString('ar-SA',{maximumFractionDigits:0}) + '</strong> ريال.';
+  else
+    html += 'بعجز قدره <strong style="color:var(--danger)">' + Math.abs(data.netProfit).toLocaleString('ar-SA',{maximumFractionDigits:0}) + '</strong> ريال.';
+  html += '</div></div>';
+
+  var highCount = data.transactions.filter(function(t){return t.confidence==='high';}).length;
+  var medCount = data.transactions.filter(function(t){return t.confidence==='medium';}).length;
+  var lowCount = data.transactions.filter(function(t){return t.confidence==='low';}).length;
+  html += '<div style="background:#faf5ff;border-right:4px solid #a855f7;padding:16px;border-radius:8px;margin-bottom:16px">';
+  html += '<div style="font-weight:700;color:#7e22ce;margin-bottom:8px">🎯 دقة التصنيف</div>';
+  html += '<div style="font-size:13px;color:#581c87;display:flex;gap:16px;flex-wrap:wrap">';
+  html += '<span class="confidence-high">عالي: ' + highCount + '</span>';
+  html += '<span class="confidence-medium">متوسط: ' + medCount + '</span>';
+  html += '<span class="confidence-low">منخفض: ' + lowCount + '</span></div></div>';
+
+  var largestExp = null, largestAmt = 0;
+  for (var cat in data.categories) {
+    if (data.categories[cat].expense > largestAmt) { largestAmt = data.categories[cat].expense; largestExp = cat; }
+  }
+  if (largestExp && data.totalExpense > 0) {
+    html += '<div style="background:#fef3c7;border-right:4px solid #f59e0b;padding:16px;border-radius:8px;margin-bottom:16px">';
+    html += '<div style="font-weight:700;color:#92400e;margin-bottom:8px">💡 ملاحظة</div>';
+    html += '<div style="font-size:14px;color:#78350f">أكبر بند مصروفات: <strong>' + largestExp + '</strong> بقيمة <strong>' +
+      largestAmt.toLocaleString('ar-SA',{maximumFractionDigits:0}) + '</strong> ريال (' +
+      ((largestAmt / data.totalExpense) * 100).toFixed(1) + '% من المصروفات)</div></div>';
+  }
+
+  html += '<div style="background:#dcfce7;border-right:4px solid #22c55e;padding:16px;border-radius:8px">';
+  html += '<div style="font-weight:700;color:#166534;margin-bottom:8px">✅ توصية</div>';
+  html += '<div style="font-size:14px;color:#14532d">';
+  if (lowCount > 0) html += 'يوجد ' + lowCount + ' معاملة بثقة منخفضة — راجعها وعدّل تصنيفها من الجدول أدناه. ';
+  html += 'بعد المراجعة، يمكنك حفظ التقرير أو مزامنة البيانات مع النظام.</div></div>';
+  return html;
+}
+
+// ---- Sync to DB via API ----
+function syncAIDataToDB() {
+  if (!aiAnalysisData || !aiAnalysisData.transactions.length) { showToast('لا توجد بيانات للمزامنة', 'error'); return; }
+  if (!confirm('هل تريد مزامنة ' + aiAnalysisData.transactions.length + ' معاملة مع قاعدة البيانات؟')) return;
+  srSetStep(5);
+
+  var payload = aiAnalysisData.transactions.map(function(tx) {
+    return {
+      type: tx.type === 'income' ? 'إيراد' : 'مصروف',
+      amount: tx.amount, category: tx.category, description: tx.description,
+      tx_date: tx.date, committee_id: '', member_id: '', period_id: ''
+    };
   });
 
-  for (var i = 0; i < sortedCategories.length; i++) {
-    var cat = sortedCategories[i];
-    var catData = data.categories[cat];
-    var total = catData.income + catData.expense;
-    var percentage = ((total / (data.totalIncome + data.totalExpense)) * 100).toFixed(1);
-
-    categoriesHTML += '<div style="padding:12px;background:#f8f9fa;border-radius:8px">';
-    categoriesHTML += '<div style="display:flex;justify-content:space-between;margin-bottom:8px">';
-    categoriesHTML += '<div style="font-weight:700">' + cat + '</div>';
-    categoriesHTML += '<div style="color:var(--green)">' + total.toLocaleString('ar-SA', {maximumFractionDigits: 0}) + ' ريال</div>';
-    categoriesHTML += '</div>';
-    categoriesHTML += '<div style="font-size:12px;color:var(--text-muted)">عدد المعاملات: ' + catData.count + ' • نسبة: ' + percentage + '%</div>';
-    categoriesHTML += '</div>';
-  }
-  categoriesHTML += '</div>';
-
-  document.getElementById('ai-categories').innerHTML = categoriesHTML;
+  apiFetch('/api/transactions.php?bulk=1', {
+    method: 'POST',
+    body: JSON.stringify({ transactions: payload })
+  }).then(function(res) {
+    var msg = '✅ تمت إضافة: ' + res.inserted + ' معاملة';
+    if (res.duplicates_skipped > 0) msg += ' • ⚠️ تم تجاهل: ' + res.duplicates_skipped + ' مكررة';
+    showToast(msg, 'success');
+    if (res.data && res.data.length) { res.data.forEach(function(row) { State.getBudget().push(row); }); }
+    renderDashboard();
+  }).catch(function(err) { showToast('خطأ في المزامنة: ' + err.message, 'error'); });
 }
 
-function generateAIInsights(data) {
-  var insights = '<div style="background:#f0f9ff;border-right:4px solid #3b82f6;padding:16px;border-radius:8px;margin-bottom:16px">';
-  insights += '<div style="font-weight:700;color:#1e40af;margin-bottom:8px">📊 الملخص التنفيذي</div>';
-  insights += '<div style="font-size:14px;color:#1e3a8a;line-height:1.8">';
-  
-  insights += 'تم تحليل <strong>' + data.transactions.length + '</strong> معاملة مالية ';
-  insights += 'بإجمالي إيرادات <strong>' + data.totalIncome.toLocaleString('ar-SA', {maximumFractionDigits: 0}) + '</strong> ريال ';
-  insights += 'ومصروفات <strong>' + data.totalExpense.toLocaleString('ar-SA', {maximumFractionDigits: 0}) + '</strong> ريال، ';
-  
-  if (data.netProfit >= 0) {
-    insights += 'بصافي ربح قدره <strong style="color:var(--green)">' + data.netProfit.toLocaleString('ar-SA', {maximumFractionDigits: 0}) + '</strong> ريال.';
-  } else {
-    insights += 'بعجز قدره <strong style="color:var(--red)">' + Math.abs(data.netProfit).toLocaleString('ar-SA', {maximumFractionDigits: 0}) + '</strong> ريال.';
-  }
-  
-  insights += '</div></div>';
-
-  // أكبر فئة مصروفات
-  var largestExpense = null;
-  var largestAmount = 0;
-  for (var cat in data.categories) {
-    if (data.categories[cat].expense > largestAmount) {
-      largestAmount = data.categories[cat].expense;
-      largestExpense = cat;
-    }
-  }
-
-  if (largestExpense) {
-    insights += '<div style="background:#fef3c7;border-right:4px solid #f59e0b;padding:16px;border-radius:8px;margin-bottom:16px">';
-    insights += '<div style="font-weight:700;color:#92400e;margin-bottom:8px">💡 ملاحظة مهمة</div>';
-    insights += '<div style="font-size:14px;color:#78350f">أكبر بند مصروفات هو <strong>' + largestExpense + '</strong> ';
-    insights += 'بقيمة <strong>' + largestAmount.toLocaleString('ar-SA', {maximumFractionDigits: 0}) + '</strong> ريال ';
-    insights += '(' + ((largestAmount / data.totalExpense) * 100).toFixed(1) + '% من إجمالي المصروفات).</div>';
-    insights += '</div>';
-  }
-
-  // توصية
-  insights += '<div style="background:#dcfce7;border-right:4px solid #22c55e;padding:16px;border-radius:8px">';
-  insights += '<div style="font-weight:700;color:#166534;margin-bottom:8px">✅ توصية</div>';
-  insights += '<div style="font-size:14px;color:#14532d">';
-  insights += 'تم تصنيف المعاملات تلقائياً بنسبة ثقة عالية. ';
-  insights += 'يمكنك مراجعة التصنيفات أدناه ثم مزامنة البيانات مع النظام مباشرة.';
-  insights += '</div></div>';
-
-  return insights;
-}
-
-function syncAIDataToDB() {
-  if (!aiAnalysisData) {
-    alert('لا توجد بيانات للمزامنة');
-    return;
-  }
-
-  if (!confirm('هل تريد مزامنة ' + aiAnalysisData.transactions.length + ' معاملة مع قاعدة البيانات؟')) {
-    return;
-  }
-
-  var synced = 0;
-  var duplicates = 0;
-
-  // إضافة المعاملات إلى قاعدة البيانات
-  for (var i = 0; i < aiAnalysisData.transactions.length; i++) {
-    var tx = aiAnalysisData.transactions[i];
-    
-    // التحقق من التكرار (بسيط)
-    var isDuplicate = false;
-    for (var j = 0; j < State.getBudget().length; j++) {
-      var existing = State.getBudget()[j];
-      if (existing.description === tx.description && 
-          Math.abs(existing.amount - tx.amount) < 0.01 &&
-          existing.date === tx.date) {
-        isDuplicate = true;
-        duplicates++;
-        break;
-      }
-    }
-
-    if (!isDuplicate) {
-      State.getBudget().push({
-        id: uid(),
-        type: tx.type,
-        category: tx.category,
-        amount: tx.amount,
-        description: tx.description,
-        date: tx.date,
-        createdAt: new Date().toISOString()
-      });
-      synced++;
-    }
-  }
-
-  saveDB();
-  
-  var message = 'تمت المزامنة بنجاح!\n\n';
-  message += '✅ تمت إضافة: ' + synced + ' معاملة\n';
-  if (duplicates > 0) {
-    message += '⚠️ تم تجاهل: ' + duplicates + ' معاملة مكررة';
-  }
-  
-  alert(message);
-  
-  // تحديث لوحة التحكم
-  renderDashboard();
-}
-
+// ---- Download CSV ----
 function downloadAIReport() {
-  if (!aiAnalysisData) {
-    alert('لا توجد بيانات لتحميلها');
-    return;
-  }
-
-  // إنشاء CSV
-  var csv = 'التاريخ,الوصف,المبلغ,النوع,الفئة\n';
-  for (var i = 0; i < aiAnalysisData.transactions.length; i++) {
-    var tx = aiAnalysisData.transactions[i];
-    csv += '"' + tx.date + '","' + tx.description + '",' + tx.amount + ',"' + tx.type + '","' + tx.category + '"\n';
-  }
-
-  // تحميل
+  if (!aiAnalysisData) { showToast('لا توجد بيانات', 'error'); return; }
+  var csv = 'التاريخ,الوصف,المبلغ,النوع,الفئة,الثقة\n';
+  aiAnalysisData.transactions.forEach(function(tx) {
+    var typeAr = tx.type === 'income' ? 'إيراد' : 'مصروف';
+    var confAr = tx.confidence === 'high' ? 'عالي' : tx.confidence === 'medium' ? 'متوسط' : 'منخفض';
+    csv += '"' + tx.date + '","' + (tx.description||'').replace(/"/g,'""') + '",' + tx.amount + ',"' + typeAr + '","' + tx.category + '","' + confAr + '"\n';
+  });
   var blob = new Blob(['\uFEFF' + csv], {type: 'text/csv;charset=utf-8;'});
   var link = document.createElement('a');
   link.href = URL.createObjectURL(blob);
-  link.download = 'ai-report-' + Date.now() + '.csv';
+  link.download = 'smart-report-' + new Date().toISOString().split('T')[0] + '.csv';
   link.click();
+  showToast('تم تحميل التقرير بنجاح', 'success');
 }
 
+// ---- Reset ----
 function resetAIAnalysis() {
-  aiAnalysisData = null;
-  document.getElementById('upload-area').style.display = 'block';
+  aiAnalysisData = null; srWorkbook = null; srRawData = null; srFileName = ''; srSelectedRows.clear();
+  document.getElementById('sr-upload-card').style.display = 'block';
+  document.getElementById('sr-preview-card').style.display = 'none';
   document.getElementById('ai-processing').style.display = 'none';
   document.getElementById('ai-results').style.display = 'none';
   document.getElementById('file-input-ai').value = '';
   document.getElementById('ai-progress-bar').style.width = '0%';
+  document.getElementById('ai-progress-pct').textContent = '0%';
+  document.getElementById('upload-file-info').style.display = 'none';
+  document.getElementById('sr-cleaning-info').style.display = 'none';
+  srSetStep(1);
+}
+
+// ---- Save Report ----
+function srSaveReport() {
+  if (!aiAnalysisData) { showToast('لا توجد بيانات للحفظ', 'error'); return; }
+  var title = prompt('عنوان التقرير:', 'تقرير ' + new Date().toLocaleDateString('ar-SA'));
+  if (!title) return;
+  var desc = prompt('وصف مختصر (اختياري):', '');
+  srSetStep(5);
+
+  apiFetch('/api/reports.php', {
+    method: 'POST',
+    body: JSON.stringify({
+      title: title, description: desc || '', report_type: 'smart_analysis',
+      report_data: { transactions: aiAnalysisData.transactions, categories: aiAnalysisData.categories, analyzedAt: aiAnalysisData.analyzedAt },
+      summary: { totalIncome: aiAnalysisData.totalIncome, totalExpense: aiAnalysisData.totalExpense, netProfit: aiAnalysisData.netProfit },
+      file_name: srFileName, total_transactions: aiAnalysisData.transactions.length,
+      total_income: aiAnalysisData.totalIncome, total_expense: aiAnalysisData.totalExpense, net_profit: aiAnalysisData.netProfit
+    })
+  }).then(function() {
+    showToast('تم حفظ التقرير: ' + title, 'success');
+    srLoadSavedReports('active');
+  }).catch(function(err) { showToast('خطأ في حفظ التقرير: ' + err.message, 'error'); });
+}
+
+// ---- Saved Reports List ----
+function srLoadSavedReports(status, tabEl) {
+  if (tabEl) {
+    tabEl.parentElement.querySelectorAll('.tab').forEach(function(t) { t.classList.remove('active'); });
+    tabEl.classList.add('active');
+  }
+  apiFetch('/api/reports.php?status=' + (status || 'active')).then(function(res) {
+    var list = res.data || [];
+    var container = document.getElementById('sr-saved-list');
+    if (!list.length) {
+      container.innerHTML = '<div class="empty-state"><div class="empty-icon">📋</div><p>' +
+        (status === 'archived' ? 'لا توجد تقارير مؤرشفة.' : 'لا توجد تقارير محفوظة بعد.') + '</p></div>';
+      return;
+    }
+    container.innerHTML = list.map(function(r) {
+      var dateStr = new Date(r.created_at).toLocaleDateString('ar-SA');
+      var isArchived = r.status === 'archived';
+      return '<div class="sr-saved-item">' +
+        '<div class="sr-saved-icon">📊</div>' +
+        '<div class="sr-saved-info"><div class="sr-saved-title">' + r.title + '</div>' +
+        '<div class="sr-saved-meta"><span>📅 ' + dateStr + '</span><span>📋 ' + r.total_transactions + ' معاملة</span>' +
+        '<span style="color:var(--green)">💰 ' + parseFloat(r.total_income).toLocaleString('ar-SA',{maximumFractionDigits:0}) + '</span>' +
+        '<span style="color:var(--danger)">💸 ' + parseFloat(r.total_expense).toLocaleString('ar-SA',{maximumFractionDigits:0}) + '</span>' +
+        (r.file_name ? '<span>📄 ' + r.file_name + '</span>' : '') + '</div></div>' +
+        '<div class="sr-saved-actions">' +
+        '<button class="btn btn-xs btn-primary" onclick="srViewReport(\'' + r.id + '\')">👁 عرض</button>' +
+        (isArchived ? '<button class="btn btn-xs btn-success" onclick="srRestoreReport(\'' + r.id + '\')">♻️ استعادة</button>' :
+          '<button class="btn btn-xs btn-outline" onclick="srArchiveReport(\'' + r.id + '\')">🗄️ أرشفة</button>') +
+        '<button class="btn btn-xs btn-danger" onclick="srDeleteReport(\'' + r.id + '\')">🗑️</button></div></div>';
+    }).join('');
+  }).catch(function() {
+    document.getElementById('sr-saved-list').innerHTML = '<div class="empty-state"><p style="color:var(--danger)">خطأ في تحميل التقارير</p></div>';
+  });
+}
+
+function srViewReport(id) {
+  apiFetch('/api/reports.php?id=' + id).then(function(res) {
+    var r = res.data;
+    if (!r || !r.report_data) { showToast('بيانات التقرير غير متوفرة', 'error'); return; }
+    aiAnalysisData = {
+      transactions: r.report_data.transactions || [], categories: r.report_data.categories || {},
+      totalIncome: parseFloat(r.total_income) || 0, totalExpense: parseFloat(r.total_expense) || 0,
+      netProfit: parseFloat(r.net_profit) || 0,
+      analyzedAt: r.report_data.analyzedAt || r.created_at, fileName: r.file_name || ''
+    };
+    srFileName = r.file_name || '';
+    displayAIResults();
+    showToast('تم تحميل التقرير: ' + r.title, 'success');
+  }).catch(function(err) { showToast('خطأ: ' + err.message, 'error'); });
+}
+
+function srArchiveReport(id) {
+  if (!confirm('أرشفة هذا التقرير؟')) return;
+  apiFetch('/api/reports.php?id=' + id + '&archive=1', { method: 'PUT', body: JSON.stringify({ status: 'archived' }) })
+    .then(function() { showToast('تم الأرشفة', 'success'); srLoadSavedReports('active'); })
+    .catch(function(err) { showToast('خطأ: ' + err.message, 'error'); });
+}
+
+function srRestoreReport(id) {
+  apiFetch('/api/reports.php?id=' + id + '&archive=1', { method: 'PUT', body: JSON.stringify({ status: 'active' }) })
+    .then(function() { showToast('تم الاستعادة', 'success'); srLoadSavedReports('archived'); })
+    .catch(function(err) { showToast('خطأ: ' + err.message, 'error'); });
+}
+
+function srDeleteReport(id) {
+  if (!confirm('حذف هذا التقرير نهائياً؟')) return;
+  apiFetch('/api/reports.php?id=' + id, { method: 'DELETE' })
+    .then(function() { showToast('تم الحذف', 'success'); srLoadSavedReports('active'); })
+    .catch(function(err) { showToast('خطأ: ' + err.message, 'error'); });
+}
+
+// ---- Smart Print ----
+function srPrintReport() {
+  if (!aiAnalysisData) { showToast('لا توجد بيانات للطباعة', 'error'); return; }
+  var data = aiAnalysisData;
+  var win = window.open('', '_blank');
+  var cats = Object.entries(data.categories).sort(function(a,b) { return (b[1].income+b[1].expense)-(a[1].income+a[1].expense); });
+  var grandTotal = data.totalIncome + data.totalExpense || 1;
+
+  var catRows = cats.map(function(entry) {
+    var c = entry[0], d = entry[1], t = d.income + d.expense;
+    return '<tr><td>' + c + '</td><td>' + d.count + '</td><td>' + d.income.toLocaleString('ar-SA',{maximumFractionDigits:0}) +
+      '</td><td>' + d.expense.toLocaleString('ar-SA',{maximumFractionDigits:0}) + '</td><td>' + t.toLocaleString('ar-SA',{maximumFractionDigits:0}) +
+      '</td><td>' + ((t/grandTotal)*100).toFixed(1) + '%</td></tr>';
+  }).join('');
+
+  var txRows = data.transactions.map(function(tx, i) {
+    return '<tr><td>' + (i+1) + '</td><td>' + tx.date + '</td><td>' + tx.description + '</td><td>' +
+      tx.amount.toLocaleString('ar-SA',{maximumFractionDigits:2}) + '</td><td>' + (tx.type==='income'?'إيراد':'مصروف') + '</td><td>' + tx.category + '</td></tr>';
+  }).join('');
+
+  var html = '<!DOCTYPE html><html lang="ar" dir="rtl"><head><meta charset="UTF-8"><title>التقرير المالي الذكي</title>';
+  html += '<style>*{margin:0;padding:0;box-sizing:border-box}body{font-family:Cairo,Tahoma,sans-serif;direction:rtl;padding:30px;color:#1a1a1a;font-size:13px;line-height:1.6}';
+  html += '.header{text-align:center;margin-bottom:30px;padding-bottom:16px;border-bottom:3px double #1a5c32}';
+  html += '.header h1{font-size:22px;color:#1a5c32;margin-bottom:4px}.header .sub{font-size:14px;color:#666}.header .date{font-size:12px;color:#999}';
+  html += '.stats{display:flex;justify-content:space-around;margin:20px 0;gap:16px}';
+  html += '.stat-box{flex:1;text-align:center;padding:16px;border:1px solid #ddd;border-radius:10px}';
+  html += '.stat-box .val{font-size:20px;font-weight:900;margin:4px 0}.stat-box .lbl{font-size:11px;color:#777}';
+  html += 'table{width:100%;border-collapse:collapse;margin:16px 0}th{background:#f0f5f1;padding:8px 10px;font-size:11px;text-align:right;border-bottom:2px solid #ddd}';
+  html += 'td{padding:7px 10px;border-bottom:1px solid #eee;font-size:12px}tr:nth-child(even){background:#fafafa}';
+  html += 'h2{font-size:15px;color:#1a5c32;margin:24px 0 10px;padding-bottom:6px;border-bottom:1px solid #eee}';
+  html += '.footer{text-align:center;margin-top:30px;padding-top:12px;border-top:2px solid #eee;font-size:11px;color:#999}';
+  html += '.net-pos{color:#166534}.net-neg{color:#991b1b}';
+  html += '@media print{@page{size:A4;margin:15mm}body{padding:0}}</style></head><body>';
+
+  html += '<div class="header"><h1>🏛️ مجلس عائلة العوامي</h1><div class="sub">التقرير المالي الذكي</div>';
+  html += '<div class="date">' + new Date().toLocaleDateString('ar-SA',{year:'numeric',month:'long',day:'numeric'}) + '</div>';
+  if (srFileName) html += '<div class="date">الملف: ' + srFileName + '</div>';
+  html += '</div>';
+
+  html += '<div class="stats">';
+  html += '<div class="stat-box"><div class="lbl">المعاملات</div><div class="val">' + data.transactions.length + '</div></div>';
+  html += '<div class="stat-box"><div class="lbl">الإيرادات</div><div class="val" style="color:#166534">' + data.totalIncome.toLocaleString('ar-SA',{maximumFractionDigits:0}) + '</div><div class="lbl">ريال</div></div>';
+  html += '<div class="stat-box"><div class="lbl">المصروفات</div><div class="val" style="color:#991b1b">' + data.totalExpense.toLocaleString('ar-SA',{maximumFractionDigits:0}) + '</div><div class="lbl">ريال</div></div>';
+  html += '<div class="stat-box"><div class="lbl">الصافي</div><div class="val ' + (data.netProfit>=0?'net-pos':'net-neg') + '">' + data.netProfit.toLocaleString('ar-SA',{maximumFractionDigits:0}) + '</div><div class="lbl">ريال</div></div>';
+  html += '</div>';
+
+  html += '<h2>🏷️ توزيع حسب الفئة</h2>';
+  html += '<table><thead><tr><th>الفئة</th><th>العدد</th><th>إيراد</th><th>مصروف</th><th>الإجمالي</th><th>النسبة</th></tr></thead><tbody>' + catRows + '</tbody></table>';
+
+  html += '<h2>📋 تفاصيل المعاملات</h2>';
+  html += '<table><thead><tr><th>#</th><th>التاريخ</th><th>الوصف</th><th>المبلغ</th><th>النوع</th><th>الفئة</th></tr></thead><tbody>' + txRows + '</tbody></table>';
+
+  html += '<div class="footer">تم إنشاء هذا التقرير بواسطة نظام مجلس عائلة العوامي — ' + new Date().toLocaleDateString('ar-SA') + '</div>';
+  html += '</body></html>';
+
+  win.document.write(html);
+  win.document.close();
+  setTimeout(function() { win.print(); }, 600);
 }
 
 // =====================================================

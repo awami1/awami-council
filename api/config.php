@@ -14,9 +14,7 @@ set_exception_handler(function (\Throwable $e): void {
     if (!headers_sent()) {
         http_response_code(500);
         header('Content-Type: application/json; charset=utf-8');
-        header('Access-Control-Allow-Origin: *');
-        header('Access-Control-Allow-Methods: GET, POST, PUT, DELETE, OPTIONS');
-        header('Access-Control-Allow-Headers: Content-Type');
+        setCorsHeaders();
     }
     echo json_encode(
         ['error' => 'حدث خطأ داخلي في الخادم.'],
@@ -24,6 +22,22 @@ set_exception_handler(function (\Throwable $e): void {
     );
     exit;
 });
+
+// ---- CORS helper (restrict to same-origin) ----
+function setCorsHeaders(): void
+{
+    $origin = $_SERVER['HTTP_ORIGIN'] ?? '';
+    if ($origin) {
+        $host   = $_SERVER['HTTP_HOST'] ?? '';
+        $scheme = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') ? 'https' : 'http';
+        $allowed = $scheme . '://' . $host;
+        if ($origin === $allowed) {
+            header('Access-Control-Allow-Origin: ' . $origin);
+            header('Access-Control-Allow-Methods: GET, POST, PUT, DELETE, OPTIONS');
+            header('Access-Control-Allow-Headers: Content-Type, X-CSRF-Token');
+        }
+    }
+}
 
 // Load .env file if it exists (PHP doesn't read .env automatically)
 (function () {
@@ -49,23 +63,7 @@ function getPDO(): PDO
     static $pdo = null;
     if ($pdo !== null) return $pdo;
 
-    // تحميل ملف .env إن وُجد (يدعم MySQL في الإنتاج)
-    $envFile = dirname(__DIR__) . '/.env';
-    if (file_exists($envFile)) {
-        $lines = file($envFile, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
-        foreach ($lines as $line) {
-            $line = trim($line);
-            if ($line === '' || $line[0] === '#' || strpos($line, '=') === false) continue;
-            [$k, $v] = explode('=', $line, 2);
-            $k = trim($k);
-            $v = trim($v);
-            if ($k !== '' && !getenv($k)) {
-                putenv("$k=$v");
-                $_ENV[$k] = $v;
-            }
-        }
-    }
-
+    // .env already loaded by the closure above
     $host = getenv('DB_HOST') ?: ($_ENV['DB_HOST'] ?? '');
     $name = getenv('DB_NAME') ?: ($_ENV['DB_NAME'] ?? '');
     $user = getenv('DB_USER') ?: ($_ENV['DB_USER'] ?? '');
@@ -121,24 +119,23 @@ function isSQLite(): bool
 header('X-Content-Type-Options: nosniff');
 header('X-Frame-Options: DENY');
 header('Referrer-Policy: strict-origin-when-cross-origin');
+if (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') {
+    header('Strict-Transport-Security: max-age=31536000; includeSubDomains');
+}
 
 // ---- JSON response ----
 function respond(int $code, array $body): never
 {
     http_response_code($code);
     header('Content-Type: application/json; charset=utf-8');
-    header('Access-Control-Allow-Origin: *');
-    header('Access-Control-Allow-Methods: GET, POST, PUT, DELETE, OPTIONS');
-    header('Access-Control-Allow-Headers: Content-Type');
+    setCorsHeaders();
     echo json_encode($body, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
     exit;
 }
 
 // ---- Handle CORS preflight ----
 if (($_SERVER['REQUEST_METHOD'] ?? '') === 'OPTIONS') {
-    header('Access-Control-Allow-Origin: *');
-    header('Access-Control-Allow-Methods: GET, POST, PUT, DELETE, OPTIONS');
-    header('Access-Control-Allow-Headers: Content-Type');
+    setCorsHeaders();
     http_response_code(204);
     exit;
 }

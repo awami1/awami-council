@@ -16,12 +16,14 @@ var COLORS = {
   highlight:  '#f59e0b',
   link:       '#c8d6c0',
 };
-var NODE_W      = 160;
-var NODE_H      = 58;
+// Adaptive sizing for mobile
+var _isMobile = window.innerWidth < 600;
+var NODE_W      = _isMobile ? 120 : 160;
+var NODE_H      = _isMobile ? 48  : 58;
 var NODE_RX     = 12;
 var DURATION    = 500;
-var DEPTH_GAP   = 120;
-var SIBLING_GAP = 14;
+var DEPTH_GAP   = _isMobile ? 90 : 120;
+var SIBLING_GAP = _isMobile ? 8  : 14;
 var INITIAL_DEPTH = 2;     // أول مستويين مفتوحين
 
 /* ════════════════════════════════════════════
@@ -168,7 +170,16 @@ function update(source) {
       update(d);
     })
     .on('mouseenter', function (e, d) { showTooltip(e, d); })
-    .on('mouseleave', hideTooltip);
+    .on('mouseleave', hideTooltip)
+    .on('touchstart', function (e, d) {
+      // Touch: toggle tooltip on tap (don't interfere with click for expand)
+      if (tooltipEl && tooltipEl.style.display === 'block') {
+        hideTooltip();
+      } else {
+        var touch = e.touches[0];
+        showTooltip({ clientX: touch.clientX, clientY: touch.clientY }, d);
+      }
+    }, { passive: true });
 
   // خلفية العقدة
   nodeEnter.append('rect')
@@ -484,7 +495,22 @@ function clearHighlight() {
    أزرار التحكم العامة
    ════════════════════════════════════════════ */
 window.treeResetZoom = function () {
-  var t = d3.zoomIdentity.translate(width / 2, 40).scale(0.85);
+  // Fit all visible nodes to screen
+  var nodes = root.descendants();
+  if (!nodes.length) return;
+  var xMin = Infinity, xMax = -Infinity, yMin = Infinity, yMax = -Infinity;
+  nodes.forEach(function (d) {
+    if (d.x < xMin) xMin = d.x;
+    if (d.x > xMax) xMax = d.x;
+    if (d.y < yMin) yMin = d.y;
+    if (d.y > yMax) yMax = d.y;
+  });
+  var tw = (xMax - xMin) + NODE_W * 2;
+  var th = (yMax - yMin) + NODE_H * 2;
+  var scale = Math.min(width / tw, height / th, 1.2) * 0.9;
+  var cx = (xMin + xMax) / 2;
+  var cy = (yMin + yMax) / 2;
+  var t = d3.zoomIdentity.translate(width / 2 - cx * scale, height / 2 - cy * scale).scale(scale);
   svg.transition().duration(600).call(zoom.transform, t);
 };
 
@@ -530,5 +556,10 @@ window.addEventListener('resize', function () {
     svg.attr('viewBox', '0 0 ' + width + ' ' + height);
   }, 200);
 });
+
+// Hide tooltip when tapping outside nodes on mobile
+document.addEventListener('touchstart', function (e) {
+  if (!e.target.closest('.tree-node')) hideTooltip();
+}, { passive: true });
 
 })();

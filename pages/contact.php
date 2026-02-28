@@ -16,20 +16,20 @@ $ws = getWS();
     <div style="background:var(--surface);border-radius:var(--radius-lg);padding:36px;border:1px solid var(--border);box-shadow:var(--shadow-sm)">
       <form id="contact-form" onsubmit="return handleContactSubmit(event)">
         <div style="margin-bottom:20px">
-          <label style="display:block;font-weight:700;margin-bottom:8px;color:var(--green-dark);font-size:14px">الاسم الكامل *</label>
-          <input type="text" name="name" required placeholder="مثال: أحمد محمد العوامي" style="width:100%;padding:14px 18px;border:2px solid var(--border);border-radius:var(--radius);font-size:15px;font-family:inherit;background:var(--bg);color:var(--text);transition:border-color .25s" onfocus="this.style.borderColor='var(--green)'" onblur="this.style.borderColor='var(--border)'">
+          <label for="contact-name" style="display:block;font-weight:700;margin-bottom:8px;color:var(--green-dark);font-size:14px">الاسم الكامل *</label>
+          <input type="text" id="contact-name" name="name" required placeholder="مثال: أحمد محمد العوامي" autocomplete="name" style="width:100%;padding:14px 18px;border:2px solid var(--border);border-radius:var(--radius);font-size:15px;font-family:inherit;background:var(--bg);color:var(--text);transition:border-color .25s" onfocus="this.style.borderColor='var(--green)'" onblur="this.style.borderColor='var(--border)'">
         </div>
         <div style="margin-bottom:20px">
-          <label style="display:block;font-weight:700;margin-bottom:8px;color:var(--green-dark);font-size:14px">رقم الجوال</label>
-          <input type="tel" name="phone" placeholder="05XXXXXXXX" dir="ltr" style="width:100%;padding:14px 18px;border:2px solid var(--border);border-radius:var(--radius);font-size:15px;font-family:inherit;background:var(--bg);color:var(--text);transition:border-color .25s;text-align:right" onfocus="this.style.borderColor='var(--green)'" onblur="this.style.borderColor='var(--border)'">
+          <label for="contact-phone" style="display:block;font-weight:700;margin-bottom:8px;color:var(--green-dark);font-size:14px">رقم الجوال</label>
+          <input type="tel" id="contact-phone" name="phone" placeholder="05XXXXXXXX" dir="ltr" autocomplete="tel" style="width:100%;padding:14px 18px;border:2px solid var(--border);border-radius:var(--radius);font-size:15px;font-family:inherit;background:var(--bg);color:var(--text);transition:border-color .25s;text-align:right" onfocus="this.style.borderColor='var(--green)'" onblur="this.style.borderColor='var(--border)'">
         </div>
         <div style="margin-bottom:20px">
-          <label style="display:block;font-weight:700;margin-bottom:8px;color:var(--green-dark);font-size:14px">الموضوع *</label>
-          <input type="text" name="subject" required placeholder="موضوع الرسالة" style="width:100%;padding:14px 18px;border:2px solid var(--border);border-radius:var(--radius);font-size:15px;font-family:inherit;background:var(--bg);color:var(--text);transition:border-color .25s" onfocus="this.style.borderColor='var(--green)'" onblur="this.style.borderColor='var(--border)'">
+          <label for="contact-subject" style="display:block;font-weight:700;margin-bottom:8px;color:var(--green-dark);font-size:14px">الموضوع *</label>
+          <input type="text" id="contact-subject" name="subject" required placeholder="موضوع الرسالة" style="width:100%;padding:14px 18px;border:2px solid var(--border);border-radius:var(--radius);font-size:15px;font-family:inherit;background:var(--bg);color:var(--text);transition:border-color .25s" onfocus="this.style.borderColor='var(--green)'" onblur="this.style.borderColor='var(--border)'">
         </div>
         <div style="margin-bottom:24px">
-          <label style="display:block;font-weight:700;margin-bottom:8px;color:var(--green-dark);font-size:14px">الرسالة *</label>
-          <textarea name="message" required rows="5" placeholder="اكتب رسالتك هنا..." style="width:100%;padding:14px 18px;border:2px solid var(--border);border-radius:var(--radius);font-size:15px;font-family:inherit;background:var(--bg);color:var(--text);resize:vertical;transition:border-color .25s" onfocus="this.style.borderColor='var(--green)'" onblur="this.style.borderColor='var(--border)'"></textarea>
+          <label for="contact-message" style="display:block;font-weight:700;margin-bottom:8px;color:var(--green-dark);font-size:14px">الرسالة *</label>
+          <textarea id="contact-message" name="message" required rows="5" placeholder="اكتب رسالتك هنا..." style="width:100%;padding:14px 18px;border:2px solid var(--border);border-radius:var(--radius);font-size:15px;font-family:inherit;background:var(--bg);color:var(--text);resize:vertical;transition:border-color .25s" onfocus="this.style.borderColor='var(--green)'" onblur="this.style.borderColor='var(--border)'"></textarea>
         </div>
         <button type="submit" class="cta-btn cta-primary" style="width:100%;justify-content:center;font-size:16px;padding:16px">&#9993; إرسال الرسالة</button>
       </form>
@@ -54,49 +54,49 @@ $ws = getWS();
     <h2 class="section-title">الأسئلة الشائعة</h2>
     <p class="section-subtitle">إجابات على أكثر الأسئلة تكراراً</p>
   </div>
-  <div class="accordion">
+  <div class="accordion" role="region" aria-label="الأسئلة الشائعة">
     <div class="accordion-item animate-in">
-      <button class="accordion-header">
+      <button class="accordion-header" aria-expanded="false" aria-controls="faq-1">
         <span>كيف يمكنني الانضمام لمجلس عائلة العوامي؟</span>
-        <span class="accordion-icon">+</span>
+        <span class="accordion-icon" aria-hidden="true">+</span>
       </button>
-      <div class="accordion-body">
+      <div class="accordion-body" id="faq-1" role="region">
         <div class="accordion-body-inner">يمكنك التواصل مع أحد أعضاء المجلس أو إرسال رسالة عبر نموذج التواصل أعلاه أو عبر الواتساب. سيتم التواصل معك وإرشادك لإجراءات التسجيل.</div>
       </div>
     </div>
     <div class="accordion-item animate-in">
-      <button class="accordion-header">
+      <button class="accordion-header" aria-expanded="false" aria-controls="faq-2">
         <span>ما هي اشتراكات العضوية؟</span>
-        <span class="accordion-icon">+</span>
+        <span class="accordion-icon" aria-hidden="true">+</span>
       </button>
-      <div class="accordion-body">
+      <div class="accordion-body" id="faq-2" role="region">
         <div class="accordion-body-inner">تُحدد قيمة الاشتراك السنوي من قبل الهيئة الإدارية في الاجتماع العمومي. يمكنك الاستفسار عن التفاصيل من خلال التواصل المباشر مع أمين الصندوق.</div>
       </div>
     </div>
     <div class="accordion-item animate-in">
-      <button class="accordion-header">
+      <button class="accordion-header" aria-expanded="false" aria-controls="faq-3">
         <span>كيف أطلع على شجرة العائلة؟</span>
-        <span class="accordion-icon">+</span>
+        <span class="accordion-icon" aria-hidden="true">+</span>
       </button>
-      <div class="accordion-body">
+      <div class="accordion-body" id="faq-3" role="region">
         <div class="accordion-body-inner">يمكنك زيارة صفحة <a href="/tree" style="color:var(--green);font-weight:700">شجرة العائلة</a> للاطلاع على الأفرع الرئيسية. كما يمكنك التواصل مع لجنة التوثيق للحصول على مزيد من التفاصيل.</div>
       </div>
     </div>
     <div class="accordion-item animate-in">
-      <button class="accordion-header">
+      <button class="accordion-header" aria-expanded="false" aria-controls="faq-4">
         <span>كيف يمكنني المشاركة في الفعاليات والأنشطة؟</span>
-        <span class="accordion-icon">+</span>
+        <span class="accordion-icon" aria-hidden="true">+</span>
       </button>
-      <div class="accordion-body">
+      <div class="accordion-body" id="faq-4" role="region">
         <div class="accordion-body-inner">يتم الإعلان عن الفعاليات والأنشطة عبر الموقع وقنوات التواصل الخاصة بالمجلس. يمكنك متابعة صفحة الأخبار أو التسجيل في القائمة البريدية للحصول على التحديثات.</div>
       </div>
     </div>
     <div class="accordion-item animate-in">
-      <button class="accordion-header">
+      <button class="accordion-header" aria-expanded="false" aria-controls="faq-5">
         <span>هل يمكنني اقتراح فعالية أو نشاط جديد؟</span>
-        <span class="accordion-icon">+</span>
+        <span class="accordion-icon" aria-hidden="true">+</span>
       </button>
-      <div class="accordion-body">
+      <div class="accordion-body" id="faq-5" role="region">
         <div class="accordion-body-inner">بالطبع! نرحب بجميع الاقتراحات والأفكار البناءة. يمكنك إرسال اقتراحك عبر نموذج التواصل أو مباشرة عبر الواتساب وسيتم دراسته من قبل اللجنة المختصة.</div>
       </div>
     </div>

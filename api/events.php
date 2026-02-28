@@ -3,28 +3,8 @@
 declare(strict_types=1);
 require_once __DIR__ . '/config.php';
 require_once __DIR__ . '/auth_guard.php';
+require_once __DIR__ . '/validation.php';
 requireAuth();
-
-// ──────────────────────────────────────────────────────────────
-// HELPERS (events-specific)
-// ──────────────────────────────────────────────────────────────
-
-function parseId(): ?string
-{
-    $id = $_GET['id'] ?? null;
-    if ($id !== null && !preg_match('/^[a-zA-Z0-9_-]{1,64}$/', $id)) {
-        respond(400, ['error' => 'Invalid ID format.']);
-    }
-    return $id;
-}
-
-function sanitizeString(mixed $value, string $field): string
-{
-    if (!is_string($value) && !is_numeric($value)) {
-        respond(422, ['error' => "Field '{$field}' must be a string."]);
-    }
-    return trim((string) $value);
-}
 
 // Normalise DB row → JS State shape
 // Maps MySQL column names back to the camelCase names State uses
@@ -326,5 +306,6 @@ try {
         default                               => respond(405, ['error' => 'Method not allowed.']),
     };
 } catch (PDOException $e) {
-    respond(500, ['error' => 'Database error.', 'detail' => $e->getMessage()]);
+    error_log('PDOException in events: ' . $e->getMessage());
+    respond(500, ['error' => 'Database error.']);
 }

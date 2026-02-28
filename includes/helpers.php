@@ -5,6 +5,9 @@
 
 require_once __DIR__ . '/../api/config.php';
 
+/** سنة تأسيس المجلس */
+const FOUNDING_YEAR = 1992;
+
 /**
  * جلب إعدادات الموقع من قاعدة البيانات (مع cache)
  */
@@ -32,6 +35,7 @@ function getWS(): array {
             $ws = $defaults;
         }
     } catch (Throwable $e) {
+        error_log('getWS() failed: ' . $e->getMessage());
         $ws = $defaults;
     }
     return $ws;
@@ -53,7 +57,7 @@ function getMeeting(): ?array {
         $row = $pdo->query("SELECT * FROM next_meeting WHERE id=1 LIMIT 1")->fetch();
         if (!$row || !$row['visible'] || !$row['date']) return null;
         return ['date' => $row['date'], 'title' => $row['title'], 'visible' => true];
-    } catch (Throwable $e) { return null; }
+    } catch (Throwable $e) { error_log('getMeeting() failed: ' . $e->getMessage()); return null; }
 }
 
 /**
@@ -63,7 +67,7 @@ function getBranches(): array {
     try {
         $pdo = getPDO();
         return $pdo->query("SELECT * FROM family_branches ORDER BY name ASC")->fetchAll();
-    } catch (Throwable $e) { return []; }
+    } catch (Throwable $e) { error_log('getBranches() failed: ' . $e->getMessage()); return []; }
 }
 
 /**
@@ -81,7 +85,7 @@ function getUpcomingEvents(): array {
             ORDER BY event_date ASC
             LIMIT 6
         ")->fetchAll();
-    } catch (Throwable $e) { return []; }
+    } catch (Throwable $e) { error_log('getUpcomingEvents() failed: ' . $e->getMessage()); return []; }
 }
 
 /**
@@ -99,7 +103,7 @@ function getPublishedNews(int $limit = 3): array {
         ");
         $stmt->execute([$limit]);
         return $stmt->fetchAll();
-    } catch (Throwable $e) { return []; }
+    } catch (Throwable $e) { error_log('getPublishedNews() failed: ' . $e->getMessage()); return []; }
 }
 
 /**
@@ -110,7 +114,7 @@ function getActiveMembersCount(): int {
         $pdo = getPDO();
         $row = $pdo->query("SELECT COUNT(*) as cnt FROM members WHERE status = 'نشط'")->fetch();
         return (int)($row['cnt'] ?? 0);
-    } catch (Throwable $e) { return 0; }
+    } catch (Throwable $e) { error_log('getActiveMembersCount() failed: ' . $e->getMessage()); return 0; }
 }
 
 /**
@@ -121,7 +125,7 @@ function getCommitteesCount(): int {
         $pdo = getPDO();
         $row = $pdo->query("SELECT COUNT(*) as cnt FROM committees")->fetch();
         return (int)($row['cnt'] ?? 0);
-    } catch (Throwable $e) { return 0; }
+    } catch (Throwable $e) { error_log('getCommitteesCount() failed: ' . $e->getMessage()); return 0; }
 }
 
 /**
@@ -135,7 +139,7 @@ function getCommittees(): array {
         try {
             $rows = $pdo->query("SELECT committee_id, COUNT(*) as cnt FROM committee_members GROUP BY committee_id")->fetchAll();
             foreach ($rows as $r) $counts[$r['committee_id']] = (int)$r['cnt'];
-        } catch (Throwable $e) {}
+        } catch (Throwable $e) { error_log('getCommittees() member counts failed: ' . $e->getMessage()); }
         foreach ($committees as &$c) {
             $linkedCount = $counts[$c['id']] ?? 0;
             $manualCount = (int) ($c['members_count'] ?? 0);
@@ -143,7 +147,7 @@ function getCommittees(): array {
         }
         unset($c);
         return $committees;
-    } catch (Throwable $e) { return []; }
+    } catch (Throwable $e) { error_log('getCommittees() failed: ' . $e->getMessage()); return []; }
 }
 
 /**
@@ -153,7 +157,7 @@ function getFamilyTree(): array {
     try {
         $pdo = getPDO();
         return $pdo->query("SELECT * FROM family_tree ORDER BY sort_order ASC, name ASC")->fetchAll();
-    } catch (Throwable $e) { return []; }
+    } catch (Throwable $e) { error_log('getFamilyTree() failed: ' . $e->getMessage()); return []; }
 }
 
 /**
@@ -170,7 +174,7 @@ function getAllEvents(int $limit = 20): array {
         ");
         $stmt->execute([$limit]);
         return $stmt->fetchAll();
-    } catch (Throwable $e) { return []; }
+    } catch (Throwable $e) { error_log('getAllEvents() failed: ' . $e->getMessage()); return []; }
 }
 
 /**
@@ -180,8 +184,7 @@ function getDynamicStats(): array {
     $ws = getWS();
     $members = getActiveMembersCount();
     $committees = getCommitteesCount();
-    $foundingYear = 1992;
-    $years = (int)date('Y') - $foundingYear;
+    $years = (int)date('Y') - FOUNDING_YEAR;
     return [
         'years'      => $years > 0 ? $years : (int)$ws['stats']['years'],
         'committees' => $committees > 0 ? $committees : (int)$ws['stats']['committees'],

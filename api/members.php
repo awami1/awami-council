@@ -149,10 +149,13 @@ function handlePut(string $id): void
     $pdo  = getPDO();
     $data = bodyJson();
 
+    // السماح فقط بالحقول المعروفة لمنع حقن أسماء أعمدة عشوائية
+    $allowed = ['name', 'family', 'phone', 'id_num', 'join_date', 'status', 'notes', 'branch_id'];
     $fields = [];
     $params = [':id' => $id];
 
     foreach ($data as $key => $value) {
+        if (!in_array($key, $allowed, true)) continue;
         $fields[] = "{$key} = :{$key}";
         $params[":{$key}"] = $value;
     }

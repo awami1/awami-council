@@ -10,6 +10,7 @@ ini_set('display_startup_errors', '0');
 
 // Global exception handler — returns JSON instead of HTML for uncaught exceptions
 set_exception_handler(function (\Throwable $e): void {
+    error_log('Uncaught exception: ' . $e->getMessage() . ' in ' . $e->getFile() . ':' . $e->getLine());
     if (!headers_sent()) {
         http_response_code(500);
         header('Content-Type: application/json; charset=utf-8');
@@ -18,7 +19,7 @@ set_exception_handler(function (\Throwable $e): void {
         header('Access-Control-Allow-Headers: Content-Type');
     }
     echo json_encode(
-        ['error' => $e->getMessage()],
+        ['error' => 'حدث خطأ داخلي في الخادم.'],
         JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES
     );
     exit;
@@ -142,11 +143,14 @@ if (($_SERVER['REQUEST_METHOD'] ?? '') === 'OPTIONS') {
     exit;
 }
 
-// ---- Read JSON body ----
-function bodyJson(): array
+// ---- Read JSON body (with size limit) ----
+function bodyJson(int $maxBytes = 65536): array
 {
-    $raw = file_get_contents('php://input');
+    $raw = file_get_contents('php://input', false, null, 0, $maxBytes + 1);
     if (!$raw) return [];
+    if (strlen($raw) > $maxBytes) {
+        respond(413, ['error' => 'حجم الطلب يتجاوز الحد المسموح.']);
+    }
     $data = json_decode($raw, true);
     return is_array($data) ? $data : [];
 }

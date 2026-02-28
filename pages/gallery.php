@@ -11,12 +11,12 @@ $ws = getWS();
     <h2 class="section-title">المعرض</h2>
     <p class="section-subtitle">صور وفيديوهات من فعاليات المجلس</p>
   </div>
-  <div class="media-tabs">
-    <button class="media-tab active" data-filter="all">الكل</button>
-    <button class="media-tab" data-filter="images">&#x1F4F7; الصور</button>
-    <button class="media-tab" data-filter="videos">&#x1F3AC; الفيديوهات</button>
-    <button class="media-tab" data-filter="youtube">&#x25B6;&#xFE0F; يوتيوب</button>
-    <button class="media-tab" data-filter="events">&#x1F389; الفعاليات</button>
+  <div class="media-tabs" role="tablist" aria-label="تصفية المعرض">
+    <button class="media-tab active" data-filter="all" role="tab" aria-selected="true">الكل</button>
+    <button class="media-tab" data-filter="images" role="tab" aria-selected="false">&#x1F4F7; الصور</button>
+    <button class="media-tab" data-filter="videos" role="tab" aria-selected="false">&#x1F3AC; الفيديوهات</button>
+    <button class="media-tab" data-filter="youtube" role="tab" aria-selected="false">&#x25B6;&#xFE0F; يوتيوب</button>
+    <button class="media-tab" data-filter="events" role="tab" aria-selected="false">&#x1F389; الفعاليات</button>
   </div>
   <div class="media-grid" id="media-grid">
     <?php $mediaItems = $ws['media'] ?? []; ?>

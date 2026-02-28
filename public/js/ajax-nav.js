@@ -91,8 +91,7 @@
         var scripts = pageScripts[url] || [];
         var promises = scripts.map(function(src) { return loadScript(src); });
 
-        Promise.all(promises).then(function() {
-          // تنفيذ السكريبتات inline الموجودة في المحتوى
+        function runInlineScripts() {
           var inlineScripts = pageContent.querySelectorAll('script');
           inlineScripts.forEach(function(s) {
             var newScript = document.createElement('script');
@@ -103,13 +102,31 @@
             }
             s.parentNode.replaceChild(newScript, s);
           });
+        }
+
+        function afterScriptsLoaded() {
+          // تنفيذ السكريبتات inline الموجودة في المحتوى
+          runInlineScripts();
 
           // إعادة تفعيل الحركات
           if (typeof window.initAnimations === 'function') {
             window.initAnimations();
           }
 
+          // شبكة أمان: تهيئة الشجرة بعد تحميل كل السكريبتات والبيانات
+          if (typeof window.initFamilyTree === 'function' && window.__TREE_DATA__) {
+            window.initFamilyTree();
+          }
+
           // أنيميشن الدخول
+          requestAnimationFrame(function() {
+            pageContent.classList.remove('page-loading');
+          });
+        }
+
+        Promise.all(promises).then(afterScriptsLoaded).catch(function() {
+          // حتى لو فشل سكريبت خارجي، نفّذ السكريبتات inline وأظهر المحتوى
+          runInlineScripts();
           requestAnimationFrame(function() {
             pageContent.classList.remove('page-loading');
           });

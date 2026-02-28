@@ -259,9 +259,40 @@ There are **no automated tests** currently. Test manually by:
 
 ## Important Notes
 
-- **No package manager**: No `node_modules`, no `vendor/` (composer.json exists but has no dependencies)
-- **Single-file admin**: The admin panel is largely contained in `admin/index.php` (~1000 lines of PHP+HTML) + `admin/js/admin-app.js` (~2350 lines)
-- **Cache busting**: The `asset()` PHP function appends `?v=<filemtime>` to static file URLs. Also `window.__ASSET_V__` is set for JS-side cache busting
-- **Service Worker**: `sw.js` only handles offline fallback (navigations) — it does NOT cache static assets
-- **AJAX navigation**: Page transitions happen without full reloads. New page content is fetched via XHR and injected into `#page-content`. Page-specific scripts are dynamically loaded
-- **Sensitive files**: `.env`, `.git/`, `*.db`, `api/config.php` are blocked from public access via server config
+### No package manager
+- **Current state**: No npm, no Composer dependencies. External libraries load from CDNs:
+  - D3.js v7 from `d3js.org` (loaded in `includes/head.php` for the tree page)
+  - XLSX 0.18.5 from `cdnjs.cloudflare.com` (loaded in `admin/index.php` for CSV import)
+  - Google Fonts (Cairo, Amiri, Tajawal) from `fonts.googleapis.com`
+- **Impact**: If a CDN goes down, the dependent feature breaks. No lockfile guarantees version consistency
+- **Recommendation**: Acceptable for this project's scale. If reliability becomes critical, host local copies in `public/vendor/`
+
+### Single-file admin
+- **Current state**: `admin/index.php` (~1036 lines of PHP+HTML) + `admin/js/admin-app.js` (~2350 lines with all functions in global scope). The admin panel has its own `<head>` (does not use `includes/head.php`) and currently has **no CSP**
+- **Impact**: Harder to maintain as features grow. Potential for function name collisions in global scope
+- **Recommendation**: When adding new admin features, consider extracting sections into separate JS files (e.g., `admin/js/admin-finance.js`). This is an incremental improvement — no need for a full rewrite
+
+### Cache busting
+- **Current state**: The `asset()` function in `includes/helpers.php` appends `?v=<filemtime>` to static file URLs. `window.__ASSET_V__` is available for JS-side cache busting
+- **Impact**: Works well for direct browser requests. However, `?v=timestamp` may be ignored by some CDNs/proxies (less effective than content-hash based busting)
+- **Recommendation**: Sufficient for the current project. No action needed
+
+### Service Worker
+- **Current state**: `sw.js` (27 lines) caches only `offline.html`. Does NOT cache CSS, JS, images, or fonts
+- **Impact**: The app does not work offline in any meaningful way — only shows a "you are offline" page when navigation fails
+- **Recommendation**: For better offline experience in the future, consider adding precache for CSS files and local fonts. Keep the SW simple — avoid caching API responses
+
+### AJAX navigation
+- **Current state**: `ajax-nav.js` intercepts link clicks and loads page content via XHR into `#page-content`. Page-specific scripts are dynamically loaded via the `pageScripts` map
+- **Impact**: When adding a new page, scripts must be registered in **two places**: the `scripts` array in `router.php` AND the `pageScripts` object in `public/js/ajax-nav.js`. Missing either causes the page to break on direct load or AJAX navigation respectively
+- **Recommendation**: Always register page scripts in both locations. Test both: direct URL access and clicking a link from another page
+
+### Sensitive files protection
+- **Current state**: Protected files and their server config coverage:
+  - `.env` (credentials) — blocked via `.htaccess` (`FilesMatch`) and `nginx.conf` (`location ~ /\.env`)
+  - `*.db` (SQLite databases) — blocked via `.htaccess` (`FilesMatch`) and `nginx.conf` (`location ~ \.db$`)
+  - `.git/` — blocked via `nginx.conf` (`location ~ /\.git`)
+  - `.htaccess` — blocked via `nginx.conf` (`location ~ /\.ht`)
+  - `api/config.php` — blocked via `nginx.conf` (`location = /api/config.php`)
+- **Note**: PHP's built-in dev server does NOT read `.htaccess`. In development, `router.php` handles routing, but direct requests to `.env` are not blocked by server config. Keep `.env` out of the document root or use Nginx/Apache in production
+- **Recommendation**: When deploying, verify that sensitive file access returns 403. Test with: `curl -I https://your-domain/.env`

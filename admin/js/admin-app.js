@@ -1879,11 +1879,11 @@ function handleAIFileUpload(event) {
 
 function srProcessFile(file) {
   if (!file.name.match(/\.(xlsx|xls|csv)$/i)) {
-    showToast('نوع الملف غير مدعوم. يرجى رفع ملف Excel أو CSV', 'error');
+    toast('نوع الملف غير مدعوم. يرجى رفع ملف Excel أو CSV', 'error');
     return;
   }
   if (file.size > 10 * 1024 * 1024) {
-    showToast('حجم الملف يتجاوز 10 ميجابايت', 'error');
+    toast('حجم الملف يتجاوز 10 ميجابايت', 'error');
     return;
   }
 
@@ -1899,12 +1899,12 @@ function srProcessFile(file) {
       srWorkbook = XLSX.read(data, {type: 'array'});
       srShowPreview(0);
     } catch (error) {
-      showToast('حدث خطأ في قراءة الملف: ' + error.message, 'error');
+      toast('حدث خطأ في قراءة الملف: ' + error.message, 'error');
       resetAIAnalysis();
     }
   };
   reader.onerror = function() {
-    showToast('فشل قراءة الملف', 'error');
+    toast('فشل قراءة الملف', 'error');
     resetAIAnalysis();
   };
   reader.readAsArrayBuffer(file);
@@ -1929,7 +1929,7 @@ function srShowPreview(sheetIdx) {
   srRawData = XLSX.utils.sheet_to_json(sheet, {raw: false});
 
   if (!srRawData || srRawData.length === 0) {
-    showToast('الملف فارغ أو لا يحتوي على بيانات', 'error');
+    toast('الملف فارغ أو لا يحتوي على بيانات', 'error');
     resetAIAnalysis();
     return;
   }
@@ -2049,7 +2049,7 @@ function srStartAnalysis() {
   var amountCol = document.getElementById('sr-col-amount').value;
 
   if (!descCol && !amountCol) {
-    showToast('يرجى تحديد عمود الوصف والمبلغ على الأقل', 'error');
+    toast('يرجى تحديد عمود الوصف والمبلغ على الأقل', 'error');
     return;
   }
 
@@ -2360,13 +2360,13 @@ function srUpdateBulkToolbar() {
 function srApplyBulkEdit() {
   var newCat = document.getElementById('sr-bulk-category').value;
   var newType = document.getElementById('sr-bulk-type').value;
-  if (!newCat && !newType) { showToast('اختر فئة أو نوع للتطبيق', 'error'); return; }
+  if (!newCat && !newType) { toast('اختر فئة أو نوع للتطبيق', 'error'); return; }
   srSelectedRows.forEach(function(idx) {
     var tx = aiAnalysisData.transactions[idx];
     if (newCat) { tx.category = newCat; tx.confidence = 'high'; }
     if (newType) tx.type = newType;
   });
-  showToast('تم تحديث ' + srSelectedRows.size + ' معاملة', 'success');
+  toast('تم تحديث ' + srSelectedRows.size + ' معاملة', 'success');
   srSelectedRows.clear();
   document.getElementById('sr-select-all').checked = false;
   srRecalcStats(); srRenderCategories(aiAnalysisData); srRenderTransactionTable(aiAnalysisData.transactions);
@@ -2377,7 +2377,7 @@ function srDeleteSelected() {
   if (!confirm('حذف ' + srSelectedRows.size + ' معاملة؟')) return;
   var indices = Array.from(srSelectedRows).sort(function(a, b) { return b - a; });
   indices.forEach(function(idx) { aiAnalysisData.transactions.splice(idx, 1); });
-  showToast('تم حذف ' + indices.length + ' معاملة', 'success');
+  toast('تم حذف ' + indices.length + ' معاملة', 'success');
   srSelectedRows.clear();
   document.getElementById('sr-select-all').checked = false;
   srRecalcStats(); srRenderCategories(aiAnalysisData); srRenderTransactionTable(aiAnalysisData.transactions);
@@ -2437,7 +2437,7 @@ function generateAIInsights(data) {
 
 // ---- Sync to DB via API ----
 function syncAIDataToDB() {
-  if (!aiAnalysisData || !aiAnalysisData.transactions.length) { showToast('لا توجد بيانات للمزامنة', 'error'); return; }
+  if (!aiAnalysisData || !aiAnalysisData.transactions.length) { toast('لا توجد بيانات للمزامنة', 'error'); return; }
   if (!confirm('هل تريد مزامنة ' + aiAnalysisData.transactions.length + ' معاملة مع قاعدة البيانات؟')) return;
   srSetStep(5);
 
@@ -2455,15 +2455,15 @@ function syncAIDataToDB() {
   }).then(function(res) {
     var msg = '✅ تمت إضافة: ' + res.inserted + ' معاملة';
     if (res.duplicates_skipped > 0) msg += ' • ⚠️ تم تجاهل: ' + res.duplicates_skipped + ' مكررة';
-    showToast(msg, 'success');
+    toast(msg, 'success');
     if (res.data && res.data.length) { res.data.forEach(function(row) { State.getBudget().push(row); }); }
     renderDashboard();
-  }).catch(function(err) { showToast('خطأ في المزامنة: ' + err.message, 'error'); });
+  }).catch(function(err) { toast('خطأ في المزامنة: ' + err.message, 'error'); });
 }
 
 // ---- Download CSV ----
 function downloadAIReport() {
-  if (!aiAnalysisData) { showToast('لا توجد بيانات', 'error'); return; }
+  if (!aiAnalysisData) { toast('لا توجد بيانات', 'error'); return; }
   var csv = 'التاريخ,الوصف,المبلغ,النوع,الفئة,الثقة\n';
   aiAnalysisData.transactions.forEach(function(tx) {
     var typeAr = tx.type === 'income' ? 'إيراد' : 'مصروف';
@@ -2475,7 +2475,7 @@ function downloadAIReport() {
   link.href = URL.createObjectURL(blob);
   link.download = 'smart-report-' + new Date().toISOString().split('T')[0] + '.csv';
   link.click();
-  showToast('تم تحميل التقرير بنجاح', 'success');
+  toast('تم تحميل التقرير بنجاح', 'success');
 }
 
 // ---- Reset ----
@@ -2495,25 +2495,22 @@ function resetAIAnalysis() {
 
 // ---- Save Report ----
 function srSaveReport() {
-  if (!aiAnalysisData) { showToast('لا توجد بيانات للحفظ', 'error'); return; }
+  if (!aiAnalysisData) { toast('لا توجد بيانات للحفظ', 'error'); return; }
   var title = prompt('عنوان التقرير:', 'تقرير ' + new Date().toLocaleDateString('ar-SA'));
   if (!title) return;
   var desc = prompt('وصف مختصر (اختياري):', '');
   srSetStep(5);
 
-  apiFetch('/api/reports.php', {
-    method: 'POST',
-    body: JSON.stringify({
+  ReportsAPI.save({
       title: title, description: desc || '', report_type: 'smart_analysis',
       report_data: { transactions: aiAnalysisData.transactions, categories: aiAnalysisData.categories, analyzedAt: aiAnalysisData.analyzedAt },
       summary: { totalIncome: aiAnalysisData.totalIncome, totalExpense: aiAnalysisData.totalExpense, netProfit: aiAnalysisData.netProfit },
       file_name: srFileName, total_transactions: aiAnalysisData.transactions.length,
       total_income: aiAnalysisData.totalIncome, total_expense: aiAnalysisData.totalExpense, net_profit: aiAnalysisData.netProfit
-    })
   }).then(function() {
-    showToast('تم حفظ التقرير: ' + title, 'success');
+    toast('تم حفظ التقرير: ' + title, 'success');
     srLoadSavedReports('active');
-  }).catch(function(err) { showToast('خطأ في حفظ التقرير: ' + err.message, 'error'); });
+  }).catch(function(err) { toast('خطأ في حفظ التقرير: ' + err.message, 'error'); });
 }
 
 // ---- Saved Reports List ----
@@ -2522,7 +2519,7 @@ function srLoadSavedReports(status, tabEl) {
     tabEl.parentElement.querySelectorAll('.tab').forEach(function(t) { t.classList.remove('active'); });
     tabEl.classList.add('active');
   }
-  apiFetch('/api/reports.php?status=' + (status || 'active')).then(function(res) {
+  ReportsAPI.getAll({ status: status || 'active' }).then(function(res) {
     var list = res.data || [];
     var container = document.getElementById('sr-saved-list');
     if (!list.length) {
@@ -2552,9 +2549,9 @@ function srLoadSavedReports(status, tabEl) {
 }
 
 function srViewReport(id) {
-  apiFetch('/api/reports.php?id=' + id).then(function(res) {
+  ReportsAPI.getOne(id).then(function(res) {
     var r = res.data;
-    if (!r || !r.report_data) { showToast('بيانات التقرير غير متوفرة', 'error'); return; }
+    if (!r || !r.report_data) { toast('بيانات التقرير غير متوفرة', 'error'); return; }
     aiAnalysisData = {
       transactions: r.report_data.transactions || [], categories: r.report_data.categories || {},
       totalIncome: parseFloat(r.total_income) || 0, totalExpense: parseFloat(r.total_expense) || 0,
@@ -2563,33 +2560,33 @@ function srViewReport(id) {
     };
     srFileName = r.file_name || '';
     displayAIResults();
-    showToast('تم تحميل التقرير: ' + r.title, 'success');
-  }).catch(function(err) { showToast('خطأ: ' + err.message, 'error'); });
+    toast('تم تحميل التقرير: ' + r.title, 'success');
+  }).catch(function(err) { toast('خطأ: ' + err.message, 'error'); });
 }
 
 function srArchiveReport(id) {
   if (!confirm('أرشفة هذا التقرير؟')) return;
-  apiFetch('/api/reports.php?id=' + id + '&archive=1', { method: 'PUT', body: JSON.stringify({ status: 'archived' }) })
-    .then(function() { showToast('تم الأرشفة', 'success'); srLoadSavedReports('active'); })
-    .catch(function(err) { showToast('خطأ: ' + err.message, 'error'); });
+  ReportsAPI.archive(id)
+    .then(function() { toast('تم الأرشفة', 'success'); srLoadSavedReports('active'); })
+    .catch(function(err) { toast('خطأ: ' + err.message, 'error'); });
 }
 
 function srRestoreReport(id) {
-  apiFetch('/api/reports.php?id=' + id + '&archive=1', { method: 'PUT', body: JSON.stringify({ status: 'active' }) })
-    .then(function() { showToast('تم الاستعادة', 'success'); srLoadSavedReports('archived'); })
-    .catch(function(err) { showToast('خطأ: ' + err.message, 'error'); });
+  ReportsAPI.restore(id)
+    .then(function() { toast('تم الاستعادة', 'success'); srLoadSavedReports('archived'); })
+    .catch(function(err) { toast('خطأ: ' + err.message, 'error'); });
 }
 
 function srDeleteReport(id) {
   if (!confirm('حذف هذا التقرير نهائياً؟')) return;
-  apiFetch('/api/reports.php?id=' + id, { method: 'DELETE' })
-    .then(function() { showToast('تم الحذف', 'success'); srLoadSavedReports('active'); })
-    .catch(function(err) { showToast('خطأ: ' + err.message, 'error'); });
+  ReportsAPI.remove(id)
+    .then(function() { toast('تم الحذف', 'success'); srLoadSavedReports('active'); })
+    .catch(function(err) { toast('خطأ: ' + err.message, 'error'); });
 }
 
 // ---- Smart Print ----
 function srPrintReport() {
-  if (!aiAnalysisData) { showToast('لا توجد بيانات للطباعة', 'error'); return; }
+  if (!aiAnalysisData) { toast('لا توجد بيانات للطباعة', 'error'); return; }
   var data = aiAnalysisData;
   var win = window.open('', '_blank');
   var cats = Object.entries(data.categories).sort(function(a,b) { return (b[1].income+b[1].expense)-(a[1].income+a[1].expense); });

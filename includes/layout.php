@@ -10,7 +10,8 @@
   </div>
 </main>
 <?php include __DIR__ . '/footer.php'; ?>
-<script>window.__ASSET_V__="<?= filemtime(__DIR__ . '/../public/js/eid.js') ?>";</script>
+<?php $__av = 0; foreach (glob(__DIR__.'/../public/js/*.js') as $__f) $__av = max($__av, filemtime($__f)); ?>
+<script>window.__ASSET_V__="<?= $__av ?>";</script>
 <script src="<?= asset('/public/js/api.js') ?>"></script>
 <script src="<?= asset('/public/js/theme.js') ?>"></script>
 <script src="<?= asset('/public/js/navbar.js') ?>"></script>

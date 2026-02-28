@@ -1,8 +1,9 @@
-// Eid card generator v2 — خط Saudi الرسمي من وزارة الثقافة السعودية
+// Eid card generator v3 — حل جذري: حذف الفولباك + retry مع حماية من السباق
 
 // ─── Shared state ───
-let _templateImg = null;
-let _rafPending  = false;
+let _templateImg   = null;
+let _loadingPromise = null;
+let _rafPending    = false;
 
 const _TEMPLATE_SRCS = ['/assets/eid-template.jpg', '/assets/eid-template.png'];
 const _FULL_W = 1003;
@@ -31,22 +32,25 @@ function _loadImage(src) {
 
 async function _loadTemplateOnce() {
   if (_templateImg) return _templateImg;
-  for (const src of _TEMPLATE_SRCS) {
-    try {
-      _templateImg = await _loadImage(src);
-      return _templateImg;
-    } catch (_) {}
-  }
-  return null;
+  if (_loadingPromise) return _loadingPromise;
+  _loadingPromise = (async () => {
+    for (let attempt = 0; attempt < 3; attempt++) {
+      for (const src of _TEMPLATE_SRCS) {
+        try {
+          _templateImg = await _loadImage(src);
+          return _templateImg;
+        } catch (_) {}
+      }
+      if (attempt < 2) await new Promise(r => setTimeout(r, 1000));
+    }
+    return null;
+  })();
+  return _loadingPromise;
 }
 
 // ─── Core drawing (shared by live preview & final generation) ───
 function _drawCard(ctx, canvas, img, name, weight, fontSize) {
-  if (img) {
-    ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-  } else {
-    _drawFallback(ctx, canvas);
-  }
+  ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
 
   if (!name) return;
 
@@ -77,37 +81,25 @@ function _drawCard(ctx, canvas, img, name, weight, fontSize) {
   ctx.shadowOffsetY = 0;
 }
 
-function _drawFallback(ctx, canvas) {
-  const s = canvas.width / _FULL_W;
-  const g = ctx.createLinearGradient(0, 0, 0, canvas.height);
-  g.addColorStop(0, '#0d4a2a');
-  g.addColorStop(1, '#1B3456');
-  ctx.fillStyle = g;
-  ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-  ctx.textAlign    = 'center';
-  ctx.textBaseline = 'middle';
-  ctx.fillStyle    = '#fff';
-  ctx.font         = `bold ${80 * s}px Saudi, Cairo, serif`;
-  ctx.fillText('كل عام وأنتم بخير', canvas.width / 2, 430 * s);
-  ctx.fillStyle = '#c8a84b';
-  ctx.font      = `bold ${50 * s}px Saudi, Cairo, sans-serif`;
-  ctx.fillText('عيد مبارك', canvas.width / 2, 540 * s);
-  ctx.fillStyle = 'rgba(255,255,255,.65)';
-  ctx.font      = `${30 * s}px Saudi, Cairo, sans-serif`;
-  ctx.fillText('مجلس عائلة العوامي', canvas.width / 2, 640 * s);
-}
-
 // ─── Live preview (debounced with rAF) ───
 function _renderLivePreview() {
   const canvas = document.getElementById('eid-preview-canvas');
   if (!canvas) return;
 
   const ctx = canvas.getContext('2d');
-
-  // أبعاد ثابتة تطابق القالب — CSS يتولى التصغير
   canvas.width  = _FULL_W;
   canvas.height = _FULL_H;
+
+  if (!_templateImg) {
+    ctx.fillStyle = '#e8f5ec';
+    ctx.fillRect(0, 0, _FULL_W, _FULL_H);
+    ctx.fillStyle = '#1A5C32';
+    ctx.font = 'bold 40px Saudi, Cairo, sans-serif';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText('جاري تحميل القالب...', _FULL_W / 2, _FULL_H / 2);
+    return;
+  }
 
   const name     = document.getElementById('eid-name').value.trim() || 'اكتب اسمك هنا';
   const weight   = document.getElementById('eid-font-weight')?.value || 'bold';
@@ -148,10 +140,15 @@ async function generateEidCard() {
     await ensureSaudiFont();
     await _loadTemplateOnce();
 
+    if (!_templateImg) {
+      alert('تعذّر تحميل قالب البطاقة. يرجى تحديث الصفحة والمحاولة مرة أخرى.');
+      return;
+    }
+
     const canvas = document.getElementById('eid-canvas');
     const ctx    = canvas.getContext('2d');
-    canvas.width  = _templateImg ? _templateImg.width : _FULL_W;
-    canvas.height = _templateImg ? _templateImg.height : _FULL_H;
+    canvas.width  = _templateImg.width;
+    canvas.height = _templateImg.height;
 
     _drawCard(ctx, canvas, _templateImg, name, weight, fontSize);
 
@@ -213,9 +210,16 @@ function initEid() {
     });
   });
 
-  // Preload template + font, then render initial preview
+  // رسالة انتظار فورية
+  _renderLivePreview();
+
+  // تحميل الخط والقالب ثم إعادة الرسم
   ensureSaudiFont()
     .then(() => _loadTemplateOnce())
     .then(() => _renderLivePreview())
-    .catch(() => _renderLivePreview());   // حتى لو فشل التحميل، ارسم الفولباك
+    .catch(() => {
+      // إعادة المحاولة بعد 1.5 ثانية
+      _loadingPromise = null;
+      setTimeout(() => _loadTemplateOnce().then(() => _renderLivePreview()), 1500);
+    });
 }

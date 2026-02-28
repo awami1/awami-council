@@ -228,8 +228,13 @@ $stats = getDynamicStats();
 <script>
 (function() {
   <?php if ($meeting): ?>
+  var _mtg = <?= json_encode($meeting) ?>;
   if (typeof initCountdown === 'function') {
-    initCountdown(<?= json_encode($meeting) ?>);
+    initCountdown(_mtg);
+  } else {
+    document.addEventListener('DOMContentLoaded', function() {
+      if (typeof initCountdown === 'function') initCountdown(_mtg);
+    });
   }
   <?php endif; ?>
 })();

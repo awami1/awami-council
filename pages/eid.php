@@ -51,6 +51,10 @@
 (function() {
   if (typeof initEid === 'function') {
     initEid();
+  } else {
+    document.addEventListener('DOMContentLoaded', function() {
+      if (typeof initEid === 'function') initEid();
+    });
   }
 })();
 </script>

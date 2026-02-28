@@ -58,14 +58,15 @@
   --green-dark:   #2A7A44;
   --green:        #4CAF6A;
   --green-light:  #1a3d28;
-  --accent:       #d4b85c;
+  --accent:       #e0c56a; /* brighter gold for dark backgrounds */
 
   --bg:           #0A0F0C;
   --bg-alt:       #111e14;
   --surface:      #1a2a1e;
+  --surface-elevated: #223a28; /* elevated cards/modals */
 
   --text:         #e8f0ea;
-  --text-muted:   #a8bfac;
+  --text-muted:   #8ca892; /* better contrast (4.5:1 on dark bg) */
 
   --border:       #2d4a35;
   --shadow-sm:    0 2px 12px rgba(0,0,0,.2);

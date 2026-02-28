@@ -20,6 +20,11 @@ get:    (path)       => apiFetch(`${API_BASE}/${path}`),
 post:   (path, body) => apiFetch(`${API_BASE}/${path}`, { method: 'POST',   body: JSON.stringify(body) }),
 put:    (path, body, id) => apiFetch(`${API_BASE}/${path}?id=${id}`, { method: 'PUT',    body: JSON.stringify(body) }),
 del:    (path, id)   => apiFetch(`${API_BASE}/${path}?id=${id}`, { method: 'DELETE' }),
+/** Catch errors and return { data, error } instead of throwing */
+safeCall: async (promise, fallback = 'حدث خطأ في تحميل البيانات.') => {
+  try { return { data: await promise, error: null }; }
+  catch (e) { return { data: null, error: e.message || fallback }; }
+},
 };
 
 // –– Settings ––

@@ -3,7 +3,38 @@
 declare(strict_types=1);
 require_once __DIR__ . '/config.php';
 require_once __DIR__ . '/auth_guard.php';
-verifyCsrf();
+// CSRF verified only for auth-protected routes (PUT/DELETE call requireAuth)
+// Public POST uses rate limiting + honeypot instead
+
+// ──────────────────────────────────────────────────────────────
+// Rate limiting for public message submission
+// ──────────────────────────────────────────────────────────────
+
+function checkMessageRateLimit(): void
+{
+    $ip   = $_SERVER['REMOTE_ADDR'] ?? 'unknown';
+    $file = sys_get_temp_dir() . '/awami_msg_' . md5($ip) . '.json';
+    $max  = 5;
+    $window = 3600; // 1 hour
+
+    $data = ['attempts' => []];
+    if (file_exists($file)) {
+        $data = json_decode((string) file_get_contents($file), true) ?: $data;
+    }
+
+    $now = time();
+    $data['attempts'] = array_values(array_filter(
+        $data['attempts'] ?? [],
+        fn($t) => ($now - $t) < $window
+    ));
+
+    if (count($data['attempts']) >= $max) {
+        respond(429, ['error' => 'لقد تجاوزت الحد المسموح من الرسائل. حاول مرة أخرى لاحقاً.']);
+    }
+
+    $data['attempts'][] = $now;
+    file_put_contents($file, json_encode($data), LOCK_EX);
+}
 
 // ──────────────────────────────────────────────────────────────
 // إنشاء جدول الرسائل إن لم يكن موجوداً
@@ -102,7 +133,15 @@ function handleMsgGetAll(): void
 function handleMsgPost(): void
 {
     // لا يحتاج auth — الزوار يمكنهم الإرسال
+    checkMessageRateLimit();
+
     $data = bodyJson();
+
+    // Honeypot: if the hidden field is filled, it's a bot
+    if (!empty($data['website'])) {
+        // Silently accept (don't reveal the trap)
+        respond(201, ['message' => 'تم إرسال رسالتك بنجاح. شكراً لتواصلك معنا.']);
+    }
 
     $name    = trim((string) ($data['name']    ?? ''));
     $email   = trim((string) ($data['email']   ?? ''));

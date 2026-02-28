@@ -3,6 +3,24 @@
 // 2) Fallback: اقرأ من /api/media.php إذا لم يكن هناك محتوى مُعروض
 let _mediaFilter = 'all';
 
+// ── Focus Trap utility ──────────────────────────────────────
+function trapFocus(el) {
+  const focusable = 'a[href],button:not([disabled]),input:not([disabled]),textarea,select,[tabindex]:not([tabindex="-1"])';
+  function handler(e) {
+    if (e.key !== 'Tab') return;
+    const items = [...el.querySelectorAll(focusable)].filter(i => i.offsetParent !== null);
+    if (!items.length) return;
+    const first = items[0], last = items[items.length - 1];
+    if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus(); }
+    else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
+  }
+  el.addEventListener('keydown', handler);
+  // Focus first focusable element
+  const items = [...el.querySelectorAll(focusable)].filter(i => i.offsetParent !== null);
+  if (items.length) items[0].focus();
+  return () => el.removeEventListener('keydown', handler);
+}
+
 // ── Lightbox ──────────────────────────────────────────────
 let _lbItems  = [];
 let _lbIndex  = 0;
@@ -25,13 +43,18 @@ function _lbShow() {
   document.getElementById('lightbox-img').alt = img.alt;
   const title = img.closest('.media-item')?.querySelector('.media-item-title')?.textContent || '';
   document.getElementById('lightbox-caption').textContent = title;
-  document.getElementById('lightbox').classList.add('open');
+  const lb = document.getElementById('lightbox');
+  lb.classList.add('open');
   document.body.style.overflow = 'hidden';
+  _focusTrapCleanup = trapFocus(lb);
 }
+
+let _focusTrapCleanup = null;
 
 function closeLightbox() {
   document.getElementById('lightbox').classList.remove('open');
   document.body.style.overflow = '';
+  if (_focusTrapCleanup) { _focusTrapCleanup(); _focusTrapCleanup = null; }
 }
 
 function lightboxNav(dir) {

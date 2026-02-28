@@ -41,3 +41,45 @@
   <button class="lightbox-nav lightbox-next" onclick="lightboxNav(1)" aria-label="التالي">&#8249;</button>
   <div class="lightbox-caption" id="lightbox-caption"></div>
 </div>
+
+<!-- Image fallback for broken images -->
+<script>
+document.addEventListener('error', function(e) {
+  if (e.target.tagName === 'IMG' && !e.target.dataset.fallback) {
+    e.target.dataset.fallback = '1';
+    e.target.style.opacity = '.3';
+    e.target.alt = 'صورة غير متوفرة';
+  }
+}, true);
+</script>
+
+<!-- Service Worker registration -->
+<script>
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('/sw.js').catch(function() {});
+}
+</script>
+
+<!-- Bottom Navigation (mobile) -->
+<nav class="bottom-nav" aria-label="تنقل سريع">
+  <a href="/" class="bottom-nav-item<?= (isset($currentPage) && $currentPage === 'home') ? ' active' : '' ?>">
+    <span class="bottom-nav-icon">&#127968;</span>
+    <span class="bottom-nav-label">الرئيسية</span>
+  </a>
+  <a href="/news" class="bottom-nav-item<?= (isset($currentPage) && $currentPage === 'news') ? ' active' : '' ?>">
+    <span class="bottom-nav-icon">&#128240;</span>
+    <span class="bottom-nav-label">الأخبار</span>
+  </a>
+  <a href="/tree" class="bottom-nav-item<?= (isset($currentPage) && $currentPage === 'tree') ? ' active' : '' ?>">
+    <span class="bottom-nav-icon">&#127795;</span>
+    <span class="bottom-nav-label">الشجرة</span>
+  </a>
+  <a href="/gallery" class="bottom-nav-item<?= (isset($currentPage) && $currentPage === 'gallery') ? ' active' : '' ?>">
+    <span class="bottom-nav-icon">&#128247;</span>
+    <span class="bottom-nav-label">المعرض</span>
+  </a>
+  <a href="/council" class="bottom-nav-item<?= (isset($currentPage) && $currentPage === 'council') ? ' active' : '' ?>">
+    <span class="bottom-nav-icon">&#127970;</span>
+    <span class="bottom-nav-label">المجلس</span>
+  </a>
+</nav>

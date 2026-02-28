@@ -15,6 +15,10 @@ $ws = getWS();
   <div style="max-width:700px;margin:0 auto">
     <div style="background:var(--surface);border-radius:var(--radius-lg);padding:36px;border:1px solid var(--border);box-shadow:var(--shadow-sm)">
       <form id="contact-form" onsubmit="return handleContactSubmit(event)">
+        <!-- Honeypot — hidden from real users -->
+        <div style="position:absolute;left:-9999px" aria-hidden="true">
+          <input type="text" name="website" id="contact-website" tabindex="-1" autocomplete="off">
+        </div>
         <div style="margin-bottom:20px">
           <label for="contact-name" style="display:block;font-weight:700;margin-bottom:8px;color:var(--green-dark);font-size:14px">الاسم الكامل *</label>
           <input type="text" id="contact-name" name="name" required placeholder="مثال: أحمد محمد العوامي" autocomplete="name" style="width:100%;padding:14px 18px;border:2px solid var(--border);border-radius:var(--radius);font-size:15px;font-family:inherit;background:var(--bg);color:var(--text);transition:border-color .25s" onfocus="this.style.borderColor='var(--green)'" onblur="this.style.borderColor='var(--border)'">
@@ -29,7 +33,8 @@ $ws = getWS();
         </div>
         <div style="margin-bottom:24px">
           <label for="contact-message" style="display:block;font-weight:700;margin-bottom:8px;color:var(--green-dark);font-size:14px">الرسالة *</label>
-          <textarea id="contact-message" name="message" required rows="5" placeholder="اكتب رسالتك هنا..." style="width:100%;padding:14px 18px;border:2px solid var(--border);border-radius:var(--radius);font-size:15px;font-family:inherit;background:var(--bg);color:var(--text);resize:vertical;transition:border-color .25s" onfocus="this.style.borderColor='var(--green)'" onblur="this.style.borderColor='var(--border)'"></textarea>
+          <textarea id="contact-message" name="message" required rows="5" maxlength="2000" placeholder="اكتب رسالتك هنا..." style="width:100%;padding:14px 18px;border:2px solid var(--border);border-radius:var(--radius);font-size:15px;font-family:inherit;background:var(--bg);color:var(--text);resize:vertical;transition:border-color .25s" onfocus="this.style.borderColor='var(--green)'" onblur="this.style.borderColor='var(--border)'" oninput="document.getElementById('char-count').textContent=this.value.length+' / 2000'"></textarea>
+          <div id="char-count" style="text-align:left;font-size:12px;color:var(--text-muted);margin-top:4px">0 / 2000</div>
         </div>
         <button type="submit" class="cta-btn cta-primary" style="width:100%;justify-content:center;font-size:16px;padding:16px">&#9993; إرسال الرسالة</button>
       </form>
@@ -109,11 +114,23 @@ function handleContactSubmit(e) {
   var form = e.target;
   var btn = form.querySelector('button[type="submit"]');
   var status = document.getElementById('contact-status');
+
+  // Phone validation (Saudi format)
+  var phone = form.phone.value.trim();
+  if (phone && !/^05\d{8}$/.test(phone)) {
+    status.style.display = 'block';
+    status.style.background = '#fee2e2';
+    status.style.color = '#991b1b';
+    status.textContent = 'صيغة رقم الجوال غير صحيحة. يجب أن يكون بصيغة 05XXXXXXXX';
+    return false;
+  }
+
   var data = {
     name: form.name.value.trim(),
-    phone: form.phone.value.trim(),
+    phone: phone,
     subject: form.subject.value.trim(),
-    message: form.message.value.trim()
+    message: form.message.value.trim(),
+    website: form.querySelector('#contact-website').value // honeypot
   };
   if (!data.name || !data.message) return false;
 
@@ -133,14 +150,20 @@ function handleContactSubmit(e) {
     status.style.color = 'var(--green-dark)';
     status.textContent = result.message || 'شكراً لتواصلك! تم استلام رسالتك بنجاح.';
     form.reset();
+    document.getElementById('char-count').textContent = '0 / 2000';
+    // Cooldown: keep button disabled for 30 seconds after success
+    var secs = 30;
+    var interval = setInterval(function() {
+      secs--;
+      btn.textContent = 'إرسال مرة أخرى (' + secs + ')';
+      if (secs <= 0) { clearInterval(interval); btn.disabled = false; btn.innerHTML = '&#9993; إرسال الرسالة'; }
+    }, 1000);
   })
   .catch(function(err) {
     status.style.display = 'block';
     status.style.background = '#fee2e2';
     status.style.color = '#991b1b';
     status.textContent = err.message || 'حدث خطأ أثناء الإرسال. حاول مرة أخرى.';
-  })
-  .finally(function() {
     btn.disabled = false;
     btn.innerHTML = '&#9993; إرسال الرسالة';
   });

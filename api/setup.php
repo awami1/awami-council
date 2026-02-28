@@ -362,6 +362,24 @@ if (!$sqlite) {
     }
 }
 
+// ---- Performance indexes (idempotent — safe to re-run) ----
+$indexes = $sqlite ? [
+    "CREATE INDEX IF NOT EXISTS idx_payments_member ON payments(member_id)",
+    "CREATE INDEX IF NOT EXISTS idx_payments_period ON payments(period_id)",
+    "CREATE INDEX IF NOT EXISTS idx_events_date ON events(event_date)",
+    "CREATE INDEX IF NOT EXISTS idx_news_created ON news(created_at)",
+    "CREATE INDEX IF NOT EXISTS idx_messages_created ON messages(created_at)",
+] : [
+    // MySQL: CREATE INDEX IF NOT EXISTS not supported pre-8.0, so use try/catch
+    "CREATE INDEX idx_payments_member ON payments(member_id)",
+    "CREATE INDEX idx_payments_period ON payments(period_id)",
+    "CREATE INDEX idx_events_date ON events(event_date)",
+    "CREATE INDEX idx_messages_created ON messages(created_at)",
+];
+foreach ($indexes as $sql) {
+    try { $pdo->exec($sql); } catch (PDOException $e) { /* index may already exist */ }
+}
+
 header('Content-Type: application/json; charset=utf-8');
 echo json_encode([
     'status'  => empty($errors) ? 'SUCCESS' : 'PARTIAL — check errors',

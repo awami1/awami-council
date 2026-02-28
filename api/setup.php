@@ -7,6 +7,11 @@ require_once __DIR__ . '/config.php';
 require_once __DIR__ . '/auth_guard.php';
 requireAuth();
 
+// حماية من إعادة التنفيذ في بيئة الإنتاج
+if (getenv('SETUP_DISABLED') === 'true') {
+    respond(403, ['error' => 'Setup disabled in production.']);
+}
+
 $pdo = getPDO();
 $sqlite = isSQLite();
 

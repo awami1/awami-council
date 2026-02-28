@@ -85,8 +85,10 @@ if ($method === 'POST' && $action === 'login') {
         $_SESSION['awami_admin']      = true;
         $_SESSION['awami_user']       = $username;
         $_SESSION['awami_login_time'] = time();
+        // إنشاء CSRF token عند تسجيل الدخول
+        $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
         logAudit('دخول', 'auth', '', $username);
-        respond(200, ['success' => true]);
+        respond(200, ['success' => true, 'csrf_token' => $_SESSION['csrf_token']]);
     }
 
     // تسجيل محاولة فاشلة لـ rate limiting

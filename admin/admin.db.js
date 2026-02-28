@@ -83,7 +83,7 @@ FamilyTreeAPI.getAll(),
     buildCommitteeMembersMap();
 
     // تحويل بيانات الأعضاء للصيغة الداخلية
-    DB.members = DB.members.map(normalizeMemeber);
+    DB.members = DB.members.map(normalizeMember);
     DB.payments = DB.payments.map(normalizePayment);
     DB.transactions = DB.transactions.map(normalizeTx);
     DB.events = DB.events.map(normalizeEvent);
@@ -112,7 +112,7 @@ FamilyTreeAPI.getAll(),
 }
 
 // –– Normalizers: تحويل بيانات API للصيغة الداخلية ––
-function normalizeMemeber(m) {
+function normalizeMember(m) {
 return {
 id:       m.id,
 name:     m.name,
@@ -222,10 +222,10 @@ let result;
 if (id) {
 result = await MembersAPI.update(id, payload);
 const idx = DB.members.findIndex(m => m.id === id);
-if (idx >= 0) DB.members[idx] = normalizeMemeber(result.data ?? { id, ...payload });
+if (idx >= 0) DB.members[idx] = normalizeMember(result.data ?? { id, ...payload });
 } else {
 result = await MembersAPI.create(payload);
-DB.members.push(normalizeMemeber(result.data));
+DB.members.push(normalizeMember(result.data));
 }
 return result;
 },
@@ -777,7 +777,7 @@ delete: async (id) => { confirm2('هل تريد حذف هذه الرسالة؟',
 
 // Services compatibility
 const MemberService = {
-saveMember: (id, data) => AdminMember.save(id, data).then(() => { closeModal('modal-member'); toast('تم الحفظ ✅'); renderMembers(); updateSidebar(); }),
+saveMember: (id, data) => AdminMember.save(id, data).then(() => { closeModalSilent('modal-member'); toast('تم الحفظ ✅'); renderMembers(); updateSidebar(); }),
 deleteMember: (id) => { confirm2('هل تريد حذف هذا العضو؟', async () => { await AdminMember.delete(id); toast('تم الحذف'); renderMembers(); updateSidebar(); }); },
 addMemberToCommittee: (cid, mid) => AdminMember.addToCommittee(cid, mid).then(() => { toast('تمت الإضافة ✅'); showCommitteeDetail(cid); }),
 removeMemberFromCommittee: (cid, mid) => AdminMember.removeFromCommittee(cid, mid).then(() => { toast('تم الإزالة'); showCommitteeDetail(cid); }),
@@ -792,8 +792,8 @@ deleteTx:     async (id) => { confirm2('حذف المعاملة؟', async () => 
 };
 
 const CommitteeService = {
-create: async (data) => { await AdminCommittee.create(data); closeModal('modal-add-committee'); toast('تم إنشاء اللجنة ✅'); renderCommittees(); renderOrgChart(); renderDashboard(); updateSidebar(); },
-update: async (id, data) => { await AdminCommittee.update(id, data); closeModal('modal-add-committee'); toast('تم التحديث ✅'); renderCommittees(); renderOrgChart(); },
+create: async (data) => { await AdminCommittee.create(data); closeModalSilent('modal-add-committee'); toast('تم إنشاء اللجنة ✅'); renderCommittees(); renderOrgChart(); renderDashboard(); updateSidebar(); },
+update: async (id, data) => { await AdminCommittee.update(id, data); closeModalSilent('modal-add-committee'); toast('تم التحديث ✅'); renderCommittees(); renderOrgChart(); },
 delete: async (id) => { confirm2('هل تريد حذف هذه اللجنة؟', async () => { await AdminCommittee.delete(id); toast('تم حذف اللجنة'); renderCommittees(); renderOrgChart(); renderDashboard(); updateSidebar(); }); },
 };
 

@@ -4,6 +4,7 @@ declare(strict_types=1);
 require_once __DIR__ . '/config.php';
 require_once __DIR__ . '/auth_guard.php';
 require_once __DIR__ . '/validation.php';
+verifyCsrf();
 
 // ──────────────────────────────────────────────────────────────
 // إنشاء جدول الأخبار إن لم يكن موجوداً

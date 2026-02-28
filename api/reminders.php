@@ -12,6 +12,7 @@ require_once __DIR__ . '/config.php';
 require_once __DIR__ . '/auth_guard.php';
 require_once __DIR__ . '/audit_helper.php';
 requireAuth();
+verifyCsrf();
 
 $pdo    = getPDO();
 $method = $_SERVER['REQUEST_METHOD'];

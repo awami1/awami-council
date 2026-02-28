@@ -3,54 +3,54 @@
      ============================================================ -->
 
 <!-- MEMBER MODAL -->
-<div class="modal-overlay" id="modal-member">
+<div class="modal-overlay" id="modal-member" role="dialog" aria-modal="true" aria-labelledby="modal-member-title">
   <div class="modal">
-    <div class="modal-header"><div class="modal-title" id="modal-member-title">+ اضافة عضو</div><button class="modal-close" onclick="closeModal('modal-member')">✕</button></div>
+    <div class="modal-header"><div class="modal-title" id="modal-member-title">+ اضافة عضو</div><button class="modal-close" onclick="closeModal('modal-member')" aria-label="إغلاق">✕</button></div>
     <div class="modal-body">
       <input type="hidden" id="mm-id">
       <div class="form-grid">
-        <div class="form-group"><label class="form-label">الاسم الكامل *</label><input class="form-control" id="mm-name" placeholder="الاسم"></div>
-        <div class="form-group"><label class="form-label">رقم الجوال</label><input class="form-control" id="mm-phone" placeholder="05xxxxxxxx"></div>
-        <div class="form-group"><label class="form-label">رقم الهوية</label><input class="form-control" id="mm-idnum"></div>
-        <div class="form-group"><label class="form-label">الفرع العائلي</label><input class="form-control" id="mm-family" placeholder="مثال: آل محمد"></div>
-        <div class="form-group"><label class="form-label">تاريخ الانضمام</label><input class="form-control" id="mm-join" type="date"></div>
-        <div class="form-group"><label class="form-label">الحالة</label><select class="form-control" id="mm-status"><option>نشط</option><option>معفي</option><option>غير نشط</option></select></div>
+        <div class="form-group"><label class="form-label" for="mm-name">الاسم الكامل *</label><input class="form-control" id="mm-name" placeholder="الاسم" required></div>
+        <div class="form-group"><label class="form-label" for="mm-phone">رقم الجوال</label><input class="form-control" id="mm-phone" placeholder="05xxxxxxxx" pattern="05\d{8}" inputmode="tel"></div>
+        <div class="form-group"><label class="form-label" for="mm-idnum">رقم الهوية</label><input class="form-control" id="mm-idnum" pattern="\d{10}" inputmode="numeric"></div>
+        <div class="form-group"><label class="form-label" for="mm-family">الفرع العائلي</label><input class="form-control" id="mm-family" placeholder="مثال: آل محمد"></div>
+        <div class="form-group"><label class="form-label" for="mm-join">تاريخ الانضمام</label><input class="form-control" id="mm-join" type="date"></div>
+        <div class="form-group"><label class="form-label" for="mm-status">الحالة</label><select class="form-control" id="mm-status"><option>نشط</option><option>معفي</option><option>غير نشط</option></select></div>
       </div>
-      <div class="form-group"><label class="form-label">ملاحظات</label><textarea class="form-control" id="mm-notes" rows="2"></textarea></div>
+      <div class="form-group"><label class="form-label" for="mm-notes">ملاحظات</label><textarea class="form-control" id="mm-notes" rows="2"></textarea></div>
     </div>
     <div class="modal-footer"><button class="btn btn-outline" onclick="closeModal('modal-member')">إلغاء</button><button class="btn btn-primary" onclick="saveMember()">حفظ</button></div>
   </div>
 </div>
 
 <!-- PAYMENT MODAL -->
-<div class="modal-overlay" id="modal-pay">
+<div class="modal-overlay" id="modal-pay" role="dialog" aria-modal="true" aria-labelledby="modal-pay-title">
   <div class="modal">
-    <div class="modal-header"><div class="modal-title">💳 تسجيل دفعة</div><button class="modal-close" onclick="closeModal('modal-pay')">✕</button></div>
+    <div class="modal-header"><div class="modal-title" id="modal-pay-title">💳 تسجيل دفعة</div><button class="modal-close" onclick="closeModal('modal-pay')" aria-label="إغلاق">✕</button></div>
     <div class="modal-body">
       <input type="hidden" id="pay-mid">
-      <div class="form-group"><label class="form-label">العضو</label><input class="form-control" id="pay-mname" disabled></div>
+      <div class="form-group"><label class="form-label" for="pay-mname">العضو</label><input class="form-control" id="pay-mname" disabled></div>
       <div class="form-grid">
-        <div class="form-group"><label class="form-label">المبلغ (ريال)</label><input class="form-control" id="pay-amount" type="number"></div>
-        <div class="form-group"><label class="form-label">التاريخ</label><input class="form-control" id="pay-date" type="date"></div>
-        <div class="form-group"><label class="form-label">الطريقة</label><select class="form-control" id="pay-method"><option>تحويل بنكي</option><option>نقدي</option><option>STCPay</option></select></div>
-        <div class="form-group"><label class="form-label">الحالة</label><select class="form-control" id="pay-status"><option>مدفوع</option><option>لم يدفع</option><option>معفي</option></select></div>
+        <div class="form-group"><label class="form-label" for="pay-amount">المبلغ (ريال)</label><input class="form-control" id="pay-amount" type="number" min="0"></div>
+        <div class="form-group"><label class="form-label" for="pay-date">التاريخ</label><input class="form-control" id="pay-date" type="date"></div>
+        <div class="form-group"><label class="form-label" for="pay-method">الطريقة</label><select class="form-control" id="pay-method"><option>تحويل بنكي</option><option>نقدي</option><option>STCPay</option></select></div>
+        <div class="form-group"><label class="form-label" for="pay-status">الحالة</label><select class="form-control" id="pay-status"><option>مدفوع</option><option>لم يدفع</option><option>معفي</option></select></div>
       </div>
-      <div class="form-group"><label class="form-label">ملاحظات</label><textarea class="form-control" id="pay-notes" rows="2"></textarea></div>
+      <div class="form-group"><label class="form-label" for="pay-notes">ملاحظات</label><textarea class="form-control" id="pay-notes" rows="2"></textarea></div>
     </div>
     <div class="modal-footer"><button class="btn btn-outline" onclick="closeModal('modal-pay')">إلغاء</button><button class="btn btn-primary" onclick="savePayment()">تسجيل</button></div>
   </div>
 </div>
 
 <!-- PERIOD MODAL -->
-<div class="modal-overlay" id="modal-period">
+<div class="modal-overlay" id="modal-period" role="dialog" aria-modal="true" aria-labelledby="modal-period-title">
   <div class="modal">
-    <div class="modal-header"><div class="modal-title">🗓 دورة دفع جديدة</div><button class="modal-close" onclick="closeModal('modal-period')">✕</button></div>
+    <div class="modal-header"><div class="modal-title" id="modal-period-title">🗓 دورة دفع جديدة</div><button class="modal-close" onclick="closeModal('modal-period')" aria-label="إغلاق">✕</button></div>
     <div class="modal-body">
       <div class="form-grid">
-        <div class="form-group"><label class="form-label">اسم الدورة *</label><input class="form-control" id="pd-name" placeholder="الدورة الأولى 2025"></div>
-        <div class="form-group"><label class="form-label">مبلغ الرسوم (ريال) *</label><input class="form-control" id="pd-amount" type="number" placeholder="400"></div>
-        <div class="form-group"><label class="form-label">تاريخ البدء</label><input class="form-control" id="pd-start" type="date"></div>
-        <div class="form-group"><label class="form-label">تاريخ الانتهاء</label><input class="form-control" id="pd-end" type="date"></div>
+        <div class="form-group"><label class="form-label" for="pd-name">اسم الدورة *</label><input class="form-control" id="pd-name" placeholder="الدورة الأولى 2025" required></div>
+        <div class="form-group"><label class="form-label" for="pd-amount">مبلغ الرسوم (ريال) *</label><input class="form-control" id="pd-amount" type="number" placeholder="400" min="0" required></div>
+        <div class="form-group"><label class="form-label" for="pd-start">تاريخ البدء</label><input class="form-control" id="pd-start" type="date"></div>
+        <div class="form-group"><label class="form-label" for="pd-end">تاريخ الانتهاء</label><input class="form-control" id="pd-end" type="date"></div>
       </div>
     </div>
     <div class="modal-footer"><button class="btn btn-outline" onclick="closeModal('modal-period')">إلغاء</button><button class="btn btn-primary" onclick="createPeriod()">إنشاء</button></div>
@@ -58,14 +58,14 @@
 </div>
 
 <!-- TRANSACTION MODAL -->
-<div class="modal-overlay" id="modal-tx">
+<div class="modal-overlay" id="modal-tx" role="dialog" aria-modal="true" aria-labelledby="modal-tx-title">
   <div class="modal">
-    <div class="modal-header"><div class="modal-title">💵 إضافة معاملة مالية</div><button class="modal-close" onclick="closeModal('modal-tx')">✕</button></div>
+    <div class="modal-header"><div class="modal-title" id="modal-tx-title">💵 إضافة معاملة مالية</div><button class="modal-close" onclick="closeModal('modal-tx')" aria-label="إغلاق">✕</button></div>
     <div class="modal-body">
       <div class="form-grid">
-        <div class="form-group"><label class="form-label">النوع</label><select class="form-control" id="tx-type"><option>إيراد</option><option>مصروف</option></select></div>
-        <div class="form-group"><label class="form-label">المبلغ (ريال) *</label><input class="form-control" id="tx-amount" type="number"></div>
-        <div class="form-group"><label class="form-label">التاريخ</label><input class="form-control" id="tx-date" type="date"></div>
+        <div class="form-group"><label class="form-label" for="tx-type">النوع</label><select class="form-control" id="tx-type"><option>إيراد</option><option>مصروف</option></select></div>
+        <div class="form-group"><label class="form-label" for="tx-amount">المبلغ (ريال) *</label><input class="form-control" id="tx-amount" type="number" min="0"></div>
+        <div class="form-group"><label class="form-label" for="tx-date">التاريخ</label><input class="form-control" id="tx-date" type="date"></div>
         <div class="form-group"><label class="form-label">الفئة</label><select class="form-control" id="tx-cat"><option>رسوم الأعضاء</option><option>رحلة العمرة</option><option>غداء العيد</option><option>رحلة ترفيهية</option><option>مسابقة</option><option>مصاريف إدارية</option><option>استثمار</option><option>عقيقة جماعية</option><option>تبرعات</option><option>أخرى</option></select></div>
         <div class="form-group" style="grid-column:1/-1"><label class="form-label">اللجنة</label><select class="form-control" id="tx-committee"><option value="">عام</option></select></div>
       </div>
@@ -76,9 +76,9 @@
 </div>
 
 <!-- EVENT MODAL -->
-<div class="modal-overlay" id="modal-event">
+<div class="modal-overlay" id="modal-event" role="dialog" aria-modal="true" aria-labelledby="event-modal-title">
   <div class="modal">
-    <div class="modal-header"><div class="modal-title" id="event-modal-title">🎉 إضافة فعالية</div><button class="modal-close" onclick="closeModal('modal-event')">✕</button></div>
+    <div class="modal-header"><div class="modal-title" id="event-modal-title">🎉 إضافة فعالية</div><button class="modal-close" onclick="closeModal('modal-event')" aria-label="إغلاق">✕</button></div>
     <div class="modal-body">
       <input type="hidden" id="ev-edit-id">
       <div class="form-group"><label class="form-label">اسم الفعالية *</label><input class="form-control" id="ev-name"></div>
@@ -106,17 +106,17 @@
 </div>
 
 <!-- COMMITTEE DETAIL MODAL -->
-<div class="modal-overlay" id="modal-committee-detail">
+<div class="modal-overlay" id="modal-committee-detail" role="dialog" aria-modal="true" aria-labelledby="cdetail-title">
   <div class="modal modal-wide">
-    <div class="modal-header"><div class="modal-title" id="cdetail-title">تفاصيل اللجنة</div><button class="modal-close" onclick="closeModal('modal-committee-detail')">✕</button></div>
+    <div class="modal-header"><div class="modal-title" id="cdetail-title">تفاصيل اللجنة</div><button class="modal-close" onclick="closeModal('modal-committee-detail')" aria-label="إغلاق">✕</button></div>
     <div class="modal-body" id="cdetail-body"></div>
   </div>
 </div>
 
 <!-- WHATSAPP MODAL -->
-<div class="modal-overlay" id="modal-whatsapp">
+<div class="modal-overlay" id="modal-whatsapp" role="dialog" aria-modal="true" aria-labelledby="modal-whatsapp-title">
   <div class="modal">
-    <div class="modal-header"><div class="modal-title">📱 إشعارات واتساب للمتأخرين</div><button class="modal-close" onclick="closeModal('modal-whatsapp')">✕</button></div>
+    <div class="modal-header"><div class="modal-title" id="modal-whatsapp-title">📱 إشعارات واتساب للمتأخرين</div><button class="modal-close" onclick="closeModal('modal-whatsapp')" aria-label="إغلاق">✕</button></div>
     <div class="modal-body">
       <div style="background:#f0fdf4;border-radius:10px;padding:12px;margin-bottom:14px;border:1px solid #86efac"><div style="font-size:12px;color:#166534">💡 اضغط على زر "إرسال" لكل عضو لفتح واتساب برسالة جاهزة</div></div>
       <div id="whatsapp-list"></div>
@@ -126,18 +126,18 @@
 </div>
 
 <!-- CONFIRM MODAL -->
-<div class="modal-overlay" id="modal-confirm">
+<div class="modal-overlay" id="modal-confirm" role="alertdialog" aria-modal="true" aria-labelledby="modal-confirm-title">
   <div class="modal" style="max-width:360px">
-    <div class="modal-header"><div class="modal-title">⚠ تأكيد</div><button class="modal-close" onclick="closeModal('modal-confirm')">✕</button></div>
+    <div class="modal-header"><div class="modal-title" id="modal-confirm-title">⚠ تأكيد</div><button class="modal-close" onclick="closeModal('modal-confirm')" aria-label="إغلاق">✕</button></div>
     <div class="modal-body"><p style="color:var(--text-muted);font-size:14px" id="confirm-msg"></p></div>
     <div class="modal-footer"><button class="btn btn-outline" onclick="closeModal('modal-confirm')">إلغاء</button><button class="btn btn-danger" id="confirm-btn">تأكيد</button></div>
   </div>
 </div>
 
 <!-- TREE MEMBER MODAL -->
-<div class="modal-overlay" id="modal-tree-member">
+<div class="modal-overlay" id="modal-tree-member" role="dialog" aria-modal="true" aria-labelledby="tree-member-modal-title">
   <div class="modal">
-    <div class="modal-header"><div class="modal-title" id="tree-member-modal-title">🌳 إضافة شخص للشجرة</div><button class="modal-close" onclick="closeModal('modal-tree-member')">✕</button></div>
+    <div class="modal-header"><div class="modal-title" id="tree-member-modal-title">🌳 إضافة شخص للشجرة</div><button class="modal-close" onclick="closeModal('modal-tree-member')" aria-label="إغلاق">✕</button></div>
     <div class="modal-body">
       <input type="hidden" id="ftm-id">
       <div class="form-grid">
@@ -172,9 +172,9 @@
 </div>
 
 <!-- ADD BRANCH MODAL -->
-<div class="modal-overlay" id="modal-add-branch">
+<div class="modal-overlay" id="modal-add-branch" role="dialog" aria-modal="true" aria-labelledby="branch-modal-title">
   <div class="modal modal-wide">
-    <div class="modal-header"><div class="modal-title" id="branch-modal-title">🌳 إضافة فرع عائلي</div><button class="modal-close" onclick="closeModal('modal-add-branch')">✕</button></div>
+    <div class="modal-header"><div class="modal-title" id="branch-modal-title">🌳 إضافة فرع عائلي</div><button class="modal-close" onclick="closeModal('modal-add-branch')" aria-label="إغلاق">✕</button></div>
     <div class="modal-body">
       <input type="hidden" id="branch-id">
       <div class="form-grid">
@@ -198,9 +198,9 @@
 </div>
 
 <!-- BACKUPS MODAL -->
-<div class="modal-overlay" id="modal-backups">
+<div class="modal-overlay" id="modal-backups" role="dialog" aria-modal="true" aria-labelledby="modal-backups-title">
   <div class="modal">
-    <div class="modal-header"><div class="modal-title">📂 النسخ الاحتياطية التلقائية</div><button class="modal-close" onclick="closeModal('modal-backups')">✕</button></div>
+    <div class="modal-header"><div class="modal-title" id="modal-backups-title">📂 النسخ الاحتياطية التلقائية</div><button class="modal-close" onclick="closeModal('modal-backups')" aria-label="إغلاق">✕</button></div>
     <div class="modal-body">
       <div style="background:#f0fdf4;border:1px solid #86efac;border-radius:10px;padding:12px;margin-bottom:14px">
         <div style="font-size:12px;color:#166534">💡 يتم حفظ نسخة احتياطية تلقائياً كل يوم (آخر 7 أيام)</div>
@@ -212,9 +212,9 @@
 </div>
 
 <!-- IMPORT EXCEL MODAL -->
-<div class="modal-overlay" id="modal-import-excel">
+<div class="modal-overlay" id="modal-import-excel" role="dialog" aria-modal="true" aria-labelledby="modal-import-title">
   <div class="modal">
-    <div class="modal-header"><div class="modal-title">📥 استيراد أعضاء من Excel</div><button class="modal-close" onclick="closeModal('modal-import-excel')">✕</button></div>
+    <div class="modal-header"><div class="modal-title" id="modal-import-title">📥 استيراد أعضاء من Excel</div><button class="modal-close" onclick="closeModal('modal-import-excel')" aria-label="إغلاق">✕</button></div>
     <div class="modal-body">
       <div style="background:#fef9c3;border:1px solid #fde047;border-radius:10px;padding:14px;margin-bottom:16px">
         <div style="font-size:13px;color:#854d0e;font-weight:600;margin-bottom:6px">📊 الأعمدة المطلوبة في Excel:</div>
@@ -231,9 +231,9 @@
 </div>
 
 <!-- ADD / EDIT MEDIA MODAL -->
-<div class="modal-overlay" id="modal-add-media">
+<div class="modal-overlay" id="modal-add-media" role="dialog" aria-modal="true" aria-labelledby="modal-media-title">
   <div class="modal">
-    <div class="modal-header"><div class="modal-title" id="modal-media-title">📷 إضافة ميديا</div><button class="modal-close" onclick="closeModal('modal-add-media')">✕</button></div>
+    <div class="modal-header"><div class="modal-title" id="modal-media-title">📷 إضافة ميديا</div><button class="modal-close" onclick="closeModal('modal-add-media')" aria-label="إغلاق">✕</button></div>
     <div class="modal-body">
       <input type="hidden" id="media-edit-id">
       <div class="form-group"><label class="form-label">العنوان *</label><input class="form-control" id="media-title" required></div>
@@ -261,18 +261,18 @@
 </div>
 
 <!-- BRANCH DETAIL MODAL -->
-<div class="modal-overlay" id="modal-branch-detail">
+<div class="modal-overlay" id="modal-branch-detail" role="dialog" aria-modal="true" aria-labelledby="branch-detail-title">
   <div class="modal">
-    <div class="modal-header"><div class="modal-title" id="branch-detail-title">تفاصيل الفرع</div><button class="modal-close" onclick="closeModal('modal-branch-detail')">✕</button></div>
+    <div class="modal-header"><div class="modal-title" id="branch-detail-title">تفاصيل الفرع</div><button class="modal-close" onclick="closeModal('modal-branch-detail')" aria-label="إغلاق">✕</button></div>
     <div class="modal-body" id="branch-detail-body"></div>
     <div class="modal-footer"><button class="btn btn-outline" onclick="closeModal('modal-branch-detail')">إغلاق</button></div>
   </div>
 </div>
 
 <!-- POSITION MODAL -->
-<div class="modal-overlay" id="modal-position">
+<div class="modal-overlay" id="modal-position" role="dialog" aria-modal="true" aria-labelledby="position-modal-title">
   <div class="modal">
-    <div class="modal-header"><div class="modal-title" id="position-modal-title">👑 إضافة منصب</div><button class="modal-close" onclick="closeModal('modal-position')">✕</button></div>
+    <div class="modal-header"><div class="modal-title" id="position-modal-title">👑 إضافة منصب</div><button class="modal-close" onclick="closeModal('modal-position')" aria-label="إغلاق">✕</button></div>
     <div class="modal-body">
       <input type="hidden" id="position-index">
       <div class="form-grid">
@@ -292,9 +292,9 @@
 </div>
 
 <!-- VALUE MODAL -->
-<div class="modal-overlay" id="modal-value">
+<div class="modal-overlay" id="modal-value" role="dialog" aria-modal="true" aria-labelledby="value-modal-title">
   <div class="modal">
-    <div class="modal-header"><div class="modal-title" id="value-modal-title">💎 إضافة قيمة</div><button class="modal-close" onclick="closeModal('modal-value')">✕</button></div>
+    <div class="modal-header"><div class="modal-title" id="value-modal-title">💎 إضافة قيمة</div><button class="modal-close" onclick="closeModal('modal-value')" aria-label="إغلاق">✕</button></div>
     <div class="modal-body">
       <input type="hidden" id="value-index">
       <div class="form-grid">
@@ -312,9 +312,9 @@
 </div>
 
 <!-- COMMITTEE ADD/EDIT MODAL -->
-<div class="modal-overlay" id="modal-add-committee">
+<div class="modal-overlay" id="modal-add-committee" role="dialog" aria-modal="true" aria-labelledby="committee-modal-title">
   <div class="modal">
-    <div class="modal-header"><div class="modal-title" id="committee-modal-title">🏛️ إضافة لجنة</div><button class="modal-close" onclick="closeModal('modal-add-committee')">✕</button></div>
+    <div class="modal-header"><div class="modal-title" id="committee-modal-title">🏛️ إضافة لجنة</div><button class="modal-close" onclick="closeModal('modal-add-committee')" aria-label="إغلاق">✕</button></div>
     <div class="modal-body">
       <input type="hidden" id="cm-id">
       <div class="form-grid">

@@ -3,6 +3,7 @@ declare(strict_types=1);
 require_once __DIR__ . '/config.php';
 require_once __DIR__ . '/auth_guard.php';
 requireAuth();
+verifyCsrf();
 
 $pdo    = getPDO();
 $method = $_SERVER['REQUEST_METHOD'];
@@ -19,16 +20,25 @@ if ($method === 'GET') {
 
 // POST — create period
 if ($method === 'POST') {
+    require_once __DIR__ . '/validation.php';
     $data = bodyJson();
     $id   = uid();
+
+    $name = sanitizeString($data['name'] ?? '', 'name');
+    if ($name === '') respond(422, ['error' => 'اسم الدورة مطلوب.']);
+
+    $feeAmount = $data['fee_amount'] ?? 0;
+    if (!is_numeric($feeAmount) || (float)$feeAmount < 0) {
+        respond(422, ['error' => 'مبلغ الرسوم يجب أن يكون رقماً موجباً.']);
+    }
 
     $pdo->prepare(
         'INSERT INTO periods (id, name, fee_amount, start_date, end_date)
          VALUES (:id, :name, :fee, :start, :end)'
     )->execute([
         ':id'    => $id,
-        ':name'  => $data['name'] ?? '',
-        ':fee'   => (float)($data['fee_amount'] ?? 0),
+        ':name'  => $name,
+        ':fee'   => (float)$feeAmount,
         ':start' => $data['start_date'] ?? null,
         ':end'   => $data['end_date'] ?? null,
     ]);

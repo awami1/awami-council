@@ -4,7 +4,9 @@ declare(strict_types=1);
 require_once __DIR__ . '/config.php';
 require_once __DIR__ . '/auth_guard.php';
 require_once __DIR__ . '/validation.php';
+require_once __DIR__ . '/audit_helper.php';
 requireAuth();
+verifyCsrf();
 
 // ──────────────────────────────────────────────────────────────
 // VALIDATION
@@ -176,6 +178,7 @@ function handlePost(): void
     $row['amount']   = (float) $row['amount'];
     $row['required'] = (float) $row['required'];
 
+    logAudit('إضافة', 'دفعة', $id, $fields['member_id'], ['amount' => $fields['amount'], 'status' => $fields['status']]);
     respond(201, ['data' => $row]);
 }
 
@@ -235,6 +238,7 @@ function handleUpsertByMemberPeriod(): void
     $row['amount']   = (float) $row['amount'];
     $row['required'] = (float) $row['required'];
 
+    logAudit($existing ? 'تعديل' : 'إضافة', 'دفعة', $id, $fields['member_id'], ['amount' => $fields['amount'], 'status' => $fields['status']]);
     respond(200, ['data' => $row]);
 }
 
@@ -286,6 +290,7 @@ function handleDelete(string $id): void
 
     $pdo->prepare('DELETE FROM payments WHERE id = :id')->execute([':id' => $id]);
 
+    logAudit('حذف', 'دفعة', $id, '');
     respond(200, ['message' => 'Payment deleted.']);
 }
 

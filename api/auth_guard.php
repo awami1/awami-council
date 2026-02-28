@@ -38,3 +38,37 @@ function requireAuth(): void
         exit;
     }
 }
+
+/**
+ * إنشاء أو جلب CSRF token من الجلسة
+ */
+function getCsrfToken(): string
+{
+    startAdminSession();
+    if (empty($_SESSION['csrf_token'])) {
+        $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
+    }
+    return $_SESSION['csrf_token'];
+}
+
+/**
+ * التحقق من صحة CSRF token لطلبات POST/PUT/DELETE
+ */
+function verifyCsrf(): void
+{
+    $method = $_SERVER['REQUEST_METHOD'] ?? 'GET';
+    if (!in_array($method, ['POST', 'PUT', 'DELETE'], true)) {
+        return;
+    }
+    startAdminSession();
+    $token = $_SERVER['HTTP_X_CSRF_TOKEN'] ?? '';
+    if (!$token || !hash_equals($_SESSION['csrf_token'] ?? '', $token)) {
+        http_response_code(403);
+        header('Content-Type: application/json; charset=utf-8');
+        echo json_encode(
+            ['error' => 'CSRF token invalid.'],
+            JSON_UNESCAPED_UNICODE
+        );
+        exit;
+    }
+}

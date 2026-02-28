@@ -30,6 +30,7 @@ if ($method === 'GET') {
 
 // ── الباقي يحتاج مصادقة ──
 requireAuth();
+verifyCsrf();
 
 // ── POST — إضافة فرد ──
 if ($method === 'POST') {

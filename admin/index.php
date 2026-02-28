@@ -15,21 +15,43 @@ if (!isAuthenticated()) {
 <link rel="stylesheet" href="css/admin.css">
 <script><?php readfile(dirname(__DIR__) . '/public/js/api.js'); ?></script>
 <script>
-// ── معالج 401: انتهاء الجلسة → إعادة توجيه لصفحة الدخول ──
+// ── CSRF Token ──
+var CSRF_TOKEN = '<?php echo getCsrfToken(); ?>';
+
+// ── معالج 401 + CSRF + حماية من الطلبات المكررة ──
 (function () {
-    const _orig = apiFetch;
+    var _pending = new Map();
+    var _orig = apiFetch;
     apiFetch = async function (url, options) {
-        const res = await fetch(url, {
-            headers: { 'Content-Type': 'application/json' },
-            ...(options || {}),
-        });
-        if (res.status === 401) {
-            window.location.href = '/admin/login.php?expired=1';
-            return new Promise(() => {});
+        var opts = options || {};
+        var method = (opts.method || 'GET').toUpperCase();
+
+        // حماية من الطلبات المكررة (Request Deduplication)
+        var dedup = (method === 'POST' || method === 'PUT');
+        var dedupKey = method + ':' + url;
+        if (dedup && _pending.has(dedupKey)) {
+            return _pending.get(dedupKey);
         }
-        const json = await res.json().catch(() => ({}));
-        if (!res.ok) throw new Error(json.error || 'HTTP ' + res.status);
-        return json;
+
+        var headers = Object.assign({ 'Content-Type': 'application/json' }, opts.headers || {});
+        // إرسال CSRF token مع طلبات الكتابة
+        if (method !== 'GET') {
+            headers['X-CSRF-Token'] = CSRF_TOKEN;
+        }
+
+        var promise = (async function() {
+            var res = await fetch(url, Object.assign({}, opts, { headers: headers }));
+            if (res.status === 401) {
+                window.location.href = '/admin/login.php?expired=1';
+                return new Promise(function() {});
+            }
+            var json = await res.json().catch(function() { return {}; });
+            if (!res.ok) throw new Error(json.error || 'HTTP ' + res.status);
+            return json;
+        })().finally(function() { _pending.delete(dedupKey); });
+
+        if (dedup) _pending.set(dedupKey, promise);
+        return promise;
     };
 })();
 </script>
@@ -55,37 +77,37 @@ if (!isAuthenticated()) {
       </div>
     </div>
   </div>
-  <nav class="nav">
+  <nav class="nav" role="navigation" aria-label="القائمة الرئيسية">
     <div class="nav-section">الرئيسية</div>
-    <div class="nav-item active" onclick="showPage('dashboard',this)"><span class="icon">📊</span>لوحة التحكم</div>
+    <button class="nav-item active" type="button" onclick="showPage('dashboard',this)"><span class="icon">📊</span>لوحة التحكم</button>
     <div class="nav-section">المجلس</div>
-    <div class="nav-item" onclick="showPage('council',this)"><span class="icon">👑</span>مناصب المجلس</div>
-    <div class="nav-item" onclick="showPage('members',this)"><span class="icon">👥</span>الأعضاء</div>
-    <div class="nav-item" onclick="showPage('fees',this)"><span class="icon">💳</span>الرسوم والمدفوعات</div>
-    <div class="nav-item" onclick="showPage('reminders',this)"><span class="icon">🔔</span>التذكيرات</div>
+    <button class="nav-item" type="button" onclick="showPage('council',this)"><span class="icon">👑</span>مناصب المجلس</button>
+    <button class="nav-item" type="button" onclick="showPage('members',this)"><span class="icon">👥</span>الأعضاء</button>
+    <button class="nav-item" type="button" onclick="showPage('fees',this)"><span class="icon">💳</span>الرسوم والمدفوعات</button>
+    <button class="nav-item" type="button" onclick="showPage('reminders',this)"><span class="icon">🔔</span>التذكيرات</button>
     <div class="nav-section">التنظيم</div>
-    <div class="nav-item" onclick="showPage('committees',this)"><span class="icon">🏛️</span>اللجان</div>
-    <div class="nav-item" onclick="showPage('orgchart',this)"><span class="icon">🗂️</span>الهيكل التنظيمي</div>
+    <button class="nav-item" type="button" onclick="showPage('committees',this)"><span class="icon">🏛️</span>اللجان</button>
+    <button class="nav-item" type="button" onclick="showPage('orgchart',this)"><span class="icon">🗂️</span>الهيكل التنظيمي</button>
     <div class="nav-section">المالية</div>
-    <div class="nav-item" onclick="showPage('budget',this)"><span class="icon">💰</span>الميزانية والمصاريف</div>
+    <button class="nav-item" type="button" onclick="showPage('budget',this)"><span class="icon">💰</span>الميزانية والمصاريف</button>
     <div class="nav-section">الأنشطة</div>
-    <div class="nav-item" onclick="showPage('events',this)"><span class="icon">🗓️</span>الفعاليات</div>
-    <div class="nav-item" onclick="showPage('news',this)"><span class="icon">📰</span>الأخبار</div>
-    <div class="nav-item" onclick="showPage('calendar',this)"><span class="icon">📅</span>التقويم</div>
-    <div class="nav-item" onclick="showPage('voting',this)"><span class="icon">🗳️</span>التصويت</div>
+    <button class="nav-item" type="button" onclick="showPage('events',this)"><span class="icon">🗓️</span>الفعاليات</button>
+    <button class="nav-item" type="button" onclick="showPage('news',this)"><span class="icon">📰</span>الأخبار</button>
+    <button class="nav-item" type="button" onclick="showPage('calendar',this)"><span class="icon">📅</span>التقويم</button>
+    <button class="nav-item" type="button" onclick="showPage('voting',this)"><span class="icon">🗳️</span>التصويت</button>
     <div class="nav-section">التواصل</div>
-    <div class="nav-item" onclick="showPage('messages',this)"><span class="icon">✉️</span>الرسائل <span id="msg-badge" class="nav-badge" style="display:none">0</span></div>
+    <button class="nav-item" type="button" onclick="showPage('messages',this)"><span class="icon">✉️</span>الرسائل <span id="msg-badge" class="nav-badge" style="display:none">0</span></button>
     <div class="nav-section">العائلة</div>
-    <div class="nav-item" onclick="showPage('familytree',this)"><span class="icon">🌳</span>شجرة العائلة</div>
+    <button class="nav-item" type="button" onclick="showPage('familytree',this)"><span class="icon">🌳</span>شجرة العائلة</button>
     <div class="nav-section">التقارير</div>
-    <div class="nav-item" onclick="showPage('smart-reports',this)"><span class="icon">🤖</span>التقارير الذكية</div>
-    <div class="nav-item" onclick="showPage('portal',this)"><span class="icon">👤</span>بوابة العضو</div>
-    <div class="nav-item" onclick="showPage('reports',this)"><span class="icon">📈</span>التقارير</div>
-    <div class="nav-item" onclick="showPage('export',this)"><span class="icon">📥</span>تصدير البيانات</div>
+    <button class="nav-item" type="button" onclick="showPage('smart-reports',this)"><span class="icon">🤖</span>التقارير الذكية</button>
+    <button class="nav-item" type="button" onclick="showPage('portal',this)"><span class="icon">👤</span>بوابة العضو</button>
+    <button class="nav-item" type="button" onclick="showPage('reports',this)"><span class="icon">📈</span>التقارير</button>
+    <button class="nav-item" type="button" onclick="showPage('export',this)"><span class="icon">📥</span>تصدير البيانات</button>
     <div class="nav-section">الإعدادات</div>
-    <div class="nav-item" onclick="showPage('audit',this)"><span class="icon">📋</span>سجل التدقيق</div>
-    <div class="nav-item" onclick="showPage('websettings',this)"><span class="icon">🌐</span>الموقع العام</div>
-    <div class="nav-item" onclick="showPage('settings',this)"><span class="icon">⚙️</span>النسخ الاحتياطي</div>
+    <button class="nav-item" type="button" onclick="showPage('audit',this)"><span class="icon">📋</span>سجل التدقيق</button>
+    <button class="nav-item" type="button" onclick="showPage('websettings',this)"><span class="icon">🌐</span>الموقع العام</button>
+    <button class="nav-item" type="button" onclick="showPage('settings',this)"><span class="icon">⚙️</span>النسخ الاحتياطي</button>
   </nav>
   <div class="sidebar-footer">
     <div id="countdown-widget" style="background:rgba(255,255,255,.08);border-radius:10px;padding:12px;margin-bottom:10px;text-align:center;display:none">

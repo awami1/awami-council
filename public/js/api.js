@@ -62,10 +62,9 @@ delete: (id)   => api.del('periods.php', id),
 
 // –– Transactions ––
 const TransactionsAPI = {
-getAll:     ()     => api.get('transactions.php'),
-create:     (data) => api.post('transactions.php', data),
-bulkCreate: (data) => apiFetch(API_BASE + '/transactions.php?bulk=1', { method: 'POST', body: JSON.stringify(data), headers: { 'Content-Type': 'application/json' } }),
-delete:     (id)   => api.del('transactions.php', id),
+getAll: ()     => api.get('transactions.php'),
+create: (data) => api.post('transactions.php', data),
+delete: (id)   => api.del('transactions.php', id),
 };
 
 // –– Events ––

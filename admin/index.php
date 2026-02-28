@@ -406,138 +406,95 @@ if (!isAuthenticated()) {
 
     <!-- SMART REPORTS AI -->
     <div class="page" id="page-smart-reports">
-      <!-- AI Status Banner -->
-      <div id="ai-status-banner" style="display:none;margin-bottom:16px;padding:12px 18px;border-radius:12px;font-size:13px;display:flex;align-items:center;gap:10px"></div>
-
-      <!-- Tabs -->
-      <div class="ai-tabs" style="display:flex;gap:0;margin-bottom:20px;border-bottom:2px solid var(--border)">
-        <div class="ai-tab active" onclick="switchAITab('import',this)" style="padding:12px 24px;font-size:14px;font-weight:700;cursor:pointer;border-bottom:3px solid var(--green);color:var(--green-dark);transition:all .2s">📥 استيراد أعضاء ذكي</div>
-        <div class="ai-tab" onclick="switchAITab('reports',this)" style="padding:12px 24px;font-size:14px;font-weight:600;cursor:pointer;border-bottom:3px solid transparent;color:var(--text-muted);transition:all .2s">📄 تحليل التقارير</div>
-        <div class="ai-tab" onclick="switchAITab('archive',this)" style="padding:12px 24px;font-size:14px;font-weight:600;cursor:pointer;border-bottom:3px solid transparent;color:var(--text-muted);transition:all .2s">🗄️ الأرشيف والميزانية</div>
-      </div>
-
-      <!-- ======================== TAB 1: IMPORT ======================== -->
-      <div class="ai-tab-content active" id="ai-tab-import">
-        <div class="card">
-          <div class="card-header">
-            <div class="card-title">📥 استيراد أعضاء من Excel بمساعدة الذكاء الاصطناعي</div>
-          </div>
-          <div class="card-body">
-            <div style="background:linear-gradient(135deg,#e0f2fe,#dbeafe);border:2px solid #7dd3fc;border-radius:12px;padding:18px;margin-bottom:20px">
-              <div style="font-size:14px;font-weight:700;color:#075985;margin-bottom:8px">✨ كيف يعمل الاستيراد الذكي</div>
-              <div style="font-size:12px;color:#075985;line-height:1.8">
-                1. ارفع ملف Excel يحتوي أسماء أعضاء<br>
-                2. الذكاء الاصطناعي يميّز الأسماء عن باقي البيانات (أرقام، عناوين، خلايا فارغة)<br>
-                3. يقارن الأسماء مع الأعضاء الحاليين ويقترح الفروع المناسبة<br>
-                4. تراجع النتائج وتؤكد الإضافة
-              </div>
-            </div>
-
-            <!-- File Upload Area -->
-            <div id="upload-area" style="border:3px dashed var(--border);border-radius:16px;padding:40px;text-align:center;cursor:pointer;transition:all .3s;margin-bottom:24px" onclick="document.getElementById('file-input-ai').click()">
-              <input type="file" id="file-input-ai" accept=".xlsx,.xls,.csv" style="display:none" onchange="handleAIFileUpload(event)">
-              <div style="font-size:64px;margin-bottom:12px">📊</div>
-              <div style="font-size:18px;font-weight:700;margin-bottom:8px">اسحب ملف Excel هنا أو انقر للاختيار</div>
-              <div style="font-size:13px;color:var(--text-muted)">يدعم: .xlsx, .xls, .csv (حد أقصى 10 ميجابايت)</div>
-            </div>
-
-            <!-- Processing Status -->
-            <div id="ai-import-processing" style="display:none;padding:20px;background:#fef9c3;border-radius:12px;margin-bottom:24px">
-              <div style="display:flex;align-items:center;gap:12px;margin-bottom:12px">
-                <div style="width:24px;height:24px;border:3px solid #fde047;border-top-color:#854d0e;border-radius:50%;animation:spin 1s linear infinite"></div>
-                <div style="font-weight:700;color:#854d0e" id="ai-import-status-text">جاري تحليل الملف...</div>
-              </div>
-              <div style="background:#fff;border-radius:8px;height:8px;overflow:hidden">
-                <div id="ai-import-progress" style="height:100%;background:linear-gradient(90deg,#854d0e,#d97706);width:0%;transition:width .5s"></div>
-              </div>
-            </div>
-
-            <!-- Import Results Container -->
-            <div id="ai-import-results" style="display:none"></div>
-          </div>
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title">🤖 التقارير الذكية - تحليل مدعوم بالذكاء الاصطناعي</div>
         </div>
-      </div>
-
-      <!-- ======================== TAB 2: REPORTS ======================== -->
-      <div class="ai-tab-content" id="ai-tab-reports" style="display:none">
-        <div class="card" style="margin-bottom:20px">
-          <div class="card-header">
-            <div class="card-title">📄 تحليل تقرير بالذكاء الاصطناعي</div>
+        <div class="card-body">
+          <div style="background:#e0f2fe;border:2px solid#7dd3fc;border-radius:12px;padding:20px;margin-bottom:24px">
+            <div style="font-size:16px;font-weight:700;color:#075985;margin-bottom:10px">✨ قوة الذكاء الاصطناعي في خدمتك</div>
+            <div style="font-size:13px;color:#075985;line-height:1.6">
+              • رفع ملفات Excel أو CSV<br>
+              • تحليل ذكي تلقائي للبيانات<br>
+              • تصنيف المعاملات باستخدام Claude AI<br>
+              • كشف التكرار والأخطاء<br>
+              • إنشاء تقارير احترافية فورية
+            </div>
           </div>
-          <div class="card-body">
-            <div class="form-grid" style="margin-bottom:16px">
-              <div class="form-group">
-                <label class="form-label">نوع التقرير</label>
-                <select class="form-control" id="report-type-select">
-                  <option value="اجتماع">محضر اجتماع</option>
-                  <option value="فعالية">تقرير فعالية</option>
-                  <option value="مالي">تقرير مالي</option>
-                  <option value="عام" selected>تقرير عام</option>
-                </select>
+
+          <!-- File Upload Area -->
+          <div id="upload-area" style="border:3px dashed var(--border);border-radius:16px;padding:40px;text-align:center;cursor:pointer;transition:all .3s;margin-bottom:24px" onclick="document.getElementById('file-input-ai').click()">
+            <input type="file" id="file-input-ai" accept=".xlsx,.xls,.csv" style="display:none" onchange="handleAIFileUpload(event)">
+            <div style="font-size:64px;margin-bottom:12px">📊</div>
+            <div style="font-size:18px;font-weight:700;margin-bottom:8px">اسحب ملف Excel هنا أو انقر للاختيار</div>
+            <div style="font-size:13px;color:var(--text-muted)">يدعم: .xlsx, .xls, .csv (حد أقصى 10 ميجابايت)</div>
+          </div>
+
+          <!-- Processing Status -->
+          <div id="ai-processing" style="display:none;padding:20px;background:#fef9c3;border-radius:12px;margin-bottom:24px">
+            <div style="display:flex;align-items:center;gap:12px;margin-bottom:12px">
+              <div class="spinner" style="width:24px;height:24px;border:3px solid #fde047;border-top-color:#854d0e;border-radius:50%;animation:spin 1s linear infinite"></div>
+              <div style="font-weight:700;color:#854d0e" id="ai-status-text">جاري تحليل الملف...</div>
+            </div>
+            <div style="background:#fff;border-radius:8px;height:8px;overflow:hidden">
+              <div id="ai-progress-bar" style="height:100%;background:#854d0e;width:0%;transition:width .3s"></div>
+            </div>
+          </div>
+
+          <!-- AI Analysis Results -->
+          <div id="ai-results" style="display:none">
+            <!-- Summary Cards -->
+            <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:16px;margin-bottom:24px">
+              <div class="stat-card green">
+                <div class="stat-label">إجمالي المعاملات</div>
+                <div class="stat-value" id="ai-total-count">0</div>
+                <div class="stat-icon">📊</div>
               </div>
-              <div class="form-group">
-                <label class="form-label">تاريخ التقرير (اختياري)</label>
-                <input type="date" class="form-control" id="report-date-input">
+              <div class="stat-card blue">
+                <div class="stat-label">إجمالي الإيرادات</div>
+                <div class="stat-value" id="ai-total-income">0</div>
+                <div class="stat-sub">ريال</div>
+                <div class="stat-icon">💰</div>
+              </div>
+              <div class="stat-card orange">
+                <div class="stat-label">إجمالي المصروفات</div>
+                <div class="stat-value" id="ai-total-expense">0</div>
+                <div class="stat-sub">ريال</div>
+                <div class="stat-icon">💸</div>
+              </div>
+              <div class="stat-card gold">
+                <div class="stat-label">صافي الربح</div>
+                <div class="stat-value" id="ai-net-profit">0</div>
+                <div class="stat-sub">ريال</div>
+                <div class="stat-icon">📈</div>
               </div>
             </div>
-            <div class="form-group" style="margin-bottom:16px">
-              <label class="form-label">نص التقرير</label>
-              <textarea class="form-control" id="report-text-input" rows="10" placeholder="الصق نص التقرير هنا... (محضر اجتماع، تقرير فعالية، تقرير مالي، إلخ)
-مثال:
-تم عقد اجتماع المجلس بتاريخ 15/1/2025 بحضور 12 عضو.
-تم صرف مبلغ 5000 ريال لتنظيم رحلة العمرة.
-تم تحصيل 3000 ريال من رسوم الأعضاء.
-قرار: إقامة غداء العيد بميزانية 4000 ريال - المسؤول: أحمد محمد"></textarea>
+
+            <!-- AI Insights -->
+            <div class="card" style="margin-bottom:24px">
+              <div class="card-header"><div class="card-title">🧠 رؤى ذكية من Claude AI</div></div>
+              <div class="card-body">
+                <div id="ai-insights" style="font-size:14px;line-height:1.8;color:#333"></div>
+              </div>
             </div>
+
+            <!-- Categorization Results -->
+            <div class="card" style="margin-bottom:24px">
+              <div class="card-header"><div class="card-title">🏷️ التصنيف الذكي</div></div>
+              <div class="card-body">
+                <div id="ai-categories"></div>
+              </div>
+            </div>
+
+            <!-- Action Buttons -->
             <div style="display:flex;gap:12px;flex-wrap:wrap">
-              <button class="btn btn-primary" onclick="analyzeReport()" id="btn-analyze-report">🧠 تحليل بالذكاء الاصطناعي</button>
-              <button class="btn btn-outline" onclick="clearReportForm()">🔄 مسح</button>
+              <button class="btn btn-primary" onclick="syncAIDataToDB()">✅ مزامنة البيانات مع النظام</button>
+              <button class="btn btn-accent" onclick="downloadAIReport()">📥 تحميل التقرير</button>
+              <button class="btn btn-outline" onclick="resetAIAnalysis()">🔄 تحليل ملف جديد</button>
             </div>
           </div>
         </div>
-
-        <!-- Report Processing -->
-        <div id="ai-report-processing" style="display:none;padding:20px;background:#fef9c3;border-radius:12px;margin-bottom:20px">
-          <div style="display:flex;align-items:center;gap:12px">
-            <div style="width:24px;height:24px;border:3px solid #fde047;border-top-color:#854d0e;border-radius:50%;animation:spin 1s linear infinite"></div>
-            <div style="font-weight:700;color:#854d0e">جاري تحليل التقرير بالذكاء الاصطناعي...</div>
-          </div>
-        </div>
-
-        <!-- Report Analysis Results -->
-        <div id="ai-report-results" style="display:none"></div>
       </div>
-
-      <!-- ======================== TAB 3: ARCHIVE ======================== -->
-      <div class="ai-tab-content" id="ai-tab-archive" style="display:none">
-        <!-- Search -->
-        <div class="card" style="margin-bottom:20px">
-          <div class="card-body" style="padding:14px 20px">
-            <div style="display:flex;gap:12px;align-items:center">
-              <input class="form-control" id="archive-search-input" placeholder="بحث في التقارير المؤرشفة... مثال: مصروفات الأفراح 2023" style="flex:1">
-              <button class="btn btn-primary" onclick="searchArchivedReports()">🔍 بحث</button>
-              <button class="btn btn-accent" onclick="generateQuarterlyDraft()">📊 المسودة الربعية</button>
-            </div>
-          </div>
-        </div>
-
-        <!-- Archived Reports List -->
-        <div class="card">
-          <div class="card-header">
-            <div class="card-title">🗄️ التقارير المؤرشفة</div>
-            <button class="btn btn-outline btn-sm" onclick="loadArchivedReports()">🔄 تحديث</button>
-          </div>
-          <div class="card-body">
-            <div id="archived-reports-list">
-              <div class="empty-state"><div class="empty-icon">🗄️</div><p>لا توجد تقارير مؤرشفة بعد</p></div>
-            </div>
-          </div>
-        </div>
-
-        <!-- Quarterly Draft (shown when generated) -->
-        <div id="quarterly-draft-container" style="display:none;margin-top:20px"></div>
-      </div>
-
     </div>
 
     <div class="page" id="page-reports">
@@ -1051,7 +1008,6 @@ if (!isAuthenticated()) {
 <script src="js/admin-app.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <script src="js/admin-import.js"></script>
-<script src="js/admin-ai.js"></script>
 <script src="admin-overrides.js"></script>
 </body>
 </html>

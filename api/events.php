@@ -5,6 +5,7 @@ require_once __DIR__ . '/config.php';
 require_once __DIR__ . '/auth_guard.php';
 require_once __DIR__ . '/validation.php';
 requireAuth();
+verifyCsrf();
 
 // Normalise DB row → JS State shape
 // Maps MySQL column names back to the camelCase names State uses

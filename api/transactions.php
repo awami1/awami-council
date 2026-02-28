@@ -4,7 +4,9 @@ declare(strict_types=1);
 require_once __DIR__ . '/config.php';
 require_once __DIR__ . '/auth_guard.php';
 require_once __DIR__ . '/validation.php';
+require_once __DIR__ . '/audit_helper.php';
 requireAuth();
+verifyCsrf();
 
 // Normalise a DB row → JS-friendly shape (matches State field names)
 function toStateShape(array $row): array
@@ -223,6 +225,7 @@ function handlePost(): void
     $stmt = $pdo->prepare('SELECT * FROM transactions WHERE id = :id LIMIT 1');
     $stmt->execute([':id' => $id]);
 
+    logAudit('إضافة', 'معاملة', $id, $fields['description'], ['type' => $fields['type'], 'amount' => $fields['amount']]);
     respond(201, ['data' => toStateShape($stmt->fetch())]);
 }
 
@@ -345,6 +348,7 @@ function handleDelete(string $id): void
 
     $pdo->prepare('DELETE FROM transactions WHERE id = :id')->execute([':id' => $id]);
 
+    logAudit('حذف', 'معاملة', $id, '');
     respond(200, ['message' => 'Transaction deleted.']);
 }
 

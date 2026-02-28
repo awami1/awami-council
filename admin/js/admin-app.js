@@ -169,8 +169,46 @@ function toggleDarkMode(){
 function uid(){ return Date.now().toString(36)+Math.random().toString(36).slice(2); }
 function today(){ return new Date().toISOString().split('T')[0]; }
 function fmt(n){ return Number(n||0).toLocaleString('ar-SA'); }
-function openModal(id){ document.getElementById(id).classList.add('open'); }
-function closeModal(id){ document.getElementById(id).classList.remove('open'); }
+
+// ── XSS Protection ──
+function escapeHtml(str) {
+  if (str == null) return '';
+  var div = document.createElement('div');
+  div.textContent = String(str);
+  return div.innerHTML;
+}
+
+// ── Focus Management for Modals ──
+var _lastFocused = null;
+function openModal(id){
+  _lastFocused = document.activeElement;
+  var modal = document.getElementById(id);
+  modal.classList.add('open');
+  var firstInput = modal.querySelector('input:not([type=hidden]),select,textarea,button:not(.modal-close)');
+  if (firstInput) setTimeout(function(){ firstInput.focus(); }, 100);
+}
+function closeModal(id){
+  var modal = document.getElementById(id);
+  // تحذير عند وجود تغييرات غير محفوظة
+  var inputs = modal.querySelectorAll('input:not([type=hidden]), textarea, select');
+  var hasChanges = Array.from(inputs).some(function(i){ return i.value !== i.defaultValue; });
+  if (hasChanges && !modal._skipUnsavedCheck) {
+    if (!confirm('يوجد تغييرات غير محفوظة. هل تريد الإغلاق؟')) return;
+  }
+  modal._skipUnsavedCheck = false;
+  modal.classList.remove('open');
+  // إزالة رسائل الخطأ
+  modal.querySelectorAll('.field-error').forEach(function(e){ e.remove(); });
+  modal.querySelectorAll('.invalid').forEach(function(e){ e.classList.remove('invalid'); });
+  if (_lastFocused) { _lastFocused.focus(); _lastFocused = null; }
+}
+// إغلاق بدون تحذير (بعد الحفظ الناجح)
+function closeModalSilent(id){
+  var modal = document.getElementById(id);
+  modal._skipUnsavedCheck = true;
+  closeModal(id);
+}
+
 function log(action,icon='📝'){ State.getActivity().unshift({id:uid(),action,icon,time:new Date().toLocaleString('ar-SA')}); if(State.getActivity().length>40) State.getActivity().pop(); saveDB(); }
 function debounce(fn, delay){
   delay = delay || 300;
@@ -180,6 +218,40 @@ function debounce(fn, delay){
     clearTimeout(timer);
     timer = setTimeout(function(){ fn.apply(ctx, args); }, delay);
   };
+}
+
+// ── Loading State for Buttons ──
+async function withLoading(btn, fn) {
+  if (!btn) return fn();
+  var original = btn.innerHTML;
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner"></span> جاري...';
+  try { return await fn(); }
+  finally { btn.disabled = false; btn.innerHTML = original; }
+}
+
+// ── Field-level Error Messages ──
+function showFieldError(inputId, msg) {
+  var input = document.getElementById(inputId);
+  if (!input) return;
+  input.classList.add('invalid');
+  input.style.borderColor = 'var(--danger)';
+  var err = input.nextElementSibling;
+  if (!err || !err.classList.contains('field-error')) {
+    err = document.createElement('div');
+    err.className = 'field-error';
+    err.style.cssText = 'color:var(--danger);font-size:11px;margin-top:4px';
+    input.parentNode.insertBefore(err, input.nextSibling);
+  }
+  err.textContent = msg;
+}
+function clearFieldError(inputId) {
+  var input = document.getElementById(inputId);
+  if (!input) return;
+  input.classList.remove('invalid');
+  input.style.borderColor = '';
+  var err = input.nextElementSibling;
+  if (err && err.classList.contains('field-error')) err.remove();
 }
 
 // =================== TOAST (IMPROVED) ===================
@@ -525,7 +597,7 @@ async function savePosition(){
 
   try {
     await AdminSettings.savePositions(State.getWebsiteSettings().councilPositions);
-    closeModal('modal-position'); toast(idx!==''?'تم التحديث':'تم الإضافة'); renderPositionsList();
+    closeModalSilent('modal-position'); toast(idx!==''?'تم التحديث':'تم الإضافة'); renderPositionsList();
   } catch(e) { toast('خطأ في الحفظ: ' + e.message, 'error'); }
 }
 
@@ -536,7 +608,7 @@ function deletePosition(){
     State.getWebsiteSettings().councilPositions.splice(idx,1);
     try {
       await AdminSettings.savePositions(State.getWebsiteSettings().councilPositions);
-      closeModal('modal-position'); toast('تم الحذف'); renderPositionsList(); log(`حذف منصب: ${p.role}`,'🗑️');
+      closeModalSilent('modal-position'); toast('تم الحذف'); renderPositionsList(); log(`حذف منصب: ${p.role}`,'🗑️');
     } catch(e) { toast('خطأ في الحفظ: ' + e.message, 'error'); }
   });
 }
@@ -595,7 +667,7 @@ async function saveValue(){
 
   try {
     await AdminSettings.saveValues(State.getWebsiteSettings().values);
-    closeModal('modal-value'); toast(idx!==''?'تم التحديث':'تم الإضافة'); renderValuesList();
+    closeModalSilent('modal-value'); toast(idx!==''?'تم التحديث':'تم الإضافة'); renderValuesList();
   } catch(e) { toast('خطأ في الحفظ: ' + e.message, 'error'); }
 }
 
@@ -606,7 +678,7 @@ function deleteValue(){
     State.getWebsiteSettings().values.splice(idx,1);
     try {
       await AdminSettings.saveValues(State.getWebsiteSettings().values);
-      closeModal('modal-value'); toast('تم الحذف'); renderValuesList(); log(`حذف قيمة: ${v.title}`,'🗑️');
+      closeModalSilent('modal-value'); toast('تم الحذف'); renderValuesList(); log(`حذف قيمة: ${v.title}`,'🗑️');
     } catch(e) { toast('خطأ في الحفظ: ' + e.message, 'error'); }
   });
 }
@@ -645,7 +717,7 @@ async function saveMedia(){
     await AdminMedia.create(mediaItem);
     log('إضافة ميديا: '+title,'📷');
     toast('تم إضافة الميديا ✅');
-    closeModal('modal-add-media');
+    closeModalSilent('modal-add-media');
     renderMediaList();
   } catch(e) { toast('خطأ في الحفظ: ' + e.message, 'error'); }
 }
@@ -1250,14 +1322,14 @@ async function saveEvent(){
       await EventService.create(data);
       log(`فعالية جديدة: ${name}`,'🎉');
     }
-    closeModal('modal-event');
+    closeModalSilent('modal-event');
   } catch(e){ toast('حدث خطأ: '+e.message,'error'); }
 }
 
 function deleteEventFromModal(){
   const id=document.getElementById('ev-edit-id').value; if(!id)return;
   EventService.delete(id);
-  closeModal('modal-event');
+  closeModalSilent('modal-event');
 }
 
 // Preview images on selection
@@ -1373,7 +1445,7 @@ function deleteTreeMemberConfirm(){
   confirm2(`حذف "${m.name}" من الشجرة؟`, async ()=>{
     try{
       await AdminFamilyTree.delete(id);
-      closeModal('modal-tree-member');
+      closeModalSilent('modal-tree-member');
       toast('تم الحذف');
       renderFamilyTreeList();
       renderTreePreview();
@@ -1783,7 +1855,7 @@ async function saveCommittee() {
 function deleteCommitteeFromModal() {
   const id = document.getElementById('cm-id').value;
   if (!id) return;
-  closeModal('modal-add-committee');
+  closeModalSilent('modal-add-committee');
   CommitteeService.delete(id);
 }
 

@@ -113,7 +113,7 @@ else positions.push(data);
 
 try {
     await AdminSettings.savePositions(positions);
-    closeModal('modal-position');
+    closeModalSilent('modal-position');
     toast(idx !== '' ? 'تم التحديث' : 'تمت الإضافة');
     renderPositionsList();
 } catch (e) { toast('فشل: ' + e.message, 'error'); }
@@ -127,7 +127,7 @@ confirm2(`حذف منصب "${p?.role}"؟`, async () => {
 positions.splice(idx, 1);
 try {
 await AdminSettings.savePositions(positions);
-closeModal('modal-position');
+closeModalSilent('modal-position');
 toast('تم الحذف');
 renderPositionsList();
 } catch (e) { toast('فشل: ' + e.message, 'error'); }
@@ -149,7 +149,7 @@ else values.push(data);
 
 try {
     await AdminSettings.saveValues(values);
-    closeModal('modal-value');
+    closeModalSilent('modal-value');
     toast(idx !== '' ? 'تم التحديث' : 'تمت الإضافة');
     renderValuesList();
 } catch (e) { toast('فشل: ' + e.message, 'error'); }
@@ -163,7 +163,7 @@ confirm2(`حذف قيمة "${v?.title}"؟`, async () => {
 values.splice(idx, 1);
 try {
 await AdminSettings.saveValues(values);
-closeModal('modal-value');
+closeModalSilent('modal-value');
 toast('تم الحذف');
 renderValuesList();
 } catch (e) { toast('فشل: ' + e.message, 'error'); }
@@ -252,7 +252,7 @@ try {
         await AdminMedia.create(data);
         toast('تم إضافة الميديا ✅');
     }
-    closeModal('modal-add-media');
+    closeModalSilent('modal-add-media');
     renderMediaList();
 } catch (e) { toast('فشل: ' + e.message, 'error'); }
 }
@@ -309,7 +309,7 @@ try {
         await AdminFamilyTree.create(data);
         toast('تمت الإضافة ✅');
     }
-    closeModal('modal-tree-member');
+    closeModalSilent('modal-tree-member');
     renderFamilyTreeList();
     renderTreePreview();
 } catch (e) { toast('فشل: ' + e.message, 'error'); }
@@ -321,7 +321,7 @@ const m  = DB.familyTreeMembers.find(x => x.id === id);
 confirm2(`حذف "${m?.name}" من الشجرة؟`, async () => {
 try {
     await AdminFamilyTree.delete(id);
-    closeModal('modal-tree-member');
+    closeModalSilent('modal-tree-member');
     toast('تم الحذف');
     renderFamilyTreeList();
     renderTreePreview();
@@ -347,7 +347,7 @@ try {
         members,
         notes:   document.getElementById('branch-notes').value.trim(),
     });
-    closeModal('modal-add-branch');
+    closeModalSilent('modal-add-branch');
     toast(id ? 'تم التحديث ✅' : 'تمت الإضافة ✅');
     renderFamilyTree();
 } catch (e) { toast('فشل: ' + e.message, 'error'); }
@@ -359,7 +359,7 @@ const b  = DB.branches.find(x => x.id === id);
 confirm2(`حذف فرع "${b?.name}" نهائياً؟`, async () => {
 try {
 await AdminBranch.delete(id);
-closeModal('modal-add-branch');
+closeModalSilent('modal-add-branch');
 toast('تم الحذف');
 renderFamilyTree();
 } catch (e) { toast('فشل: ' + e.message, 'error'); }
@@ -412,7 +412,7 @@ try {
         await AdminEvent.create(data);
         toast('تم إضافة الفعالية ✅');
     }
-    closeModal('modal-event');
+    closeModalSilent('modal-event');
     renderEvents(); renderCalendar(); renderDashboard();
 } catch (e) { toast('فشل: ' + e.message, 'error'); }
 }
@@ -421,7 +421,7 @@ function deleteEventFromModal() {
 const id = document.getElementById('ev-edit-id').value;
 if (!id) return;
 deleteEvent(id);
-closeModal('modal-event');
+closeModalSilent('modal-event');
 }
 
 async function deleteEvent(id) {

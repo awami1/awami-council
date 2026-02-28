@@ -101,23 +101,19 @@ function _drawFallback(ctx, canvas) {
 // ─── Live preview (debounced with rAF) ───
 function _renderLivePreview() {
   const canvas = document.getElementById('eid-preview-canvas');
-  const wrap   = document.getElementById('eid-live-preview');
-  if (!canvas || !wrap) return;
+  if (!canvas) return;
 
-  const ctx  = canvas.getContext('2d');
-  const rect = wrap.getBoundingClientRect();
-  const dpr  = Math.min(window.devicePixelRatio || 1, 2);
-  canvas.width  = Math.round(rect.width * dpr);
-  canvas.height = Math.round(rect.height * dpr);
+  const ctx = canvas.getContext('2d');
+
+  // أبعاد ثابتة تطابق القالب — CSS يتولى التصغير
+  canvas.width  = _FULL_W;
+  canvas.height = _FULL_H;
 
   const name     = document.getElementById('eid-name').value.trim() || 'اكتب اسمك هنا';
   const weight   = document.getElementById('eid-font-weight')?.value || 'bold';
   const fontSize = parseInt(document.getElementById('eid-font-size')?.value || '70');
 
   _drawCard(ctx, canvas, _templateImg, name, weight, fontSize);
-
-  const hint = document.getElementById('eid-live-hint');
-  if (hint) hint.classList.add('hidden');
 }
 
 function updateEidPreview() {
@@ -164,6 +160,7 @@ async function generateEidCard() {
     preview.scrollIntoView({ behavior: 'smooth', block: 'center' });
 
   } catch (e) {
+    console.error('Eid card error:', e);
     alert('حدث خطأ أثناء إنشاء البطاقة. يرجى المحاولة مرة أخرى.');
   } finally {
     btn.disabled    = false;
@@ -217,12 +214,8 @@ function initEid() {
   });
 
   // Preload template + font, then render initial preview
-  ensureSaudiFont().then(() => _loadTemplateOnce()).then(() => _renderLivePreview());
-
-  // Re-render on resize
-  let resizeTimer;
-  window.addEventListener('resize', () => {
-    clearTimeout(resizeTimer);
-    resizeTimer = setTimeout(_renderLivePreview, 150);
-  });
+  ensureSaudiFont()
+    .then(() => _loadTemplateOnce())
+    .then(() => _renderLivePreview())
+    .catch(() => _renderLivePreview());   // حتى لو فشل التحميل، ارسم الفولباك
 }

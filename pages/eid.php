@@ -15,9 +15,8 @@
       <label class="eid-label">&#x270D;&#xFE0F; اكتب اسمك:</label>
       <input type="text" id="eid-name" class="eid-input" placeholder="مثال: أحمد محمد العوامي" oninput="updateEidPreview()">
 
-      <div class="eid-live-preview" id="eid-live-preview">
+      <div class="eid-live-preview">
         <canvas id="eid-preview-canvas"></canvas>
-        <div class="eid-live-hint" id="eid-live-hint">معاينة حية للبطاقة</div>
       </div>
 
       <div class="eid-controls">

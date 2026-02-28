@@ -94,5 +94,7 @@ window.__TREE_DATA__ = <?= json_encode(array_map(function($m) {
         'sort_order'  => (int)$m['sort_order'],
     ];
 }, $treeMembers), JSON_UNESCAPED_UNICODE) ?>;
+// تهيئة الشجرة بعد تعيين البيانات (مهم لـ AJAX navigation)
+if (typeof window.initFamilyTree === 'function') window.initFamilyTree();
 </script>
 <?php endif; ?>

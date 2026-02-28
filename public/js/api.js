@@ -162,6 +162,17 @@ getAll: (params = {}) => {
 },
 };
 
+// –– Saved Reports ––
+const ReportsAPI = {
+getAll: (params = {})  => { const qs = new URLSearchParams(params).toString(); return api.get('reports.php' + (qs ? '?' + qs : '')); },
+getOne: (id)           => apiFetch(`${API_BASE}/reports.php?id=${id}`),
+save:   (data)         => api.post('reports.php', data),
+update: (id, data)     => api.put('reports.php', data, id),
+archive:(id)           => apiFetch(`${API_BASE}/reports.php?id=${id}&archive=1`, { method: 'PUT', body: JSON.stringify({ status: 'archived' }) }),
+restore:(id)           => apiFetch(`${API_BASE}/reports.php?id=${id}&archive=1`, { method: 'PUT', body: JSON.stringify({ status: 'active' }) }),
+remove: (id)           => api.del('reports.php', id),
+};
+
 // –– Export (returns CSV download URL) ––
 const ExportAPI = {
 url: (type, params = {}) => {

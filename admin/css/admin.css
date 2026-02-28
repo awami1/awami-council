@@ -400,4 +400,96 @@ tr:hover td{background:var(--bg-hover);}
   .stat-card:hover{transform:none;box-shadow:var(--shadow);}
 }
 
-@media print{.sidebar,.topbar,.btn,.modal-overlay,.mobile-toggle,.sidebar-backdrop{display:none!important;}.main{margin-right:0!important;}}
+/* ============================================================
+   SMART REPORTS — Stepper, Upload, Preview, Results
+   ============================================================ */
+
+/* Stepper */
+.smart-report-stepper{display:flex;align-items:center;justify-content:center;gap:0;padding:16px 20px;margin-bottom:18px;background:var(--bg-card);border-radius:var(--radius);border:1px solid var(--border);box-shadow:var(--shadow);}
+.sr-step{display:flex;align-items:center;gap:8px;padding:6px 12px;border-radius:20px;transition:all .3s;cursor:default;}
+.sr-step-num{width:26px;height:26px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;background:var(--border);color:var(--text-muted);transition:all .3s;}
+.sr-step-label{font-size:12px;font-weight:600;color:var(--text-muted);transition:color .3s;}
+.sr-step.active .sr-step-num{background:var(--green);color:#fff;}
+.sr-step.active .sr-step-label{color:var(--green-dark);}
+.sr-step.done .sr-step-num{background:#dcfce7;color:#166534;}
+.sr-step.done .sr-step-label{color:#166534;}
+.sr-step-line{flex:1;height:2px;background:var(--border);margin:0 4px;max-width:60px;transition:background .3s;}
+.sr-step-line.done{background:var(--green);}
+
+/* Upload Area */
+#upload-area{border:3px dashed var(--border);border-radius:16px;padding:40px;text-align:center;cursor:pointer;transition:all .3s;margin-bottom:0;}
+#upload-area:hover{background-color:var(--bg-hover);border-color:var(--green);}
+#upload-area.drag-over{border-color:var(--green);background:#f0fdf4;transform:scale(1.01);}
+[data-theme="dark"] #upload-area.drag-over{background:#14532d;}
+.upload-icon{font-size:64px;margin-bottom:12px;transition:transform .3s;}
+#upload-area.drag-over .upload-icon{transform:scale(1.15) translateY(-4px);}
+
+/* Confidence Badges */
+.confidence-high{background:#dcfce7;color:#166534;padding:2px 8px;border-radius:10px;font-size:11px;font-weight:600;}
+.confidence-medium{background:#fef9c3;color:#854d0e;padding:2px 8px;border-radius:10px;font-size:11px;font-weight:600;}
+.confidence-low{background:#fee2e2;color:#991b1b;padding:2px 8px;border-radius:10px;font-size:11px;font-weight:600;}
+
+/* Inline Edit */
+.sr-editable{cursor:pointer;border-radius:4px;padding:1px 4px;transition:background .15s;}
+.sr-editable:hover{background:rgba(71,145,92,.08);}
+.sr-edit-input{width:100%;padding:4px 8px;border:1.5px solid var(--green);border-radius:6px;font-family:'Cairo',sans-serif;font-size:12px;outline:none;background:var(--bg-card);color:var(--text);}
+.sr-edit-select{padding:4px 8px;border:1.5px solid var(--green);border-radius:6px;font-family:'Cairo',sans-serif;font-size:12px;outline:none;background:var(--bg-card);color:var(--text);}
+
+/* Transactions table enhancements */
+#sr-transactions-table td{font-size:12px;padding:8px 10px;}
+#sr-transactions-table th{font-size:11px;padding:8px 10px;position:sticky;top:0;z-index:1;background:var(--bg-table-header);}
+#sr-transactions-table tr.selected{background:#f0f9ff;}
+[data-theme="dark"] #sr-transactions-table tr.selected{background:#172554;}
+
+/* Bulk Toolbar */
+#sr-bulk-toolbar{padding:10px 18px;background:#f0f9ff;border-bottom:1px solid #bae6fd;align-items:center;gap:10px;flex-wrap:wrap;}
+[data-theme="dark"] #sr-bulk-toolbar{background:#172554;border-color:#1e40af;}
+
+/* Saved Reports */
+.sr-saved-item{display:flex;align-items:center;gap:14px;padding:14px 18px;border-bottom:1px solid var(--border);transition:background .15s;}
+.sr-saved-item:last-child{border-bottom:none;}
+.sr-saved-item:hover{background:var(--bg-hover);}
+.sr-saved-icon{font-size:28px;opacity:.6;}
+.sr-saved-info{flex:1;min-width:0;}
+.sr-saved-title{font-weight:700;font-size:13px;color:var(--green-dark);margin-bottom:3px;}
+.sr-saved-meta{font-size:11px;color:var(--text-muted);display:flex;gap:12px;flex-wrap:wrap;}
+.sr-saved-actions{display:flex;gap:6px;}
+
+/* ============================================================
+   PRINT STYLES — Smart Report Professional Layout
+   ============================================================ */
+@media print{
+  .sidebar,.topbar,.mobile-toggle,.sidebar-backdrop,.modal-overlay{display:none!important;}
+  .main{margin-right:0!important;}
+  body{background:#fff!important;color:#000!important;}
+  .page{display:none!important;}
+  .page.active{display:block!important;}
+  .smart-report-stepper,#sr-upload-card,#sr-preview-card,#ai-processing,#sr-saved-card,#sr-bulk-toolbar,#sr-select-all,.sr-saved-actions,.btn{display:none!important;}
+  #ai-results{display:block!important;}
+  #ai-results .card{box-shadow:none!important;border:1px solid #ddd!important;break-inside:avoid;}
+  #ai-results .stat-card{box-shadow:none!important;border:1px solid #ddd!important;}
+  .card-header{background:#f8f8f8!important;}
+  #sr-transactions-table th:first-child,#sr-transactions-table td:first-child{display:none!important;}
+  @page{size:A4;margin:15mm;}
+}
+
+/* Print-specific layout */
+.sr-print-header{display:none;}
+@media print{
+  .sr-print-header{display:block!important;text-align:center;margin-bottom:24px;padding-bottom:16px;border-bottom:3px double #1a5c32;}
+  .sr-print-header h1{font-size:20px;color:#1a5c32;margin-bottom:4px;}
+  .sr-print-header .subtitle{font-size:14px;color:#666;margin-bottom:2px;}
+  .sr-print-header .date{font-size:12px;color:#999;}
+}
+
+@media(max-width:768px){
+  .smart-report-stepper{overflow-x:auto;justify-content:flex-start;padding:12px;gap:0;white-space:nowrap;}
+  .sr-step-label{display:none;}
+  .sr-step{padding:4px 8px;}
+  .sr-step-line{max-width:20px;}
+  #sr-column-mapping{grid-template-columns:1fr!important;}
+}
+@media(max-width:480px){
+  .sr-saved-item{flex-direction:column;align-items:flex-start;gap:8px;}
+  .sr-saved-actions{width:100%;justify-content:flex-end;}
+}

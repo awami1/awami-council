@@ -168,6 +168,27 @@ if ($sqlite) {
 
 "CREATE INDEX IF NOT EXISTS idx_ft_parent ON family_tree(parent_id)",
 
+"CREATE TABLE IF NOT EXISTS saved_reports (
+  id VARCHAR(36) NOT NULL PRIMARY KEY,
+  title VARCHAR(300) NOT NULL,
+  description TEXT,
+  report_type VARCHAR(50) NOT NULL DEFAULT 'smart_analysis',
+  report_data TEXT NOT NULL,
+  summary TEXT,
+  status VARCHAR(20) NOT NULL DEFAULT 'active' CHECK(status IN ('active','archived')),
+  file_name VARCHAR(200),
+  total_transactions INTEGER DEFAULT 0,
+  total_income DECIMAL(12,2) DEFAULT 0,
+  total_expense DECIMAL(12,2) DEFAULT 0,
+  net_profit DECIMAL(12,2) DEFAULT 0,
+  created_by VARCHAR(36),
+  created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+)",
+
+"CREATE INDEX IF NOT EXISTS idx_reports_status ON saved_reports(status)",
+"CREATE INDEX IF NOT EXISTS idx_reports_created ON saved_reports(created_at)",
+
     ]; // end SQLite
 } else {
     $statements = [
@@ -332,6 +353,27 @@ if ($sqlite) {
   PRIMARY KEY (`id`),
   INDEX `idx_ft_parent` (`parent_id`),
   CONSTRAINT `fk_ft_parent` FOREIGN KEY (`parent_id`) REFERENCES `family_tree` (`id`) ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci",
+
+"CREATE TABLE IF NOT EXISTS `saved_reports` (
+  `id` VARCHAR(36) NOT NULL,
+  `title` VARCHAR(300) NOT NULL,
+  `description` TEXT,
+  `report_type` VARCHAR(50) NOT NULL DEFAULT 'smart_analysis',
+  `report_data` JSON NOT NULL,
+  `summary` JSON DEFAULT NULL,
+  `status` ENUM('active','archived') NOT NULL DEFAULT 'active',
+  `file_name` VARCHAR(200) DEFAULT NULL,
+  `total_transactions` INT DEFAULT 0,
+  `total_income` DECIMAL(12,2) DEFAULT 0,
+  `total_expense` DECIMAL(12,2) DEFAULT 0,
+  `net_profit` DECIMAL(12,2) DEFAULT 0,
+  `created_by` VARCHAR(36) DEFAULT NULL,
+  `created_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  INDEX `idx_reports_status` (`status`),
+  INDEX `idx_reports_created` (`created_at`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci",
 
     ]; // end MySQL

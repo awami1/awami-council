@@ -14,7 +14,11 @@
     <div class="eid-wrapper">
       <label class="eid-label">&#x270D;&#xFE0F; اكتب اسمك:</label>
       <input type="text" id="eid-name" class="eid-input" placeholder="مثال: أحمد محمد العوامي" oninput="updateEidPreview()">
-      <div class="eid-font-preview" id="eid-name-preview">مثال على الخط</div>
+
+      <div class="eid-live-preview" id="eid-live-preview">
+        <canvas id="eid-preview-canvas"></canvas>
+        <div class="eid-live-hint" id="eid-live-hint">معاينة حية للبطاقة</div>
+      </div>
 
       <div class="eid-controls">
         <div>
@@ -27,7 +31,7 @@
         <div>
           <label class="eid-label">&#x1F4CF; حجم الخط: <span id="eid-font-size-label">70</span>px</label>
           <input type="range" id="eid-font-size" class="eid-range" min="40" max="120" value="70" oninput="updateFontSize()">
-          <div class="eid-range-labels"><span>كبير</span><span>متوسط</span><span>صغير</span></div>
+          <div class="eid-range-labels"><span>صغير</span><span>متوسط</span><span>كبير</span></div>
         </div>
       </div>
 

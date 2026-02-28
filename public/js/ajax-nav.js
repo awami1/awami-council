@@ -26,7 +26,8 @@
     return new Promise(function(resolve, reject) {
       if (loadedScripts[src]) { resolve(); return; }
       var script = document.createElement('script');
-      script.src = src;
+      var v = window.__ASSET_V__;
+      script.src = src + (v ? (src.indexOf('?') === -1 ? '?v=' : '&v=') + v : '');
       script.onload = function() { loadedScripts[src] = true; resolve(); };
       script.onerror = reject;
       document.body.appendChild(script);

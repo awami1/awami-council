@@ -55,11 +55,11 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Amiri:wght@400;700&family=Cairo:wght@400;600;700&family=Tajawal:wght@400;700&display=swap" rel="stylesheet">
 <!-- CSS -->
-<link rel="stylesheet" href="/public/css/variables.css">
-<link rel="stylesheet" href="/public/css/base.css">
-<link rel="stylesheet" href="/public/css/layout.css">
-<link rel="stylesheet" href="/public/css/components.css">
-<link rel="stylesheet" href="/public/css/animations.css">
+<link rel="stylesheet" href="<?= asset('/public/css/variables.css') ?>">
+<link rel="stylesheet" href="<?= asset('/public/css/base.css') ?>">
+<link rel="stylesheet" href="<?= asset('/public/css/layout.css') ?>">
+<link rel="stylesheet" href="<?= asset('/public/css/components.css') ?>">
+<link rel="stylesheet" href="<?= asset('/public/css/animations.css') ?>">
 <?php if (isset($currentPage) && $currentPage === 'tree'): ?>
 <script src="https://d3js.org/d3.v7.min.js"></script>
 <?php endif; ?>

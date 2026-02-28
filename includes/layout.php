@@ -10,13 +10,14 @@
   </div>
 </main>
 <?php include __DIR__ . '/footer.php'; ?>
-<script src="/public/js/api.js"></script>
-<script src="/public/js/theme.js"></script>
-<script src="/public/js/navbar.js"></script>
-<script src="/public/js/animations.js"></script>
+<script>window.__ASSET_V__="<?= filemtime(__DIR__ . '/../public/js/eid.js') ?>";</script>
+<script src="<?= asset('/public/js/api.js') ?>"></script>
+<script src="<?= asset('/public/js/theme.js') ?>"></script>
+<script src="<?= asset('/public/js/navbar.js') ?>"></script>
+<script src="<?= asset('/public/js/animations.js') ?>"></script>
 <?php foreach ($pageScripts ?? [] as $script): ?>
-  <script src="<?= $script ?>"></script>
+  <script src="<?= asset($script) ?>"></script>
 <?php endforeach; ?>
-<script src="/public/js/ajax-nav.js"></script>
+<script src="<?= asset('/public/js/ajax-nav.js') ?>"></script>
 </body>
 </html>

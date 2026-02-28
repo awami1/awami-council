@@ -163,39 +163,6 @@ if ($sqlite) {
 
 "CREATE INDEX IF NOT EXISTS idx_ft_parent ON family_tree(parent_id)",
 
-"CREATE TABLE IF NOT EXISTS ai_reports (
-  id VARCHAR(36) NOT NULL PRIMARY KEY,
-  title VARCHAR(500) NOT NULL DEFAULT '',
-  report_type VARCHAR(50) NOT NULL DEFAULT 'عام',
-  original_text TEXT NOT NULL,
-  summary_executive TEXT DEFAULT '',
-  summary_extended TEXT DEFAULT '',
-  summary_financial TEXT DEFAULT '',
-  extracted_people TEXT DEFAULT '[]',
-  extracted_decisions TEXT DEFAULT '[]',
-  keywords TEXT DEFAULT '[]',
-  total_income DECIMAL(12,2) NOT NULL DEFAULT 0,
-  total_expense DECIMAL(12,2) NOT NULL DEFAULT 0,
-  total_remaining DECIMAL(12,2) NOT NULL DEFAULT 0,
-  report_date DATE DEFAULT NULL,
-  synced_to_budget INTEGER NOT NULL DEFAULT 0,
-  created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
-)",
-
-"CREATE TABLE IF NOT EXISTS ai_report_items (
-  id VARCHAR(36) NOT NULL PRIMARY KEY,
-  report_id VARCHAR(36) NOT NULL,
-  item_type VARCHAR(20) NOT NULL DEFAULT 'مصروف',
-  description VARCHAR(500) NOT NULL DEFAULT '',
-  amount DECIMAL(12,2) NOT NULL DEFAULT 0,
-  category VARCHAR(100) DEFAULT '',
-  item_date DATE DEFAULT NULL,
-  status TEXT NOT NULL DEFAULT 'مستخرج' CHECK(status IN ('مستخرج','مؤكد','مرفوض','مزامن')),
-  transaction_id VARCHAR(36) DEFAULT NULL,
-  created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  FOREIGN KEY (report_id) REFERENCES ai_reports(id) ON DELETE CASCADE
-)",
-
     ]; // end SQLite
 } else {
     $statements = [
@@ -360,46 +327,6 @@ if ($sqlite) {
   PRIMARY KEY (`id`),
   INDEX `idx_ft_parent` (`parent_id`),
   CONSTRAINT `fk_ft_parent` FOREIGN KEY (`parent_id`) REFERENCES `family_tree` (`id`) ON DELETE SET NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci",
-
-"CREATE TABLE IF NOT EXISTS `ai_reports` (
-  `id` VARCHAR(36) NOT NULL,
-  `title` VARCHAR(500) NOT NULL DEFAULT '',
-  `report_type` VARCHAR(50) NOT NULL DEFAULT 'عام',
-  `original_text` TEXT NOT NULL,
-  `summary_executive` TEXT DEFAULT '',
-  `summary_extended` TEXT DEFAULT '',
-  `summary_financial` TEXT DEFAULT '',
-  `extracted_people` JSON DEFAULT NULL,
-  `extracted_decisions` JSON DEFAULT NULL,
-  `keywords` JSON DEFAULT NULL,
-  `total_income` DECIMAL(12,2) NOT NULL DEFAULT 0,
-  `total_expense` DECIMAL(12,2) NOT NULL DEFAULT 0,
-  `total_remaining` DECIMAL(12,2) NOT NULL DEFAULT 0,
-  `report_date` DATE DEFAULT NULL,
-  `synced_to_budget` TINYINT(1) NOT NULL DEFAULT 0,
-  `created_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  PRIMARY KEY (`id`),
-  INDEX `idx_air_type` (`report_type`),
-  INDEX `idx_air_date` (`report_date`),
-  FULLTEXT INDEX `ftx_air_search` (`title`, `original_text`, `summary_extended`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci",
-
-"CREATE TABLE IF NOT EXISTS `ai_report_items` (
-  `id` VARCHAR(36) NOT NULL,
-  `report_id` VARCHAR(36) NOT NULL,
-  `item_type` VARCHAR(20) NOT NULL DEFAULT 'مصروف',
-  `description` VARCHAR(500) NOT NULL DEFAULT '',
-  `amount` DECIMAL(12,2) NOT NULL DEFAULT 0,
-  `category` VARCHAR(100) DEFAULT '',
-  `item_date` DATE DEFAULT NULL,
-  `status` ENUM('مستخرج','مؤكد','مرفوض','مزامن') NOT NULL DEFAULT 'مستخرج',
-  `transaction_id` VARCHAR(36) DEFAULT NULL,
-  `created_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  PRIMARY KEY (`id`),
-  INDEX `idx_ari_report` (`report_id`),
-  INDEX `idx_ari_status` (`status`),
-  CONSTRAINT `fk_ari_report` FOREIGN KEY (`report_id`) REFERENCES `ai_reports` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci",
 
     ]; // end MySQL

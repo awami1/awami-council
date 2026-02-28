@@ -21,7 +21,6 @@ news:        [],
 messages:    [],
 messagesUnread: 0,
 familyTreeMembers: [],
-aiReports: [],
 };
 
 // ============================================================

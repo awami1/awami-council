@@ -1,5 +1,5 @@
 // Service Worker — offline fallback only
-const CACHE_NAME = 'awami-offline-v1';
+const CACHE_NAME = 'awami-offline-v2';
 const OFFLINE_URL = '/offline.html';
 
 self.addEventListener('install', event => {

@@ -30,6 +30,7 @@ $committees = getCommittees();
         <div class="countdown-item"><div class="countdown-num" id="cd-m"><?= esc($cdMins) ?></div><div class="countdown-label">دقيقة</div></div>
       </div>
       <div id="cd-date" style="font-size:12px;opacity:.65;margin-top:14px;font-weight:600"></div>
+      <div id="cd-date-greg" style="font-size:12px;opacity:.55;margin-top:6px;font-weight:600"></div>
     </div>
   </div>
 </section>

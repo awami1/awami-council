@@ -49,6 +49,15 @@ function esc(string $s): string {
 }
 
 /**
+ * إضافة version query لكسر كاش المتصفح
+ */
+function asset(string $path): string {
+    $file = __DIR__ . '/../' . ltrim($path, '/');
+    $v = is_file($file) ? filemtime($file) : time();
+    return esc($path) . '?v=' . $v;
+}
+
+/**
  * جلب بيانات الاجتماع القادم
  */
 function getMeeting(): ?array {

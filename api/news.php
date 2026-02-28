@@ -3,6 +3,7 @@
 declare(strict_types=1);
 require_once __DIR__ . '/config.php';
 require_once __DIR__ . '/auth_guard.php';
+require_once __DIR__ . '/validation.php';
 
 // ──────────────────────────────────────────────────────────────
 // إنشاء جدول الأخبار إن لم يكن موجوداً
@@ -44,25 +45,8 @@ function ensureNewsTable(): void
 ensureNewsTable();
 
 // ──────────────────────────────────────────────────────────────
-// HELPERS
+// HELPERS (parseId و sanitizeString من validation.php)
 // ──────────────────────────────────────────────────────────────
-
-function parseNewsId(): ?string
-{
-    $id = $_GET['id'] ?? null;
-    if ($id !== null && !preg_match('/^[a-zA-Z0-9_-]{1,64}$/', $id)) {
-        respond(400, ['error' => 'Invalid ID format.']);
-    }
-    return $id;
-}
-
-function sanitize(mixed $value, string $field): string
-{
-    if (!is_string($value) && !is_numeric($value)) {
-        respond(422, ['error' => "Field '{$field}' must be a string."]);
-    }
-    return trim((string) $value);
-}
 
 function newsToShape(array $row): array
 {
@@ -92,7 +76,7 @@ function validateNewsPayload(array $data, bool $requireAll = true): array
     $fields = [];
 
     if ($requireAll || array_key_exists('title', $data)) {
-        $v = sanitize($data['title'] ?? '', 'title');
+        $v = sanitizeString($data['title'] ?? '', 'title');
         if ($requireAll && $v === '') {
             respond(422, ['error' => '"title" مطلوب.']);
         }
@@ -100,28 +84,28 @@ function validateNewsPayload(array $data, bool $requireAll = true): array
     }
 
     if ($requireAll || array_key_exists('content', $data)) {
-        $fields['content'] = sanitize($data['content'] ?? '', 'content');
+        $fields['content'] = sanitizeString($data['content'] ?? '', 'content');
     }
 
     if ($requireAll || array_key_exists('excerpt', $data)) {
-        $fields['excerpt'] = sanitize($data['excerpt'] ?? '', 'excerpt');
+        $fields['excerpt'] = sanitizeString($data['excerpt'] ?? '', 'excerpt');
     }
 
     if ($requireAll || array_key_exists('image', $data)) {
-        $fields['image'] = sanitize($data['image'] ?? '', 'image');
+        $fields['image'] = sanitizeString($data['image'] ?? '', 'image');
     }
 
     if ($requireAll || array_key_exists('category', $data)) {
-        $v = sanitize($data['category'] ?? 'عام', 'category');
+        $v = sanitizeString($data['category'] ?? 'عام', 'category');
         $fields['category'] = $v;
     }
 
     if ($requireAll || array_key_exists('author', $data)) {
-        $fields['author'] = sanitize($data['author'] ?? '', 'author');
+        $fields['author'] = sanitizeString($data['author'] ?? '', 'author');
     }
 
     if ($requireAll || array_key_exists('status', $data)) {
-        $v = sanitize($data['status'] ?? 'published', 'status');
+        $v = sanitizeString($data['status'] ?? 'published', 'status');
         if (!in_array($v, NEWS_STATUSES, true)) {
             respond(422, ['error' => '"status" must be one of: ' . implode(', ', NEWS_STATUSES)]);
         }
@@ -289,7 +273,7 @@ function handleNewsDelete(string $id): void
 // ──────────────────────────────────────────────────────────────
 
 $method = $_SERVER['REQUEST_METHOD'];
-$id     = parseNewsId();
+$id     = parseId();
 
 try {
     match (true) {
@@ -303,5 +287,6 @@ try {
         default                               => respond(405, ['error' => 'Method not allowed.']),
     };
 } catch (PDOException $e) {
-    respond(500, ['error' => 'Database error.', 'detail' => $e->getMessage()]);
+    error_log('PDOException in news: ' . $e->getMessage());
+    respond(500, ['error' => 'Database error.']);
 }

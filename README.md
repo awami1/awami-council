@@ -1,127 +1,114 @@
-# Hi there 👋 I'm Abdullah
+# Awami Council Platform
 
-> Crafting elegant code, learning every day, and shipping delightful experiences.
+A full-stack web platform for managing a real-world family council (Majlis), built with PHP and vanilla JavaScript.
 
+## Features
 
-[![Twitter](https://img.shields.io/badge/twitter-@BL4UE-1DA1F2)](#)
-[![Email](https://img.shields.io/badge/email-alawamiabdul@gmail.com-D14836)](#)
+- **Member Management** -- CRUD for family members with status tracking
+- **Financial System** -- Payment tracking, transactions (income/expense), and periods
+- **Committees** -- Create and manage committees with member assignments
+- **Events** -- Event planning with status, budget, and participant tracking
+- **Family Tree** -- Hierarchical family tree with parent-child relationships
+- **News** -- Publish articles with categories, drafts, and rich content
+- **Public Website** -- Dynamic API-driven pages (RTL Arabic layout)
+- **Admin Panel** -- Secure dashboard for council administrators
+- **Audit Logging** -- Track all administrative actions
+- **Media Gallery** -- Photo/video gallery with YouTube embed support
+- **Polls & Reminders** -- Community engagement tools
 
----
+## Tech Stack
 
-## About Me
-I’m Abdullah — a passionate developer who loves turning ideas into products. I focus on building reliable, maintainable software with an emphasis on clarity, performance, and delightful user experiences.
+| Layer | Technology |
+|-------|-----------|
+| Backend | PHP 8+ (PDO, strict types) |
+| Database | MySQL (production) / SQLite (development) |
+| Frontend | Vanilla JavaScript (modular), CSS3 |
+| Server | Nginx |
+| Auth | Session-based with bcrypt password hashing |
 
-- 🔭 I’m currently working on: **[A family Council Platform — full-stack administrative system]**
-- 🌱 🌱 Currently improving: **[Backend architecture, API security, and system design]**
-- 👯 I’m open to collaborating on interesting open-source projects
-- ⚡ Interested in: scalable systems, clean architecture, automation
+## Project Structure
 
----
+```
+awami-council/
+  api/            # REST API endpoints (PHP)
+    config.php    # Database & shared utilities
+    auth.php      # Login/logout
+    auth_guard.php
+    validation.php # Shared validation helpers
+    members.php, payments.php, events.php, ...
+  admin/          # Admin panel (SPA)
+  includes/       # Shared templates & helpers
+    helpers.php   # Public site data functions
+    header.php, footer.php, layout.php
+  pages/          # Public page templates
+  public/         # Static assets (CSS, JS, images)
+  data/           # SQLite database (dev only)
+```
 
-## What I Do
-I design and build modern web and backend systems that scale. My typical work includes:
+## Getting Started
 
-- Building web apps and APIs
-- Designing responsive, accessible front-ends
-- Automating workflows and CI/CD
-- Shipping reliable production systems and observability
+### Prerequisites
 
----
+- PHP 8.1+
+- MySQL 8.0+ (or SQLite for local dev)
+- Nginx or Apache
 
-## Top Skills
-Languages & Platforms:
-- JavaScript / TypeScript, Python, Php
+### Setup
 
-Frameworks & Libraries:
-- React, Next.js, Node.js, Express, Flask
+1. Clone the repository:
+   ```bash
+   git clone https://github.com/awami1/awami-council.git
+   cd awami-council
+   ```
 
-Databases & Storage:
-- PostgreSQL, MongoDB, Redis
+2. Create a `.env` file:
+   ```env
+   DB_HOST=localhost
+   DB_NAME=awami_council
+   DB_USER=root
+   DB_PASS=your_password
+   DB_PORT=3306
 
-DevOps & Infra:
-- Docker, Kubernetes, GitHub Actions, Terraform
+   ADMIN_USERNAME=admin
+   ADMIN_PASSWORD_HASH=$2y$10$...   # Generate with: php -r "echo password_hash('your_password', PASSWORD_DEFAULT);"
+   ```
 
-AI & Data 
-- PyTorch, scikit-learn
----
+3. Run database setup:
+   ```
+   Visit /api/members.php?setup=1
+   ```
 
-## 🏛 Awami Council Platform
+4. Point your web server to the project root.
 
-A full digital platform built to manage a real-world family council.
+### Local Development (SQLite)
 
-Architecture:
----
-Public Website → API (PHP/PDO) → MySQL  
-Admin Panel → API → MySQL
+If no `DB_HOST` is set in `.env`, the app automatically uses SQLite at `data/awami.db`.
 
-Key Features:
----
-	•	Member management system
-	•	Financial tracking (payments & transactions)
-	•	Committees & events management
-	•	Dynamic public website (API-based, no localStorage)
-	•	Secure admin authentication
-	•	Production-ready structure
-	•	Environment-based configuration
+## API Endpoints
 
-Tech Stack:
----
-	•	PHP (PDO)
-	•	MySQL
-	•	Vanilla JS (modular architecture)
-	•	Nginx
-	•	GitHub Deployment
+| Endpoint | Methods | Auth | Description |
+|----------|---------|------|-------------|
+| `/api/auth.php` | GET, POST | No | Login/logout/check |
+| `/api/members.php` | CRUD | Yes | Member management |
+| `/api/payments.php` | CRUD | Yes | Payment records |
+| `/api/transactions.php` | CRUD | Yes | Financial transactions |
+| `/api/events.php` | CRUD | Yes | Events |
+| `/api/committees.php` | CRUD | Yes | Committees |
+| `/api/news.php` | CRUD | Mixed | News (GET public, write auth) |
+| `/api/family-tree.php` | CRUD | Mixed | Family tree (GET public) |
+| `/api/settings.php` | GET, PUT | Yes | Website settings |
 
-⸻
+## Security
 
-🛠 Tech Stack
----
+- Session-based authentication with `SameSite=Strict` cookies
+- bcrypt password hashing (no default passwords)
+- Rate limiting on login (5 attempts per 15 minutes)
+- Request body size limits (64KB)
+- Prepared statements (PDO) for SQL injection prevention
+- HTML escaping (`htmlspecialchars`) for XSS prevention
+- Security headers: `X-Content-Type-Options`, `X-Frame-Options`, `Referrer-Policy`
+- Audit logging for all admin actions
 
-Backend
+## License
 
-	•	PHP (Production API architecture)
-	•	MySQL
-	•	PDO
-	•	REST-style endpoints
-	•	Session-based authentication
-
-Frontend
-
-	•	Modular JavaScript
-	•	Dynamic API-driven UI
-	•	RTL Arabic layout support
-	•	Responsive design
-
-Infrastructure
-
-	•	Nginx
-	•	Environment variables
-	•	GitHub-based workflow
-	•	Structured deployment
----
-
-## How I Work
-- Small, iterative improvements — release early, gather feedback
-- Automated tests and CI for safe, fast delivery
-- Clear documentation and code review culture
-- Empathy-first collaboration across teams
-
----
-
-## Contact
-Let’s connect
-
-- 🐙 GitHub: [@awami1](https://github.com/awami1)
-- 🐦 Twitter: [@BL4UE](#)
-- 🌐 Website: Soon...
-- ✉️ Email: alawamiabdul@gmail.com
-
----
-
-![GitHub stats](https://github-readme-stats.vercel.app/api?username=awami1&show_icons=true)
-![Top Langs](https://github-readme-stats.vercel.app/api/top-langs/?username=awami1&layout=compact)
-
-
-
----
-
+All rights reserved.

@@ -166,6 +166,18 @@
 .lightbox-next { left: 16px; }
 .lightbox-caption { position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%); color: #fff; font-size: 14px; font-weight: 700; text-align: center; background: rgba(0,0,0,.5); padding: 8px 20px; border-radius: 20px; max-width: 80vw; z-index: 9001; }
 
+/* ─── FOCUS VISIBLE (keyboard accessibility) ─── */
+.accordion-header:focus-visible,
+.media-tab:focus-visible,
+.lightbox-close:focus-visible,
+.lightbox-nav:focus-visible,
+.cta-btn:focus-visible,
+.news-page-btn:focus-visible,
+.section-link-card:focus-visible {
+  outline: 3px solid var(--green);
+  outline-offset: 2px;
+}
+
 /* ─── EID CARD ─── */
 .eid-section { max-width: 800px; margin: 0 auto; }
 .eid-wrapper { background: var(--surface); border-radius: 24px; padding: 40px; box-shadow: 0 8px 32px rgba(0,0,0,.08); border: 1px solid var(--border); }

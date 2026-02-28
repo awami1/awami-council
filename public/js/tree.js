@@ -2,9 +2,17 @@
  * tree.js — شجرة العائلة التفاعلية بـ D3.js v7
  * عمودية (الجد أعلى → الأبناء → الأحفاد)
  * مع expand/collapse + zoom/pan + بحث + tooltip
+ *
+ * يدعم إعادة التهيئة (لتوافق AJAX navigation)
  */
 (function () {
 'use strict';
+
+/**
+ * initFamilyTree — تهيئة أو إعادة تهيئة الشجرة
+ * يُستدعى تلقائياً عند تحميل السكريبت، ويمكن استدعاؤه مجدداً بعد تعيين __TREE_DATA__
+ */
+window.initFamilyTree = function initFamilyTree() {
 
 /* ════════════════════════════════════════════
    ثوابت و إعدادات
@@ -31,6 +39,9 @@ var INITIAL_DEPTH = 2;     // أول مستويين مفتوحين
    ════════════════════════════════════════════ */
 var rawData = window.__TREE_DATA__;
 if (!rawData || !rawData.length) return;
+
+// التحقق من وجود D3.js
+if (typeof d3 === 'undefined') return;
 
 /* ════════════════════════════════════════════
    بناء الهيكل الشجري من مصفوفة مسطحة
@@ -67,6 +78,9 @@ if (roots.length === 1) {
    ════════════════════════════════════════════ */
 var container = document.getElementById('tree-svg-container');
 if (!container) return;
+
+// تنظيف أي رسم سابق (لدعم إعادة التهيئة)
+container.innerHTML = '';
 
 var width  = container.clientWidth  || 800;
 var height = container.clientHeight || 600;
@@ -561,5 +575,10 @@ window.addEventListener('resize', function () {
 document.addEventListener('touchstart', function (e) {
   if (!e.target.closest('.tree-node')) hideTooltip();
 }, { passive: true });
+
+}; // end initFamilyTree
+
+// تهيئة تلقائية عند تحميل السكريبت
+window.initFamilyTree();
 
 })();

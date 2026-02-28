@@ -39,6 +39,11 @@ if (dateEl) dateEl.textContent = tDate.toLocaleDateString('ar-SA', {
 weekday: 'long', year: 'numeric', month: 'long',
 day: 'numeric', hour: '2-digit', minute: '2-digit'
 });
+const gregEl = document.getElementById('cd-date-greg');
+if (gregEl) gregEl.textContent = tDate.toLocaleDateString('ar-EG', {
+weekday: 'long', year: 'numeric', month: 'long',
+day: 'numeric', hour: '2-digit', minute: '2-digit'
+});
 }
 
 update();

@@ -103,28 +103,6 @@
   z-index: 2;
 }
 
-/* حالة الشخصية (overlay أسفل الصورة) */
-.story-person-status {
-  position: absolute;
-  bottom: 0;
-  left: 0;
-  right: 0;
-  padding: 8px 14px;
-  font-size: 12px;
-  font-weight: 600;
-  text-align: center;
-  z-index: 2;
-}
-
-.story-person-status.status-deceased {
-  background: linear-gradient(to top, rgba(27,52,86,.85), transparent);
-  color: #e0e8f0;
-}
-
-.story-person-status.status-alive {
-  background: linear-gradient(to top, rgba(26,92,50,.75), transparent);
-  color: #e0f0e8;
-}
 
 /* محتوى البطاقة */
 .story-card-body {
@@ -376,19 +354,6 @@
   margin-bottom: 4px;
 }
 
-.story-person-card-status {
-  font-size: 13px;
-  font-weight: 600;
-  margin-bottom: 8px;
-}
-
-.story-person-card-status.deceased {
-  color: var(--primary);
-}
-
-.story-person-card-status.alive {
-  color: var(--green);
-}
 
 .story-person-card-bio {
   font-size: 14px;
@@ -572,6 +537,61 @@
 .story-author-details span {
   color: var(--text-muted);
   font-size: 12px;
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   شريط تقدم القراءة
+   ═══════════════════════════════════════════════════════════════ */
+
+.story-progress-bar {
+  position: fixed;
+  top: 0;
+  right: 0;
+  height: 3px;
+  width: 0%;
+  background: var(--green);
+  z-index: 9999;
+  transition: width .1s linear;
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   وقت القراءة
+   ═══════════════════════════════════════════════════════════════ */
+
+.story-card-readtime {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 12px;
+  color: var(--text-muted);
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   إشعار نسخ الرابط
+   ═══════════════════════════════════════════════════════════════ */
+
+.story-toast {
+  position: fixed;
+  bottom: 24px;
+  left: 50%;
+  transform: translateX(-50%) translateY(20px);
+  background: var(--green-dark, #1A5C32);
+  color: #fff;
+  padding: 12px 28px;
+  border-radius: 28px;
+  font-size: 14px;
+  font-weight: 600;
+  z-index: 10000;
+  opacity: 0;
+  transition: opacity .3s ease, transform .3s ease;
+  pointer-events: none;
+  font-family: var(--font-body);
+  box-shadow: 0 4px 16px rgba(0,0,0,.2);
+}
+
+.story-toast.visible {
+  opacity: 1;
+  transform: translateX(-50%) translateY(0);
 }
 
 /* ═══════════════════════════════════════════════════════════════

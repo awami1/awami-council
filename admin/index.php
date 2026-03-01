@@ -105,8 +105,6 @@ var CSRF_TOKEN = '<?php echo getCsrfToken(); ?>';
     <button class="nav-item" type="button" onclick="showPage('portal',this)"><span class="icon">👤</span>بوابة العضو</button>
     <button class="nav-item" type="button" onclick="showPage('reports',this)"><span class="icon">📈</span>التقارير</button>
     <button class="nav-item" type="button" onclick="showPage('export',this)"><span class="icon">📥</span>تصدير البيانات</button>
-    <div class="nav-section">المناسبات</div>
-    <button class="nav-item" type="button" onclick="showPage('occasion',this)"><span class="icon">🎉</span>صفحة المناسبة</button>
     <div class="nav-section">الإعدادات</div>
     <button class="nav-item" type="button" onclick="showPage('audit',this)"><span class="icon">📋</span>سجل التدقيق</button>
     <button class="nav-item" type="button" onclick="showPage('websettings',this)"><span class="icon">🌐</span>الموقع العام</button>
@@ -1122,147 +1120,6 @@ var CSRF_TOKEN = '<?php echo getCsrfToken(); ?>';
       </div>
     </div>
 
-    <!-- OCCASION (المناسبات) -->
-    <div class="page" id="page-occasion">
-      <div class="occasion-admin">
-
-        <!-- إعدادات الصفحة -->
-        <div class="card" style="margin-bottom:16px">
-          <div class="card-header">
-            <div class="card-title">🎉 إعدادات صفحة المناسبة</div>
-            <div style="display:flex;gap:8px;align-items:center">
-              <span id="occ-status-badge" class="badge badge-info">--</span>
-              <label class="occ-toggle-label">
-                <input type="checkbox" id="occ-is-active" onchange="occasionToggleActive()">
-                <span class="occ-toggle-switch"></span>
-                <span class="occ-toggle-text">ظاهرة</span>
-              </label>
-            </div>
-          </div>
-          <div class="card-body">
-            <div class="form-group">
-              <label class="form-label">عنوان المناسبة *</label>
-              <input class="form-control" id="occ-page-title" placeholder="مثال: تهنئة عيد الفطر المبارك 1447هـ">
-            </div>
-            <div class="form-group">
-              <label class="form-label">رسالة التهنئة (اختيارية)</label>
-              <textarea class="form-control" id="occ-greeting-message" rows="3" placeholder="نص تهنئة أو ترحيب يظهر تحت العنوان في الصفحة العامة"></textarea>
-            </div>
-            <button class="btn btn-primary" id="occ-save-settings-btn" onclick="occasionSaveSettings()">حفظ الإعدادات</button>
-          </div>
-        </div>
-
-        <!-- إدارة الصور -->
-        <div class="card" style="margin-bottom:16px">
-          <div class="card-header">
-            <div class="card-title">🖼️ صور المناسبة</div>
-            <label class="btn btn-primary btn-sm" style="cursor:pointer">
-              + رفع صورة
-              <input type="file" accept="image/jpeg,image/png,image/webp" style="display:none" id="occ-image-upload" onchange="occasionUploadImage(this)">
-            </label>
-          </div>
-          <div class="card-body">
-            <div style="font-size:12px;color:var(--text-muted);margin-bottom:12px">الصيغ المدعومة: JPG, PNG, WEBP — الحد الأقصى: 5MB — الصورة الرئيسية هي التي يُكتب عليها الاسم</div>
-            <div id="occ-images-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:14px">
-              <div class="empty-state"><div class="empty-icon">🖼️</div><p>لا توجد صور</p></div>
-            </div>
-          </div>
-        </div>
-
-        <!-- إعدادات الاسم على الصورة -->
-        <div class="card" style="margin-bottom:16px">
-          <div class="card-header">
-            <div class="card-title">✍️ إعدادات الاسم على الصورة</div>
-            <label class="occ-toggle-label">
-              <input type="checkbox" id="occ-name-enabled" onchange="occasionToggleNameInput()">
-              <span class="occ-toggle-switch"></span>
-              <span class="occ-toggle-text">مفعّل</span>
-            </label>
-          </div>
-          <div class="card-body" id="occ-name-settings-body">
-
-            <div class="grid-2" style="gap:20px">
-              <!-- العمود الأيمن: تحديد الموقع والمعاينة -->
-              <div>
-                <div style="font-weight:700;margin-bottom:10px;font-size:14px">تحديد موقع الاسم على الصورة</div>
-                <div style="font-size:12px;color:var(--text-muted);margin-bottom:10px">انقر على الصورة لتحديد مكان ظهور الاسم — أو اسحب العلامة لتعديل الموقع</div>
-                <div id="occ-position-container" class="occ-position-container">
-                  <div class="occ-position-placeholder">ارفع صورة رئيسية أولاً</div>
-                </div>
-                <!-- معاينة حية -->
-                <div style="margin-top:12px">
-                  <label class="form-label">معاينة — اكتب اسماً تجريبياً:</label>
-                  <input class="form-control" id="occ-preview-name" placeholder="أحمد محمد العوامي" oninput="occasionUpdatePreview()">
-                </div>
-              </div>
-
-              <!-- العمود الأيسر: تخصيص المظهر -->
-              <div>
-                <div style="font-weight:700;margin-bottom:10px;font-size:14px">تخصيص مظهر الاسم</div>
-
-                <div class="form-group">
-                  <label class="form-label">لون الخط</label>
-                  <div style="display:flex;gap:8px;align-items:center">
-                    <input type="color" id="occ-font-color" value="#FFFFFF" onchange="occasionUpdatePreview()" style="width:50px;height:36px;border:2px solid var(--border);border-radius:8px;cursor:pointer">
-                    <input class="form-control" id="occ-font-color-text" value="#FFFFFF" style="width:100px;font-family:monospace" oninput="occasionSyncColorFromText()">
-                  </div>
-                </div>
-
-                <div class="form-group">
-                  <label class="form-label">حجم الخط</label>
-                  <select class="form-control" id="occ-font-size" onchange="occasionUpdatePreview()">
-                    <option value="small">صغير</option>
-                    <option value="medium">متوسط</option>
-                    <option value="large" selected>كبير</option>
-                    <option value="xlarge">كبير جداً</option>
-                  </select>
-                </div>
-
-                <div class="form-group">
-                  <label class="form-label">نوع الخط</label>
-                  <select class="form-control" id="occ-font-family" onchange="occasionUpdatePreview()">
-                    <option value="Cairo">Cairo — القاهرة</option>
-                    <option value="Amiri">Amiri — أميري</option>
-                    <option value="Saudi">Saudi — السعودي</option>
-                    <option value="Tajawal">Tajawal — تجوّل</option>
-                  </select>
-                </div>
-
-                <div class="form-group">
-                  <label class="form-label">
-                    <input type="checkbox" id="occ-text-shadow" checked onchange="occasionUpdatePreview()">
-                    ظل النص (لتحسين القراءة على خلفيات مختلفة)
-                  </label>
-                </div>
-
-                <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:12px">
-                  <div style="background:var(--bg);padding:10px;border-radius:8px;text-align:center">
-                    <div style="font-size:11px;color:var(--text-muted);margin-bottom:4px">الموقع الأفقي (X)</div>
-                    <div style="font-size:18px;font-weight:700;color:var(--green)" id="occ-pos-x-display">50%</div>
-                  </div>
-                  <div style="background:var(--bg);padding:10px;border-radius:8px;text-align:center">
-                    <div style="font-size:11px;color:var(--text-muted);margin-bottom:4px">الموقع العمودي (Y)</div>
-                    <div style="font-size:18px;font-weight:700;color:var(--green)" id="occ-pos-y-display">80%</div>
-                  </div>
-                </div>
-
-                <button class="btn btn-primary" style="width:100%;margin-top:14px" id="occ-save-name-btn" onclick="occasionSaveNameSettings()">حفظ إعدادات الاسم</button>
-              </div>
-            </div>
-
-          </div>
-        </div>
-
-        <!-- رابط الصفحة العامة -->
-        <div class="card">
-          <div class="card-body" style="text-align:center;padding:20px">
-            <div style="font-size:14px;color:var(--text-muted);margin-bottom:8px">رابط الصفحة العامة</div>
-            <a href="/eid" target="_blank" class="btn btn-outline" style="font-size:14px">🔗 فتح صفحة المناسبة</a>
-          </div>
-        </div>
-      </div>
-    </div>
-
   </div>
 </main>
 
@@ -1444,7 +1301,6 @@ var CSRF_TOKEN = '<?php echo getCsrfToken(); ?>';
 <script src="js/admin-core.js"></script>
 <script src="js/admin-app.js"></script>
 <script src="js/admin-stories.js"></script>
-<script src="js/occasion-admin.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <script src="js/admin-import.js"></script>
 <script src="admin-overrides.js"></script>

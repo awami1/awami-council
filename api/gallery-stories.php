@@ -60,7 +60,11 @@ function ensureGalleryStoriesTable(): void
     }
 }
 
-ensureGalleryStoriesTable();
+try {
+    ensureGalleryStoriesTable();
+} catch (Throwable $e) {
+    error_log('ensureGalleryStoriesTable failed: ' . $e->getMessage());
+}
 
 // ──────────────────────────────────────────────────────────────
 // HELPERS

@@ -1,0 +1,675 @@
+/* ═══════════════════════════════════════════════════════════════
+   riwaq.css — الرِّوَاق: معرض سينمائي لحكايا العائلة
+   ═══════════════════════════════════════════════════════════════ */
+
+/* ── Reset & Base ── */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+html, body {
+  height: 100%;
+  overflow: hidden;
+  background: #060606;
+  color: #f5f0e8;
+  font-family: 'Noto Naskh Arabic', 'Amiri', serif;
+  direction: rtl;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* ── Keyframes ── */
+
+@keyframes curtainTitleAppear {
+  from { opacity: 0; transform: translateY(30px); letter-spacing: 15px; }
+  to   { opacity: 1; transform: translateY(0);    letter-spacing: 5px;  }
+}
+
+@keyframes curtainSubAppear {
+  from { opacity: 0; transform: translateY(15px); }
+  to   { opacity: 0.4; transform: translateY(0);  }
+}
+
+@keyframes curtainExit {
+  0%   { opacity: 1; }
+  100% { opacity: 0; pointer-events: none; }
+}
+
+@keyframes lineGrow {
+  from { height: 0; }
+  to   { height: 80px; }
+}
+
+@keyframes fadeSlideUp {
+  from { opacity: 0; transform: translateY(25px); }
+  to   { opacity: 1; transform: translateY(0);    }
+}
+
+@keyframes panelReveal {
+  from { opacity: 0; transform: scale(0.92); }
+  to   { opacity: 1; transform: scale(1);    }
+}
+
+@keyframes widthGrow {
+  from { transform: scaleX(0); }
+  to   { transform: scaleX(1); }
+}
+
+@keyframes float {
+  0%, 100% { transform: translateY(0); }
+  50%      { transform: translateY(-6px); }
+}
+
+@keyframes overlayDividerGrow {
+  from { transform: scaleX(0); }
+  to   { transform: scaleX(1); }
+}
+
+/* ── ستارة الافتتاح ── */
+
+.riwaq-curtain {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  background: #060606;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  animation: curtainExit 0.8s ease-in 2.5s forwards;
+}
+
+.riwaq-curtain-inner {
+  text-align: center;
+}
+
+.riwaq-curtain-title {
+  font-family: 'Amiri', serif;
+  font-size: clamp(2.5rem, 7vw, 5rem);
+  font-weight: 700;
+  color: #D4AF37;
+  opacity: 0;
+  animation: curtainTitleAppear 1.5s ease-out 0.4s forwards;
+}
+
+.riwaq-curtain-sub {
+  font-family: 'Noto Naskh Arabic', serif;
+  font-size: clamp(0.9rem, 2vw, 1.2rem);
+  color: #f5f0e8;
+  opacity: 0;
+  margin-top: 12px;
+  animation: curtainSubAppear 1s ease-out 1.2s forwards;
+}
+
+/* ── الشريط العلوي ── */
+
+.riwaq-topbar {
+  position: fixed;
+  top: 0; left: 0; right: 0;
+  z-index: 100;
+  height: 56px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 24px;
+  background: linear-gradient(to bottom, rgba(6,6,6,0.92) 0%, rgba(6,6,6,0.4) 70%, transparent 100%);
+  pointer-events: none;
+}
+
+.riwaq-topbar > * { pointer-events: auto; }
+
+.riwaq-topbar-title {
+  font-family: 'Amiri', serif;
+  font-size: 1.1rem;
+  color: #D4AF37;
+  letter-spacing: 2px;
+}
+
+.riwaq-back {
+  color: rgba(245,240,232,0.6);
+  text-decoration: none;
+  font-size: 1.4rem;
+  transition: color 0.3s;
+  line-height: 1;
+}
+.riwaq-back:hover { color: #D4AF37; }
+
+/* ── الشريط السفلي ── */
+
+.riwaq-bottombar {
+  position: fixed;
+  bottom: 0; left: 0; right: 0;
+  z-index: 100;
+  text-align: center;
+  padding: 16px;
+  font-size: 0.75rem;
+  color: rgba(245,240,232,0.25);
+  background: linear-gradient(to top, rgba(6,6,6,0.85) 0%, transparent 100%);
+  pointer-events: none;
+  letter-spacing: 1px;
+}
+
+/* ── المعرض الأفقي ── */
+
+.riwaq-gallery {
+  display: flex;
+  height: 100vh;
+  overflow-x: auto;
+  overflow-y: hidden;
+  scroll-behavior: smooth;
+  scroll-snap-type: x proximity;
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+.riwaq-gallery::-webkit-scrollbar { display: none; }
+
+/* ── اللوحات ── */
+
+.riwaq-panel {
+  flex: 0 0 auto;
+  height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  scroll-snap-align: start;
+}
+
+/* لوحة الافتتاح */
+.riwaq-panel--intro {
+  width: 100vw;
+}
+
+.riwaq-intro {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 20px;
+}
+
+.riwaq-intro-line {
+  width: 2px;
+  height: 0;
+  background: linear-gradient(to bottom, transparent, #D4AF37, transparent);
+  animation: lineGrow 1.5s ease-out 3s forwards;
+}
+
+.riwaq-intro-text {
+  font-family: 'Amiri', serif;
+  font-size: clamp(1rem, 2vw, 1.3rem);
+  color: rgba(245,240,232,0.5);
+  opacity: 0;
+  animation: fadeSlideUp 1s ease-out 3.5s forwards;
+}
+
+/* لوحة القصة */
+.riwaq-panel--story {
+  width: clamp(350px, 38vw, 500px);
+  padding: 20px;
+  /* reveal animation via JS IntersectionObserver */
+  opacity: 0;
+  transform: scale(0.92);
+  transition: opacity 0.6s ease-out, transform 0.6s ease-out;
+}
+
+.riwaq-panel--story.riwaq-visible {
+  opacity: 1;
+  transform: scale(1);
+}
+
+/* لوحة فارغة */
+.riwaq-panel--empty {
+  width: 100vw;
+}
+
+.riwaq-empty-text {
+  font-family: 'Amiri', serif;
+  font-size: 1.3rem;
+  color: rgba(245,240,232,0.3);
+}
+
+/* لوحة الختام */
+.riwaq-panel--closing {
+  width: 60vw;
+  min-width: 300px;
+}
+
+.riwaq-closing-text {
+  font-family: 'Amiri', serif;
+  font-size: clamp(1.2rem, 3vw, 2.5rem);
+  color: rgba(245,240,232,0.3);
+  letter-spacing: 3px;
+}
+
+/* ── البطاقات ── */
+
+.riwaq-card {
+  position: relative;
+  width: 100%;
+  height: 75vh;
+  border-radius: 24px;
+  background: linear-gradient(160deg, var(--cp), var(--cs));
+  padding: 32px 28px;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  cursor: pointer;
+  transition:
+    transform 0.5s cubic-bezier(.22,1,.36,1),
+    box-shadow 0.5s ease,
+    border-color 0.4s ease;
+  border: 2px solid transparent;
+}
+
+.riwaq-card:hover {
+  transform: translateY(-6px) scale(1.03);
+  box-shadow: 0 20px 60px rgba(0,0,0,0.5), 0 0 40px color-mix(in srgb, var(--ca) 20%, transparent);
+  border-color: color-mix(in srgb, var(--ca) 40%, transparent);
+}
+
+/* Grain texture */
+.riwaq-card__grain {
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  opacity: 0.07;
+  pointer-events: none;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='256' height='256' filter='url(%23n)' opacity='1'/%3E%3C/svg%3E");
+  background-size: 128px;
+  mix-blend-mode: overlay;
+}
+
+/* رأس البطاقة */
+.riwaq-card__top {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: auto;
+}
+
+.riwaq-card__badge {
+  display: inline-block;
+  padding: 4px 14px;
+  border-radius: 20px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  background: rgba(255,255,255,0.12);
+  color: var(--ca);
+  backdrop-filter: blur(8px);
+  letter-spacing: 0.5px;
+}
+
+.riwaq-card__year {
+  font-size: 0.8rem;
+  color: rgba(255,255,255,0.45);
+  font-family: 'Noto Naskh Arabic', serif;
+}
+
+/* جسم البطاقة */
+.riwaq-card__body {
+  margin-top: auto;
+}
+
+.riwaq-card__quote {
+  position: relative;
+  margin-bottom: 16px;
+}
+
+.riwaq-card__quote-mark {
+  font-size: 3rem;
+  color: var(--ca);
+  opacity: 0.3;
+  line-height: 1;
+  display: block;
+  margin-bottom: -8px;
+}
+
+.riwaq-card__quote p {
+  font-family: 'Amiri', serif;
+  font-style: italic;
+  font-size: clamp(0.9rem, 1.5vw, 1.05rem);
+  color: rgba(255,255,255,0.75);
+  line-height: 1.9;
+}
+
+.riwaq-card__divider {
+  width: 60px;
+  height: 2px;
+  background: linear-gradient(to left, var(--ca), transparent);
+  margin: 16px 0;
+  transform-origin: right;
+}
+
+.riwaq-card__title {
+  font-family: 'Amiri', serif;
+  font-size: clamp(1.3rem, 2.5vw, 2rem);
+  font-weight: 700;
+  color: #fff;
+  line-height: 1.5;
+  margin-bottom: 6px;
+}
+
+.riwaq-card__subtitle {
+  font-size: clamp(0.8rem, 1.2vw, 0.95rem);
+  color: var(--ca);
+  line-height: 1.6;
+  opacity: 0.85;
+}
+
+/* ذيل البطاقة */
+.riwaq-card__footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 20px;
+  padding-top: 16px;
+  border-top: 1px solid rgba(255,255,255,0.08);
+}
+
+.riwaq-card__author {
+  font-size: 0.8rem;
+  color: rgba(255,255,255,0.5);
+}
+
+.riwaq-card__arrow {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  border: 1px solid rgba(255,255,255,0.15);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1rem;
+  color: rgba(255,255,255,0.5);
+  transition: all 0.3s ease;
+}
+
+.riwaq-card:hover .riwaq-card__arrow {
+  border-color: var(--ca);
+  color: var(--ca);
+  transform: translateX(-4px);
+}
+
+/* ── Overlay القصة الكاملة ── */
+
+.riwaq-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 200;
+  background: #060606;
+  overflow-y: auto;
+  overflow-x: hidden;
+  transform: translateY(100%);
+  opacity: 0;
+  transition: transform 0.6s cubic-bezier(.22,1,.36,1), opacity 0.4s ease;
+}
+
+.riwaq-overlay.riwaq-overlay--active {
+  transform: translateY(0);
+  opacity: 1;
+}
+
+/* زر الإغلاق */
+.riwaq-overlay__close {
+  position: fixed;
+  top: 20px;
+  left: 20px;
+  z-index: 210;
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  border: 1px solid rgba(255,255,255,0.15);
+  background: rgba(6,6,6,0.6);
+  backdrop-filter: blur(12px);
+  color: #f5f0e8;
+  font-size: 1.4rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.3s ease;
+}
+.riwaq-overlay__close:hover {
+  background: rgba(212,175,55,0.2);
+  border-color: #D4AF37;
+  color: #D4AF37;
+}
+
+/* Hero header */
+.riwaq-overlay__hero {
+  position: relative;
+  min-height: 70vh;
+  display: flex;
+  align-items: flex-end;
+  padding: 48px 40px;
+  background: linear-gradient(160deg, var(--cp, #0B3D2E), var(--cs, #1A6B4A));
+  overflow: hidden;
+}
+
+.riwaq-overlay__hero::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(ellipse at 30% 80%, rgba(255,255,255,0.06) 0%, transparent 60%);
+  pointer-events: none;
+}
+
+.riwaq-overlay__hero-grain {
+  position: absolute;
+  inset: 0;
+  opacity: 0.06;
+  pointer-events: none;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='256' height='256' filter='url(%23n)' opacity='1'/%3E%3C/svg%3E");
+  background-size: 128px;
+  mix-blend-mode: overlay;
+}
+
+.riwaq-overlay__hero-content {
+  position: relative;
+  z-index: 1;
+  max-width: 800px;
+}
+
+.riwaq-overlay__badge {
+  display: inline-block;
+  padding: 5px 16px;
+  border-radius: 20px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  background: rgba(255,255,255,0.12);
+  color: var(--ca, #D4AF37);
+  backdrop-filter: blur(8px);
+  margin-bottom: 16px;
+}
+
+.riwaq-overlay__year {
+  font-size: 0.85rem;
+  color: rgba(255,255,255,0.45);
+  margin-right: 12px;
+}
+
+.riwaq-overlay__title {
+  font-family: 'Amiri', serif;
+  font-size: clamp(2rem, 5vw, 3.5rem);
+  font-weight: 700;
+  color: #fff;
+  line-height: 1.4;
+  margin: 12px 0;
+}
+
+.riwaq-overlay__subtitle {
+  font-size: clamp(1rem, 2vw, 1.2rem);
+  color: var(--ca, #D4AF37);
+  line-height: 1.7;
+  opacity: 0.85;
+}
+
+.riwaq-overlay__divider {
+  width: 80px;
+  height: 2px;
+  background: linear-gradient(to left, var(--ca, #D4AF37), transparent);
+  margin: 20px 0;
+  transform-origin: right;
+  animation: overlayDividerGrow 0.8s ease-out 0.3s both;
+}
+
+.riwaq-overlay__meta {
+  display: flex;
+  gap: 20px;
+  font-size: 0.85rem;
+  color: rgba(255,255,255,0.5);
+}
+
+/* جسم المقال */
+.riwaq-overlay__body {
+  max-width: 700px;
+  margin: 0 auto;
+  padding: 48px 24px 100px;
+  font-family: 'Amiri', serif;
+  font-size: 19px;
+  line-height: 2.4;
+  color: #d4cec2;
+  position: relative;
+}
+
+.riwaq-overlay__body::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  right: -20px;
+  width: 2px;
+  height: 100%;
+  background: linear-gradient(to bottom, var(--ca, #D4AF37), transparent 80%);
+  opacity: 0.15;
+}
+
+.riwaq-overlay__body p {
+  margin-bottom: 1.8em;
+  opacity: 0;
+  transform: translateY(20px);
+  animation: fadeSlideUp 0.6s ease-out forwards;
+}
+
+.riwaq-overlay__body h2,
+.riwaq-overlay__body h3 {
+  font-family: 'Amiri', serif;
+  color: #f5f0e8;
+  margin: 2em 0 0.8em;
+  opacity: 0;
+  transform: translateY(20px);
+  animation: fadeSlideUp 0.6s ease-out forwards;
+}
+
+.riwaq-overlay__body h2 { font-size: 1.6rem; }
+.riwaq-overlay__body h3 { font-size: 1.3rem; }
+
+.riwaq-overlay__body blockquote {
+  border-right: 3px solid var(--ca, #D4AF37);
+  padding: 16px 24px 16px 0;
+  margin: 2em 0;
+  background: rgba(212,175,55,0.04);
+  border-radius: 0 12px 12px 0;
+  font-style: italic;
+  color: #e8e0d4;
+  opacity: 0;
+  transform: translateY(20px);
+  animation: fadeSlideUp 0.6s ease-out forwards;
+}
+
+.riwaq-overlay__body img {
+  max-width: 100%;
+  border-radius: 12px;
+  margin: 1.5em 0;
+}
+
+.riwaq-overlay__author-tag {
+  margin-top: 3em;
+  padding: 16px 20px;
+  background: rgba(255,255,255,0.04);
+  border-radius: 12px;
+  border: 1px solid rgba(255,255,255,0.06);
+  font-size: 0.95rem;
+  color: rgba(245,240,232,0.6);
+  text-align: center;
+}
+
+/* ══════════════════════════════════════════
+   Responsive — جوال (سكرول عمودي)
+   ══════════════════════════════════════════ */
+
+@media (max-width: 767px) {
+  html, body {
+    overflow-y: auto;
+    overflow-x: hidden;
+  }
+
+  .riwaq-gallery {
+    flex-direction: column;
+    height: auto;
+    overflow-x: hidden;
+    overflow-y: visible;
+    scroll-snap-type: y proximity;
+  }
+
+  .riwaq-panel {
+    width: 100vw !important;
+    height: auto;
+    min-height: 100vh;
+  }
+
+  .riwaq-panel--story {
+    padding: 16px;
+  }
+
+  .riwaq-card {
+    height: 80vh;
+  }
+
+  .riwaq-panel--intro {
+    min-height: 100vh;
+  }
+
+  .riwaq-panel--closing {
+    min-height: 50vh;
+  }
+
+  .riwaq-overlay__hero {
+    min-height: 50vh;
+    padding: 32px 20px;
+  }
+
+  .riwaq-overlay__title {
+    font-size: clamp(1.6rem, 6vw, 2.4rem);
+  }
+
+  .riwaq-overlay__body {
+    padding: 32px 20px 80px;
+    font-size: 17px;
+  }
+
+  .riwaq-overlay__body::before {
+    display: none;
+  }
+
+  .riwaq-overlay__close {
+    top: 12px;
+    left: 12px;
+    width: 40px;
+    height: 40px;
+    font-size: 1.2rem;
+  }
+}
+
+/* ══════════════════════════════════════════
+   Reduced motion
+   ══════════════════════════════════════════ */
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+  .riwaq-curtain {
+    display: none;
+  }
+  .riwaq-panel--story {
+    opacity: 1;
+    transform: none;
+  }
+}

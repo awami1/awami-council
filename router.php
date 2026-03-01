@@ -55,16 +55,10 @@ $routes = [
     '/gallery' => ['file' => 'pages/gallery.php',  'page' => 'gallery', 'title' => 'المعرض',              'scripts' => ['/public/js/media.js']],
     '/contact' => ['file' => 'pages/contact.php',  'page' => 'contact', 'title' => 'تواصل معنا',          'scripts' => []],
     '/eid'     => ['file' => 'pages/eid.php',      'page' => 'eid',     'title' => 'تهنئة العيد',         'scripts' => ['/public/js/eid.js']],
-    '/stories' => ['file' => 'pages/stories.php',  'page' => 'stories', 'title' => 'سِيَر وقصص',         'scripts' => ['/public/js/stories.js']],
+    '/riwaq'   => ['file' => 'pages/riwaq.php',   'page' => 'riwaq',   'title' => 'الرِّوَاق',          'scripts' => [], 'standalone' => true],
 ];
 
-// مسارات ديناميكية: /stories/{slug}
 $route = $routes[$uri] ?? null;
-
-if (!$route && preg_match('#^/stories/([^/]+)$#', $uri, $m)) {
-    $_GET['slug'] = $m[1];
-    $route = ['file' => 'pages/story.php', 'page' => 'stories', 'title' => 'سِيَر وقصص', 'scripts' => ['/public/js/stories.js']];
-}
 
 if (!$route) {
     http_response_code(404);
@@ -82,7 +76,10 @@ $isAjax = (!empty($_SERVER['HTTP_X_REQUESTED_WITH'])
         && strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) === 'xmlhttprequest')
        || !empty($_GET['_ajax']);
 
-if ($isAjax) {
+if (!empty($route['standalone'])) {
+    // صفحات مستقلة تعرض HTML كامل بدون layout
+    include $pageFile;
+} elseif ($isAjax) {
     header('Content-Type: text/html; charset=UTF-8');
     header('Cache-Control: no-store');
     include $pageFile;

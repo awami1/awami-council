@@ -193,6 +193,15 @@ toggleStatus: (id)     => apiFetch(`${API_BASE}/stories.php?id=${id}&action=stat
 uploadImage: (formData) => fetch(`${API_BASE}/stories.php?upload=1`, { method: 'POST', body: formData }).then(r => r.json()).then(j => { if (j.error) throw new Error(j.error); return j; }),
 };
 
+// –– Gallery Stories (الرِّوَاق) ––
+const GalleryStoriesAPI = {
+getAll: (params = {})  => { const qs = new URLSearchParams(params).toString(); return api.get('gallery-stories.php' + (qs ? '?' + qs : '')); },
+get:    (id)           => apiFetch(`${API_BASE}/gallery-stories.php?id=${id}`),
+create: (data)         => api.post('gallery-stories.php', data),
+update: (id, data)     => api.put('gallery-stories.php', data, id),
+delete: (id)           => api.del('gallery-stories.php', id),
+};
+
 // –– Public site helpers (used in index.php) ––
 async function loadSettings()  { const r = await SettingsAPI.get();     return r.settings; }
 async function loadEvents()    { return await EventsAPI.getAll(); }

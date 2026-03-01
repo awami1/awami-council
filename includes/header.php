@@ -29,7 +29,7 @@
       <a href="/council"<?= ($currentPage ?? '') === 'council' ? ' class="active"' : '' ?>>المجلس</a>
       <a href="/tree"<?= ($currentPage ?? '') === 'tree' ? ' class="active"' : '' ?>>شجرة العائلة</a>
       <a href="/news"<?= ($currentPage ?? '') === 'news' ? ' class="active"' : '' ?>>الأخبار</a>
-      <a href="/stories"<?= ($currentPage ?? '') === 'stories' ? ' class="active"' : '' ?>>سِيَر وقصص</a>
+      <a href="/riwaq" data-no-ajax<?= ($currentPage ?? '') === 'riwaq' ? ' class="active"' : '' ?>>الرِّوَاق</a>
       <a href="/events"<?= ($currentPage ?? '') === 'events' ? ' class="active"' : '' ?>>الفعاليات</a>
       <a href="/gallery"<?= ($currentPage ?? '') === 'gallery' ? ' class="active"' : '' ?>>المعرض</a>
       <a href="/contact"<?= ($currentPage ?? '') === 'contact' ? ' class="active"' : '' ?>>تواصل معنا</a>

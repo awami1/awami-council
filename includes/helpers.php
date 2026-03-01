@@ -147,6 +147,17 @@ function getStoryBySlug(string $slug): ?array {
 }
 
 /**
+ * جلب قصص الرِّوَاق النشطة
+ */
+function getActiveGalleryStories(): array {
+    try {
+        $pdo = getPDO();
+        $stmt = $pdo->query("SELECT * FROM gallery_stories WHERE is_active = 1 ORDER BY display_order ASC, created_at DESC");
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+    } catch (Throwable $e) { error_log('getActiveGalleryStories() failed: ' . $e->getMessage()); return []; }
+}
+
+/**
  * حساب عدد الأعضاء النشطين
  */
 function getActiveMembersCount(): int {

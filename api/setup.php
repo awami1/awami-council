@@ -189,6 +189,26 @@ if ($sqlite) {
 "CREATE INDEX IF NOT EXISTS idx_reports_status ON saved_reports(status)",
 "CREATE INDEX IF NOT EXISTS idx_reports_created ON saved_reports(created_at)",
 
+"CREATE TABLE IF NOT EXISTS gallery_stories (
+  id TEXT PRIMARY KEY,
+  title TEXT NOT NULL,
+  subtitle TEXT NOT NULL DEFAULT '',
+  type TEXT NOT NULL DEFAULT 'سيرة ذاتية',
+  year_range TEXT NOT NULL DEFAULT '',
+  quote TEXT NOT NULL DEFAULT '',
+  full_text TEXT NOT NULL DEFAULT '',
+  author_name TEXT NOT NULL DEFAULT '',
+  read_time INTEGER NOT NULL DEFAULT 5,
+  color_primary TEXT NOT NULL DEFAULT '#0B3D2E',
+  color_secondary TEXT NOT NULL DEFAULT '#1A6B4A',
+  color_accent TEXT NOT NULL DEFAULT '#D4AF37',
+  display_order INTEGER NOT NULL DEFAULT 0,
+  is_active INTEGER NOT NULL DEFAULT 1,
+  created_at TEXT NOT NULL DEFAULT (datetime('now')),
+  updated_at TEXT NOT NULL DEFAULT (datetime('now'))
+)",
+"CREATE INDEX IF NOT EXISTS idx_gs_active_order ON gallery_stories(is_active, display_order)",
+
 "CREATE TABLE IF NOT EXISTS stories (
   id TEXT PRIMARY KEY,
   title TEXT NOT NULL,
@@ -418,6 +438,27 @@ if ($sqlite) {
   UNIQUE KEY `slug` (`slug`),
   INDEX `idx_stories_status` (`status`),
   INDEX `idx_stories_published` (`published_at`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci",
+
+"CREATE TABLE IF NOT EXISTS `gallery_stories` (
+  `id` VARCHAR(64) NOT NULL,
+  `title` VARCHAR(255) NOT NULL,
+  `subtitle` VARCHAR(500) NOT NULL DEFAULT '',
+  `type` ENUM('سيرة ذاتية','رثاء','قصة نجاح','ذكريات','وصايا') NOT NULL DEFAULT 'سيرة ذاتية',
+  `year_range` VARCHAR(100) NOT NULL DEFAULT '',
+  `quote` TEXT,
+  `full_text` LONGTEXT,
+  `author_name` VARCHAR(255) NOT NULL DEFAULT '',
+  `read_time` INT NOT NULL DEFAULT 5,
+  `color_primary` VARCHAR(7) NOT NULL DEFAULT '#0B3D2E',
+  `color_secondary` VARCHAR(7) NOT NULL DEFAULT '#1A6B4A',
+  `color_accent` VARCHAR(7) NOT NULL DEFAULT '#D4AF37',
+  `display_order` INT NOT NULL DEFAULT 0,
+  `is_active` TINYINT(1) NOT NULL DEFAULT 1,
+  `created_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  INDEX `idx_gs_active_order` (`is_active`, `display_order`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci",
 
     ]; // end MySQL

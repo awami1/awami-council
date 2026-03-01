@@ -10,7 +10,6 @@
     '/gallery': ['/public/js/media.js'],
     '/news':    ['/public/js/news.js'],
     '/events':  [],
-    '/stories': ['/public/js/stories.js'],
     '/eid':     ['/public/js/eid.js']
   };
 
@@ -91,10 +90,6 @@
 
         // تحميل السكريبتات الخاصة بالصفحة
         var scripts = pageScripts[url] || [];
-        // مسارات ديناميكية: /stories/{slug}
-        if (!scripts.length && url.indexOf('/stories/') === 0) {
-          scripts = pageScripts['/stories'] || [];
-        }
         var promises = scripts.map(function(src) { return loadScript(src); });
 
         function runInlineScripts() {
@@ -158,6 +153,7 @@
     if (!a.href) return false;
     if (a.target === '_blank') return false;
     if (a.hasAttribute('download')) return false;
+    if (a.hasAttribute('data-no-ajax')) return false;
     var href = a.getAttribute('href');
     if (!href || href.charAt(0) === '#') return false;
     if (href.indexOf('http') === 0 && href.indexOf(location.origin) !== 0) return false;

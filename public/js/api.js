@@ -193,6 +193,17 @@ toggleStatus: (id)     => apiFetch(`${API_BASE}/stories.php?id=${id}&action=stat
 uploadImage: (formData) => fetch(`${API_BASE}/stories.php?upload=1`, { method: 'POST', body: formData }).then(r => r.json()).then(j => { if (j.error) throw new Error(j.error); return j; }),
 };
 
+// –– Occasions (المناسبات) ––
+const OccasionAPI = {
+getPublic: ()           => api.get('occasions.php?action=public'),
+getAdmin:  ()           => api.get('occasions.php'),
+update:    (data)       => apiFetch(`${API_BASE}/occasions.php`, { method: 'PUT', body: JSON.stringify(data) }),
+uploadImage: (formData) => fetch(`${API_BASE}/occasions.php?action=upload`, { method: 'POST', body: formData }).then(r => r.json()).then(j => { if (j.error) throw new Error(j.error); return j; }),
+setPrimary: (id)        => apiFetch(`${API_BASE}/occasions.php?action=primary&id=${id}`, { method: 'PUT' }),
+reorderImages: (order)  => apiFetch(`${API_BASE}/occasions.php?action=reorder`, { method: 'PUT', body: JSON.stringify({ order }) }),
+deleteImage: (id)       => apiFetch(`${API_BASE}/occasions.php?id=${id}`, { method: 'DELETE' }),
+};
+
 // –– Public site helpers (used in index.php) ––
 async function loadSettings()  { const r = await SettingsAPI.get();     return r.settings; }
 async function loadEvents()    { return await EventsAPI.getAll(); }

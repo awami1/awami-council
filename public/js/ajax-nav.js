@@ -11,7 +11,7 @@
     '/news':    ['/public/js/news.js'],
     '/events':  [],
     '/stories': ['/public/js/stories.js'],
-    '/eid':     ['/public/js/eid.js']
+    '/eid':     ['/public/js/occasion.js']
   };
 
   // سكريبتات تم تحميلها

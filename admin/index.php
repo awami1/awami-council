@@ -93,6 +93,7 @@ var CSRF_TOKEN = '<?php echo getCsrfToken(); ?>';
     <div class="nav-section">الأنشطة</div>
     <button class="nav-item" type="button" onclick="showPage('events',this)"><span class="icon">🗓️</span>الفعاليات</button>
     <button class="nav-item" type="button" onclick="showPage('news',this)"><span class="icon">📰</span>الأخبار</button>
+    <button class="nav-item" type="button" onclick="showPage('stories',this)"><span class="icon">📖</span>سِيَر وقصص</button>
     <button class="nav-item" type="button" onclick="showPage('calendar',this)"><span class="icon">📅</span>التقويم</button>
     <button class="nav-item" type="button" onclick="showPage('voting',this)"><span class="icon">🗳️</span>التصويت</button>
     <div class="nav-section">التواصل</div>
@@ -336,6 +337,21 @@ var CSRF_TOKEN = '<?php echo getCsrfToken(); ?>';
         <div class="table-wrap mobile-cards"><table><thead><tr><th>#</th><th>العنوان</th><th>التصنيف</th><th>الحالة</th><th>التاريخ</th><th>إجراءات</th></tr></thead><tbody id="news-tbody"></tbody></table></div>
         <div id="news-pagination"></div>
         <div style="padding:12px 18px;border-top:1px solid var(--border)"><span style="font-size:12px;color:var(--text-muted)" id="news-count">0 خبر</span></div>
+      </div>
+    </div>
+
+    <!-- STORIES (سِيَر وقصص) -->
+    <div class="page" id="page-stories">
+      <div class="card">
+        <div class="search-bar">
+          <button class="btn btn-primary btn-sm" onclick="openAddStory()">+ إضافة موضوع</button>
+          <input class="search-input" id="stories-search" placeholder="بحث في المواضيع..." oninput="debouncedRenderStories()">
+          <select class="filter-select" style="width:130px" id="stories-flt-status" onchange="_pageState.stories=1;renderStories()"><option value="">كل الحالات</option><option value="published">منشور</option><option value="draft">مسودة</option></select>
+          <select class="filter-select" style="width:130px" id="stories-flt-cat" onchange="_pageState.stories=1;renderStories()"><option value="">كل التصنيفات</option><option value="biography">سيرة ذاتية</option><option value="self_made">قصة عصامية</option><option value="eulogy">رثاء</option><option value="tribute">مقال تكريمي</option><option value="other">أخرى</option></select>
+        </div>
+        <div class="table-wrap mobile-cards"><table><thead><tr><th>#</th><th>العنوان</th><th>التصنيف</th><th>الشخصية</th><th>الحالة</th><th>تثبيت</th><th>التاريخ</th><th>إجراءات</th></tr></thead><tbody id="stories-tbody"></tbody></table></div>
+        <div id="stories-pagination"></div>
+        <div style="padding:12px 18px;border-top:1px solid var(--border)"><span style="font-size:12px;color:var(--text-muted)" id="stories-count">0 موضوع</span></div>
       </div>
     </div>
 
@@ -1138,6 +1154,136 @@ var CSRF_TOKEN = '<?php echo getCsrfToken(); ?>';
   </div>
 </div>
 
+<!-- Modal: Story Add/Edit -->
+<div class="modal-overlay" id="modal-story">
+  <div class="modal" style="max-width:800px;max-height:90vh;overflow-y:auto">
+    <div class="modal-header"><span id="story-modal-title">إضافة موضوع جديد</span><button onclick="closeModal('modal-story')">&times;</button></div>
+    <div class="modal-body">
+      <label class="form-label">عنوان الموضوع *</label>
+      <input class="form-control" id="story-title" placeholder="عنوان الموضوع">
+
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+        <div><label class="form-label">التصنيف</label>
+          <select class="form-control" id="story-category">
+            <option value="biography">سيرة ذاتية</option>
+            <option value="self_made">قصة عصامية</option>
+            <option value="eulogy">رثاء</option>
+            <option value="tribute">مقال تكريمي</option>
+            <option value="other">أخرى</option>
+          </select>
+        </div>
+        <div><label class="form-label">حالة النشر</label>
+          <select class="form-control" id="story-status">
+            <option value="draft">مسودة</option>
+            <option value="published">منشور</option>
+          </select>
+        </div>
+      </div>
+
+      <div style="border:1px solid var(--border);border-radius:var(--radius);padding:16px;margin:12px 0;background:var(--bg-alt)">
+        <div style="font-weight:700;margin-bottom:10px;font-size:14px">معلومات الشخصية</div>
+        <label class="form-label">الاسم الكامل</label>
+        <input class="form-control" id="story-person-name" placeholder="اسم الشخصية المُتحدث عنها">
+
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+          <div><label class="form-label">حالة الشخصية</label>
+            <select class="form-control" id="story-person-status">
+              <option value="alive">حاضر (حفظه الله)</option>
+              <option value="deceased">راحل (رحمه الله)</option>
+            </select>
+          </div>
+          <div><label class="form-label">صورة الشخصية</label>
+            <div style="display:flex;gap:8px">
+              <input class="form-control" id="story-person-image" placeholder="رابط أو رفع صورة" style="flex:1">
+              <label class="btn btn-outline btn-sm" style="cursor:pointer;white-space:nowrap;display:flex;align-items:center">
+                📷 رفع
+                <input type="file" accept="image/*" style="display:none" onchange="uploadStoryImage(this,'story-person-image')">
+              </label>
+            </div>
+          </div>
+        </div>
+
+        <label class="form-label">نبذة مختصرة عن الشخصية</label>
+        <textarea class="form-control" id="story-person-bio" rows="2" placeholder="نبذة مختصرة عن حياة الشخصية"></textarea>
+      </div>
+
+      <label class="form-label">صورة الغلاف</label>
+      <div style="display:flex;gap:8px;margin-bottom:4px">
+        <input class="form-control" id="story-cover-image" placeholder="رابط أو رفع صورة" style="flex:1">
+        <label class="btn btn-outline btn-sm" style="cursor:pointer;white-space:nowrap;display:flex;align-items:center">
+          📷 رفع
+          <input type="file" accept="image/*" style="display:none" onchange="uploadStoryImage(this,'story-cover-image')">
+        </label>
+      </div>
+      <div id="story-cover-preview" style="margin-bottom:8px"></div>
+
+      <label class="form-label">الوصف المختصر <small style="color:var(--text-muted)">(يظهر في البطاقة — 200 حرف)</small></label>
+      <textarea class="form-control" id="story-excerpt" rows="2" maxlength="200" placeholder="ملخص قصير يظهر في بطاقة الموضوع"></textarea>
+
+      <label class="form-label">المحتوى الرئيسي (يدعم HTML)</label>
+      <div id="story-editor-toolbar" style="display:flex;flex-wrap:wrap;gap:4px;margin-bottom:6px;padding:8px;background:var(--bg-alt);border:1px solid var(--border);border-radius:var(--radius) var(--radius) 0 0">
+        <button type="button" class="btn btn-outline btn-sm" onclick="storyEditorCmd('bold')" title="عريض"><b>B</b></button>
+        <button type="button" class="btn btn-outline btn-sm" onclick="storyEditorCmd('italic')" title="مائل"><i>I</i></button>
+        <button type="button" class="btn btn-outline btn-sm" onclick="storyEditorCmd('underline')" title="تحته خط"><u>U</u></button>
+        <span style="border-left:1px solid var(--border);margin:0 4px"></span>
+        <button type="button" class="btn btn-outline btn-sm" onclick="storyEditorCmd('formatBlock','h2')" title="عنوان فرعي">H2</button>
+        <button type="button" class="btn btn-outline btn-sm" onclick="storyEditorCmd('formatBlock','h3')" title="عنوان فرعي">H3</button>
+        <button type="button" class="btn btn-outline btn-sm" onclick="storyEditorCmd('formatBlock','p')" title="فقرة">P</button>
+        <span style="border-left:1px solid var(--border);margin:0 4px"></span>
+        <button type="button" class="btn btn-outline btn-sm" onclick="storyEditorCmd('formatBlock','blockquote')" title="اقتباس">&#10077;</button>
+        <button type="button" class="btn btn-outline btn-sm" onclick="storyEditorCmd('insertUnorderedList')" title="قائمة نقطية">&#8226;</button>
+        <button type="button" class="btn btn-outline btn-sm" onclick="storyEditorCmd('insertOrderedList')" title="قائمة مرقمة">1.</button>
+        <span style="border-left:1px solid var(--border);margin:0 4px"></span>
+        <label class="btn btn-outline btn-sm" style="cursor:pointer" title="إدراج صورة">
+          🖼️
+          <input type="file" accept="image/*" style="display:none" onchange="insertEditorImage(this)">
+        </label>
+        <button type="button" class="btn btn-outline btn-sm" onclick="storyEditorCmd('justifyRight')" title="محاذاة يمين">&#8676;</button>
+        <button type="button" class="btn btn-outline btn-sm" onclick="storyEditorCmd('justifyCenter')" title="توسيط">&#8596;</button>
+      </div>
+      <div id="story-content-editor" contenteditable="true" dir="rtl" style="min-height:300px;max-height:500px;overflow-y:auto;padding:16px;border:1px solid var(--border);border-top:none;border-radius:0 0 var(--radius) var(--radius);background:var(--surface);font-size:16px;line-height:1.8;outline:none" data-placeholder="اكتب محتوى الموضوع هنا..."></div>
+
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:12px">
+        <div><label class="form-label">اسم الكاتب</label>
+          <input class="form-control" id="story-author" placeholder="اسم الكاتب/المساهم">
+        </div>
+        <div><label class="form-label">تاريخ النشر</label>
+          <input class="form-control" type="datetime-local" id="story-published-at">
+        </div>
+      </div>
+
+      <div style="margin-top:12px">
+        <label style="display:flex;align-items:center;gap:8px;cursor:pointer">
+          <input type="checkbox" id="story-is-pinned"> <span style="font-size:14px">تثبيت الموضوع (يظهر أولاً)</span>
+        </label>
+      </div>
+
+      <input type="hidden" id="story-edit-id">
+    </div>
+    <div class="modal-footer" style="display:flex;gap:8px;justify-content:space-between">
+      <div>
+        <button class="btn btn-outline" onclick="previewStory()" title="معاينة الموضوع">👁️ معاينة</button>
+      </div>
+      <div style="display:flex;gap:8px">
+        <button class="btn btn-outline" onclick="closeModal('modal-story')">إلغاء</button>
+        <button class="btn btn-outline" onclick="saveStory('draft')">حفظ كمسودة</button>
+        <button class="btn btn-primary" onclick="saveStory('published')">نشر</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: Story Preview -->
+<div class="modal-overlay" id="modal-story-preview">
+  <div class="modal" style="max-width:800px;max-height:90vh;overflow-y:auto">
+    <div class="modal-header"><span>معاينة الموضوع</span><button onclick="closeModal('modal-story-preview')">&times;</button></div>
+    <div class="modal-body" id="story-preview-body" style="padding:24px"></div>
+    <div class="modal-footer">
+      <button class="btn btn-outline" onclick="closeModal('modal-story-preview')">إغلاق</button>
+    </div>
+  </div>
+</div>
+
 <!-- Modal: Message Detail -->
 <div class="modal-overlay" id="modal-msg-detail">
   <div class="modal" style="max-width:500px">
@@ -1163,6 +1309,7 @@ var CSRF_TOKEN = '<?php echo getCsrfToken(); ?>';
 </script>
 <script src="js/admin-core.js"></script>
 <script src="js/admin-app.js"></script>
+<script src="js/admin-stories.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <script src="js/admin-import.js"></script>
 <script src="admin-overrides.js"></script>

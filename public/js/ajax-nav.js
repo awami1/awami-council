@@ -10,6 +10,7 @@
     '/gallery': ['/public/js/media.js'],
     '/news':    ['/public/js/news.js'],
     '/events':  [],
+    '/stories': ['/public/js/stories.js'],
     '/eid':     ['/public/js/eid.js']
   };
 
@@ -90,6 +91,10 @@
 
         // تحميل السكريبتات الخاصة بالصفحة
         var scripts = pageScripts[url] || [];
+        // مسارات ديناميكية: /stories/{slug}
+        if (!scripts.length && url.indexOf('/stories/') === 0) {
+          scripts = pageScripts['/stories'] || [];
+        }
         var promises = scripts.map(function(src) { return loadScript(src); });
 
         function runInlineScripts() {

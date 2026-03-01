@@ -116,6 +116,37 @@ function getPublishedNews(int $limit = 3): array {
 }
 
 /**
+ * جلب آخر سِيَر وقصص أبناء العائلة المنشورة
+ */
+function getPublishedStories(int $limit = 6): array {
+    try {
+        $pdo = getPDO();
+        $stmt = $pdo->prepare("
+            SELECT id, title, slug, category, excerpt, cover_image, person_name, person_image, person_status, author_name, is_pinned, published_at, created_at
+            FROM stories
+            WHERE status = 'published'
+            ORDER BY is_pinned DESC, published_at DESC, created_at DESC
+            LIMIT ?
+        ");
+        $stmt->execute([$limit]);
+        return $stmt->fetchAll();
+    } catch (Throwable $e) { error_log('getPublishedStories() failed: ' . $e->getMessage()); return []; }
+}
+
+/**
+ * جلب موضوع واحد بالتفصيل
+ */
+function getStoryBySlug(string $slug): ?array {
+    try {
+        $pdo = getPDO();
+        $stmt = $pdo->prepare("SELECT * FROM stories WHERE (slug = :slug OR id = :id) AND status = 'published' LIMIT 1");
+        $stmt->execute([':slug' => $slug, ':id' => $slug]);
+        $row = $stmt->fetch();
+        return $row ?: null;
+    } catch (Throwable $e) { error_log('getStoryBySlug() failed: ' . $e->getMessage()); return null; }
+}
+
+/**
  * حساب عدد الأعضاء النشطين
  */
 function getActiveMembersCount(): int {

@@ -189,6 +189,26 @@ if ($sqlite) {
 "CREATE INDEX IF NOT EXISTS idx_reports_status ON saved_reports(status)",
 "CREATE INDEX IF NOT EXISTS idx_reports_created ON saved_reports(created_at)",
 
+"CREATE TABLE IF NOT EXISTS stories (
+  id TEXT PRIMARY KEY,
+  title TEXT NOT NULL,
+  slug TEXT NOT NULL UNIQUE,
+  category TEXT NOT NULL DEFAULT 'biography',
+  excerpt TEXT NOT NULL DEFAULT '',
+  content TEXT NOT NULL DEFAULT '',
+  cover_image TEXT NOT NULL DEFAULT '',
+  person_name TEXT NOT NULL DEFAULT '',
+  person_image TEXT NOT NULL DEFAULT '',
+  person_bio TEXT NOT NULL DEFAULT '',
+  person_status TEXT NOT NULL DEFAULT 'alive',
+  author_name TEXT NOT NULL DEFAULT '',
+  status TEXT NOT NULL DEFAULT 'draft',
+  is_pinned INTEGER NOT NULL DEFAULT 0,
+  published_at TEXT,
+  created_at TEXT NOT NULL DEFAULT (datetime('now')),
+  updated_at TEXT NOT NULL DEFAULT (datetime('now'))
+)",
+
     ]; // end SQLite
 } else {
     $statements = [
@@ -376,6 +396,30 @@ if ($sqlite) {
   INDEX `idx_reports_created` (`created_at`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci",
 
+"CREATE TABLE IF NOT EXISTS `stories` (
+  `id` VARCHAR(64) NOT NULL,
+  `title` VARCHAR(255) NOT NULL,
+  `slug` VARCHAR(255) NOT NULL,
+  `category` VARCHAR(50) NOT NULL DEFAULT 'biography',
+  `excerpt` TEXT,
+  `content` LONGTEXT,
+  `cover_image` VARCHAR(500) NOT NULL DEFAULT '',
+  `person_name` VARCHAR(255) NOT NULL DEFAULT '',
+  `person_image` VARCHAR(500) NOT NULL DEFAULT '',
+  `person_bio` TEXT,
+  `person_status` ENUM('deceased','alive') NOT NULL DEFAULT 'alive',
+  `author_name` VARCHAR(255) NOT NULL DEFAULT '',
+  `status` ENUM('draft','published') NOT NULL DEFAULT 'draft',
+  `is_pinned` TINYINT NOT NULL DEFAULT 0,
+  `published_at` DATETIME NULL,
+  `created_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `slug` (`slug`),
+  INDEX `idx_stories_status` (`status`),
+  INDEX `idx_stories_published` (`published_at`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci",
+
     ]; // end MySQL
 }
 
@@ -411,12 +455,16 @@ $indexes = $sqlite ? [
     "CREATE INDEX IF NOT EXISTS idx_events_date ON events(event_date)",
     "CREATE INDEX IF NOT EXISTS idx_news_created ON news(created_at)",
     "CREATE INDEX IF NOT EXISTS idx_messages_created ON messages(created_at)",
+    "CREATE INDEX IF NOT EXISTS idx_stories_status ON stories(status)",
+    "CREATE INDEX IF NOT EXISTS idx_stories_published ON stories(published_at)",
 ] : [
     // MySQL: CREATE INDEX IF NOT EXISTS not supported pre-8.0, so use try/catch
     "CREATE INDEX idx_payments_member ON payments(member_id)",
     "CREATE INDEX idx_payments_period ON payments(period_id)",
     "CREATE INDEX idx_events_date ON events(event_date)",
     "CREATE INDEX idx_messages_created ON messages(created_at)",
+    "CREATE INDEX idx_stories_status ON stories(status)",
+    "CREATE INDEX idx_stories_published ON stories(published_at)",
 ];
 foreach ($indexes as $sql) {
     try { $pdo->exec($sql); } catch (PDOException $e) { /* index may already exist */ }

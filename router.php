@@ -55,9 +55,16 @@ $routes = [
     '/gallery' => ['file' => 'pages/gallery.php',  'page' => 'gallery', 'title' => 'المعرض',              'scripts' => ['/public/js/media.js']],
     '/contact' => ['file' => 'pages/contact.php',  'page' => 'contact', 'title' => 'تواصل معنا',          'scripts' => []],
     '/eid'     => ['file' => 'pages/eid.php',      'page' => 'eid',     'title' => 'تهنئة العيد',         'scripts' => ['/public/js/eid.js']],
+    '/stories' => ['file' => 'pages/stories.php',  'page' => 'stories', 'title' => 'سِيَر وقصص',         'scripts' => ['/public/js/stories.js']],
 ];
 
+// مسارات ديناميكية: /stories/{slug}
 $route = $routes[$uri] ?? null;
+
+if (!$route && preg_match('#^/stories/([^/]+)$#', $uri, $m)) {
+    $_GET['slug'] = $m[1];
+    $route = ['file' => 'pages/story.php', 'page' => 'stories', 'title' => 'سِيَر وقصص', 'scripts' => ['/public/js/stories.js']];
+}
 
 if (!$route) {
     http_response_code(404);

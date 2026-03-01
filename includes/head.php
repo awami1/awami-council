@@ -60,6 +60,7 @@
 <link rel="stylesheet" href="<?= asset('/public/css/layout.css') ?>">
 <link rel="stylesheet" href="<?= asset('/public/css/components.css') ?>">
 <link rel="stylesheet" href="<?= asset('/public/css/animations.css') ?>">
+<link rel="stylesheet" href="<?= asset('/public/css/stories.css') ?>">
 <?php if (isset($currentPage) && $currentPage === 'eid'): ?>
 <link rel="preload" href="/assets/eid-template.jpg" as="image">
 <?php endif; ?>

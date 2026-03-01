@@ -181,6 +181,18 @@ url: (type, params = {}) => {
 },
 };
 
+// –– Stories (سِيَر وقصص) ––
+const StoriesAPI = {
+getAll: (params = {})  => { const qs = new URLSearchParams(params).toString(); return api.get('stories.php' + (qs ? '?' + qs : '')); },
+get:    (id)           => apiFetch(`${API_BASE}/stories.php?id=${id}`),
+create: (data)         => api.post('stories.php', data),
+update: (id, data)     => api.put('stories.php', data, id),
+delete: (id)           => api.del('stories.php', id),
+togglePin: (id)        => apiFetch(`${API_BASE}/stories.php?id=${id}&action=pin`, { method: 'PATCH' }),
+toggleStatus: (id)     => apiFetch(`${API_BASE}/stories.php?id=${id}&action=status`, { method: 'PATCH' }),
+uploadImage: (formData) => fetch(`${API_BASE}/stories.php?upload=1`, { method: 'POST', body: formData }).then(r => r.json()).then(j => { if (j.error) throw new Error(j.error); return j; }),
+};
+
 // –– Public site helpers (used in index.php) ––
 async function loadSettings()  { const r = await SettingsAPI.get();     return r.settings; }
 async function loadEvents()    { return await EventsAPI.getAll(); }
@@ -189,3 +201,4 @@ async function loadMedia()     { const r = await MediaAPI.getAll();      return 
 async function loadMeeting()   { const r = await MeetingAPI.get();       return r.nextMeeting; }
 async function loadMembers()   { const r = await MembersAPI.getAll();    return r.data ?? []; }
 async function loadNews()      { const r = await NewsAPI.getAll();       return r.data ?? []; }
+async function loadStories()   { const r = await StoriesAPI.getAll();    return r.data ?? []; }

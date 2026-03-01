@@ -493,3 +493,26 @@ tr:hover td{background:var(--bg-hover);}
   .sr-saved-item{flex-direction:column;align-items:flex-start;gap:8px;}
   .sr-saved-actions{width:100%;justify-content:flex-end;}
 }
+
+/* ─── Rich Text Editor ─── */
+#story-content-editor:empty::before {
+  content: attr(data-placeholder);
+  color: var(--text-muted);
+  opacity: .5;
+  pointer-events: none;
+}
+#story-content-editor img {
+  max-width: 100%;
+  height: auto;
+  border-radius: 8px;
+  margin: 8px 0;
+}
+#story-content-editor blockquote {
+  border-right: 3px solid var(--accent, #c8a84b);
+  padding: 8px 16px;
+  margin: 8px 0;
+  background: var(--bg-alt);
+  border-radius: 0 8px 8px 0;
+  font-style: italic;
+  color: var(--text-muted);
+}

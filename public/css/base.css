@@ -66,8 +66,24 @@ section { max-width: 1200px; margin: 0 auto; padding: 70px 24px; }
 }
 .cta-primary { background: var(--green); color: #fff; box-shadow: 0 4px 16px rgba(45,107,64,.35); }
 .cta-primary:hover { background: var(--green-dark); transform: translateY(-2px); box-shadow: 0 8px 24px rgba(45,107,64,.45); }
-.cta-secondary { background: rgba(255,255,255,.12); color: #fff; border: 2px solid rgba(255,255,255,.3); }
-.cta-secondary:hover { background: rgba(255,255,255,.22); transform: translateY(-2px); }
+.cta-secondary { background: var(--green-light); color: var(--green-dark); border: 2px solid var(--green); }
+.cta-secondary:hover { background: var(--green); color: #fff; transform: translateY(-2px); }
+/* على الخلفيات الداكنة الثابتة (الهيدر/الفوتر) */
+header .cta-secondary,
+footer .cta-secondary {
+  background: rgba(255,255,255,.12); color: #fff; border-color: rgba(255,255,255,.3);
+}
+header .cta-secondary:hover,
+footer .cta-secondary:hover {
+  background: rgba(255,255,255,.22); color: #fff;
+}
+/* الوضع الداكن */
+[data-theme="dark"] .cta-secondary {
+  background: rgba(255,255,255,.12); color: #fff; border-color: rgba(255,255,255,.3);
+}
+[data-theme="dark"] .cta-secondary:hover {
+  background: rgba(255,255,255,.22); color: #fff;
+}
 
 /* Responsive */
 @media (max-width: 768px) {

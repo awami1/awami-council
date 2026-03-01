@@ -27,10 +27,22 @@ $story = null;
 if ($storySlug) {
     $story = getStoryBySlug($storySlug);
 }
+
+// حساب وقت القراءة
+$readingTime = '';
+if ($story && !empty($story['content'])) {
+    $plainText = trim(strip_tags($story['content']));
+    $wordCount = count(preg_split('/\s+/u', $plainText, -1, PREG_SPLIT_NO_EMPTY));
+    $readingMinutes = max(1, (int)ceil($wordCount / 180));
+    $readingTime = $readingMinutes . ' دقيقة للقراءة';
+}
 ?>
 
 <?php if ($story): ?>
 <div class="story-single" id="story-single" data-slug="<?= esc($storySlug) ?>">
+
+  <!-- شريط تقدم القراءة -->
+  <div class="story-progress-bar" id="story-progress-bar"></div>
 
   <!-- زر العودة -->
   <div style="max-width:800px;margin:0 auto;padding:20px 24px 0">
@@ -51,14 +63,11 @@ if ($storySlug) {
           <span>&#9998; <?= esc($story['author_name']) ?></span>
         <?php endif; ?>
         <span>&#128197; <?= esc(substr($story['published_at'] ?? $story['created_at'] ?? '', 0, 10)) ?></span>
+        <?php if ($readingTime): ?>
+          <span>&#9201; <?= $readingTime ?></span>
+        <?php endif; ?>
         <?php if (!empty($story['person_name'])): ?>
-          <span>&#128100; <?= esc($story['person_name']) ?>
-            <?php if ($story['person_status'] === 'deceased'): ?>
-              (رحمه الله)
-            <?php else: ?>
-              (حفظه الله)
-            <?php endif; ?>
-          </span>
+          <span>&#128100; <?= esc($story['person_name']) ?></span>
         <?php endif; ?>
       </div>
     </div>
@@ -74,6 +83,9 @@ if ($storySlug) {
         <span>&#9998; <?= esc($story['author_name']) ?></span>
       <?php endif; ?>
       <span>&#128197; <?= esc(substr($story['published_at'] ?? $story['created_at'] ?? '', 0, 10)) ?></span>
+      <?php if ($readingTime): ?>
+        <span>&#9201; <?= $readingTime ?></span>
+      <?php endif; ?>
     </div>
   </div>
   <?php endif; ?>
@@ -90,9 +102,6 @@ if ($storySlug) {
       <?php endif; ?>
       <div class="story-person-card-info">
         <div class="story-person-card-name"><?= esc($story['person_name']) ?></div>
-        <div class="story-person-card-status <?= $story['person_status'] === 'deceased' ? 'deceased' : 'alive' ?>">
-          <?= $story['person_status'] === 'deceased' ? '&#128336; رحمه الله وأسكنه فسيح جناته' : '&#127807; حفظه الله ورعاه' ?>
-        </div>
         <?php if (!empty($story['person_bio'])): ?>
           <div class="story-person-card-bio"><?= esc($story['person_bio']) ?></div>
         <?php endif; ?>
@@ -138,16 +147,6 @@ if ($storySlug) {
 </div>
 
 <script>
-function copyStoryLink() {
-  var url = window.location.href;
-  if (navigator.clipboard) {
-    navigator.clipboard.writeText(url).then(function() {
-      var btn = document.getElementById('share-copy');
-      btn.textContent = '\u2705 تم النسخ!';
-      setTimeout(function() { btn.innerHTML = '&#128203; نسخ الرابط'; }, 2000);
-    });
-  }
-}
 // تحديث روابط المشاركة بالرابط الحالي
 (function() {
   var url = encodeURIComponent(window.location.href);
@@ -156,6 +155,17 @@ function copyStoryLink() {
   if (wa) wa.href = 'https://wa.me/?text=' + title + '%20' + url;
   var tw = document.getElementById('share-twitter');
   if (tw) tw.href = 'https://twitter.com/intent/tweet?text=' + title + '&url=' + url;
+
+  // شريط تقدم القراءة
+  var bar = document.getElementById('story-progress-bar');
+  if (bar) {
+    window.addEventListener('scroll', function() {
+      var scrollTop = window.pageYOffset || document.documentElement.scrollTop;
+      var docHeight = document.documentElement.scrollHeight - document.documentElement.clientHeight;
+      var progress = docHeight > 0 ? (scrollTop / docHeight) * 100 : 0;
+      bar.style.width = Math.min(progress, 100) + '%';
+    });
+  }
 })();
 </script>
 
@@ -171,4 +181,12 @@ function copyStoryLink() {
     <p style="margin-top:16px">جاري تحميل الموضوع...</p>
   </div>
 </div>
+<script>
+(function() {
+  var slug = '<?= esc($storySlug) ?>';
+  if (slug && typeof window.__storiesLoadSingle === 'function') {
+    window.__storiesLoadSingle(slug);
+  }
+})();
+</script>
 <?php endif; ?>

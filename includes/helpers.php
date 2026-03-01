@@ -122,7 +122,7 @@ function getPublishedStories(int $limit = 6): array {
     try {
         $pdo = getPDO();
         $stmt = $pdo->prepare("
-            SELECT id, title, slug, category, excerpt, cover_image, person_name, person_image, person_status, author_name, is_pinned, published_at, created_at
+            SELECT id, title, slug, category, excerpt, cover_image, person_name, person_image, author_name, is_pinned, published_at, created_at
             FROM stories
             WHERE status = 'published'
             ORDER BY is_pinned DESC, published_at DESC, created_at DESC

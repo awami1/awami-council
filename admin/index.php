@@ -1185,22 +1185,13 @@ var CSRF_TOKEN = '<?php echo getCsrfToken(); ?>';
         <label class="form-label">الاسم الكامل</label>
         <input class="form-control" id="story-person-name" placeholder="اسم الشخصية المُتحدث عنها">
 
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
-          <div><label class="form-label">حالة الشخصية</label>
-            <select class="form-control" id="story-person-status">
-              <option value="alive">حاضر (حفظه الله)</option>
-              <option value="deceased">راحل (رحمه الله)</option>
-            </select>
-          </div>
-          <div><label class="form-label">صورة الشخصية</label>
-            <div style="display:flex;gap:8px">
-              <input class="form-control" id="story-person-image" placeholder="رابط أو رفع صورة" style="flex:1">
-              <label class="btn btn-outline btn-sm" style="cursor:pointer;white-space:nowrap;display:flex;align-items:center">
-                📷 رفع
-                <input type="file" accept="image/*" style="display:none" onchange="uploadStoryImage(this,'story-person-image')">
-              </label>
-            </div>
-          </div>
+        <label class="form-label">صورة الشخصية</label>
+        <div style="display:flex;gap:8px">
+          <input class="form-control" id="story-person-image" placeholder="رابط أو رفع صورة" style="flex:1">
+          <label class="btn btn-outline btn-sm" style="cursor:pointer;white-space:nowrap;display:flex;align-items:center">
+            📷 رفع
+            <input type="file" accept="image/*" style="display:none" onchange="uploadStoryImage(this,'story-person-image')">
+          </label>
         </div>
 
         <label class="form-label">نبذة مختصرة عن الشخصية</label>

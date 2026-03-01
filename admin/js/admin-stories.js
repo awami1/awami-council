@@ -57,12 +57,11 @@ function renderStories(page) {
     var idx = (info.page - 1) * 10 + i + 1;
     var catLabel = STORY_CAT_LABELS[s.category] || 'أخرى';
     var catBadge = STORY_CAT_BADGES[s.category] || 'badge-gray';
-    var personStatus = s.person_status === 'deceased' ? 'رحمه الله' : 'حفظه الله';
     return '<tr>' +
       '<td data-label="#">' + idx + '</td>' +
       '<td data-label="العنوان"><strong>' + escAdmin(s.title) + '</strong>' + (s.excerpt ? '<br><small style="color:var(--text-muted)">' + escAdmin(s.excerpt.substring(0, 60)) + '...</small>' : '') + '</td>' +
       '<td data-label="التصنيف"><span class="badge ' + catBadge + '">' + catLabel + '</span></td>' +
-      '<td data-label="الشخصية">' + (s.person_name ? escAdmin(s.person_name) + '<br><small style="color:var(--text-muted)">' + personStatus + '</small>' : '—') + '</td>' +
+      '<td data-label="الشخصية">' + (s.person_name ? escAdmin(s.person_name) : '—') + '</td>' +
       '<td data-label="الحالة"><span class="badge ' + (s.status === 'published' ? 'badge-success' : 'badge-warning') + '">' + (s.status === 'published' ? 'منشور' : 'مسودة') + '</span></td>' +
       '<td data-label="تثبيت"><button class="btn btn-outline btn-sm" onclick="toggleStoryPin(\'' + s.id + '\')" title="' + (s.is_pinned ? 'إلغاء التثبيت' : 'تثبيت') + '">' + (s.is_pinned ? '📌' : '○') + '</button></td>' +
       '<td data-label="التاريخ">' + (s.published_at || s.created_at || '').substring(0, 10) + '</td>' +
@@ -94,7 +93,6 @@ function openAddStory() {
   document.getElementById('story-category').value = 'biography';
   document.getElementById('story-status').value = 'draft';
   document.getElementById('story-person-name').value = '';
-  document.getElementById('story-person-status').value = 'alive';
   document.getElementById('story-person-image').value = '';
   document.getElementById('story-person-bio').value = '';
   document.getElementById('story-cover-image').value = '';
@@ -118,7 +116,6 @@ async function editStory(id) {
   document.getElementById('story-category').value = s.category || 'biography';
   document.getElementById('story-status').value = s.status || 'draft';
   document.getElementById('story-person-name').value = s.person_name || '';
-  document.getElementById('story-person-status').value = s.person_status || 'alive';
   document.getElementById('story-person-image').value = s.person_image || '';
   document.getElementById('story-person-bio').value = s.person_bio || '';
   document.getElementById('story-cover-image').value = s.cover_image || '';
@@ -154,7 +151,6 @@ async function saveStory(statusOverride) {
     category:      document.getElementById('story-category').value,
     status:        status,
     person_name:   document.getElementById('story-person-name').value.trim(),
-    person_status: document.getElementById('story-person-status').value,
     person_image:  document.getElementById('story-person-image').value.trim(),
     person_bio:    document.getElementById('story-person-bio').value.trim(),
     cover_image:   document.getElementById('story-cover-image').value.trim(),
@@ -296,7 +292,6 @@ function previewStory() {
   var category = document.getElementById('story-category').value;
   var catLabel = STORY_CAT_LABELS[category] || 'أخرى';
   var personName = document.getElementById('story-person-name').value.trim();
-  var personStatus = document.getElementById('story-person-status').value;
   var personBio = document.getElementById('story-person-bio').value.trim();
   var personImage = document.getElementById('story-person-image').value.trim();
   var coverImage = document.getElementById('story-cover-image').value.trim();
@@ -328,7 +323,6 @@ function previewStory() {
     }
     html += '<div>';
     html += '<div style="font-weight:700;font-size:16px">' + escAdmin(personName) + '</div>';
-    html += '<div style="font-size:13px;color:' + (personStatus === 'deceased' ? 'var(--primary)' : 'var(--green)') + '">' + (personStatus === 'deceased' ? 'رحمه الله' : 'حفظه الله') + '</div>';
     if (personBio) html += '<div style="font-size:13px;color:var(--text-muted);margin-top:4px">' + escAdmin(personBio) + '</div>';
     html += '</div></div>';
   }

@@ -31,11 +31,6 @@ $categoryLabels = [
       <button class="media-tab stories-tab" data-category="eulogy">رثاء</button>
       <button class="media-tab stories-tab" data-category="tribute">مقال تكريمي</button>
     </div>
-    <div class="stories-filter-group" id="stories-status-tabs">
-      <button class="media-tab active stories-status-tab" data-person-status="">الجميع</button>
-      <button class="media-tab stories-status-tab" data-person-status="alive">حفظه الله</button>
-      <button class="media-tab stories-status-tab" data-person-status="deceased">رحمه الله</button>
-    </div>
   </div>
 
   <div id="stories-container" style="max-width:1100px;margin:0 auto">
@@ -55,11 +50,6 @@ $categoryLabels = [
               <span class="story-category-badge <?= $catClass ?>"><?= esc($categoryLabels[$s['category']] ?? 'أخرى') ?></span>
               <?php if (!empty($s['is_pinned'])): ?>
                 <span class="story-pin-badge" title="مثبّت">&#128204;</span>
-              <?php endif; ?>
-              <?php if (!empty($s['person_status'])): ?>
-                <span class="story-person-status status-<?= esc($s['person_status']) ?>">
-                  <?= $s['person_status'] === 'deceased' ? 'رحمه الله' : 'حفظه الله' ?>
-                </span>
               <?php endif; ?>
             </div>
             <div class="story-card-body">

@@ -23,10 +23,10 @@
 
   /* النصوص */
   --text:         #1a2a1e;
-  --text-muted:   #6b7c6e;
+  --text-muted:   #546358;
 
   /* الحدود والظلال */
-  --border:       #d4ddd6;
+  --border:       #c2cec5;
   --shadow-sm:    0 2px 12px rgba(0,0,0,.06);
   --shadow-md:    0 8px 28px rgba(45,107,64,.12);
   --shadow-lg:    0 12px 32px rgba(71,145,92,.18);
@@ -48,7 +48,7 @@
 
   /* تدرجات */
   --gradient-header:  linear-gradient(135deg, #1A5C32, #0f3d22 50%, #1B3456);
-  --gradient-hero:    linear-gradient(170deg, rgba(61,139,55,.06), rgba(27,52,86,.03) 50%, rgba(200,168,75,.04));
+  --gradient-hero:    linear-gradient(170deg, rgba(61,139,55,.10), rgba(27,52,86,.05) 50%, rgba(200,168,75,.06));
   --gradient-green:   linear-gradient(135deg, #3D8B37, #1A5C32);
   --gradient-card:    linear-gradient(145deg, #fffbf0, #fff);
 }

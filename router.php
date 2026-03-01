@@ -54,7 +54,7 @@ $routes = [
     '/events'  => ['file' => 'pages/events.php',   'page' => 'events',  'title' => 'الفعاليات',            'scripts' => []],
     '/gallery' => ['file' => 'pages/gallery.php',  'page' => 'gallery', 'title' => 'المعرض',              'scripts' => ['/public/js/media.js']],
     '/contact' => ['file' => 'pages/contact.php',  'page' => 'contact', 'title' => 'تواصل معنا',          'scripts' => []],
-    '/eid'     => ['file' => 'pages/eid.php',      'page' => 'eid',     'title' => 'تهنئة العيد',         'scripts' => ['/public/js/eid.js']],
+    '/eid'     => ['file' => 'pages/eid.php',      'page' => 'eid',     'title' => 'تهنئة المناسبة',      'scripts' => ['/public/js/occasion.js']],
     '/stories' => ['file' => 'pages/stories.php',  'page' => 'stories', 'title' => 'سِيَر وقصص',         'scripts' => ['/public/js/stories.js']],
 ];
 

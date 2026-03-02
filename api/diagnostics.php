@@ -64,11 +64,24 @@ $info['db_env'] = [
 
 // ---- 4. فحص الشبكة (الوصول لسيرفر MySQL) ----
 if ($dbHost !== '') {
+    $conn = false;
     $errno = 0;
     $errstr = '';
-    $conn = @fsockopen($dbHost, (int) $dbPort, $errno, $errstr, 3);
+    $maxNetRetries = 3;
+    for ($netAttempt = 0; $netAttempt <= $maxNetRetries; $netAttempt++) {
+        $errno = 0;
+        $errstr = '';
+        $conn = @fsockopen($dbHost, (int) $dbPort, $errno, $errstr, 3);
+        if ($conn) break;
+        $isTransient = str_contains($errstr, 'getaddrinfo') || str_contains($errstr, 'Name or service not known');
+        if (!$isTransient || $netAttempt >= $maxNetRetries) break;
+        sleep((int) pow(2, $netAttempt)); // 1s, 2s, 4s
+    }
     if ($conn) {
         $info['db_network'] = 'يمكن الوصول ✓ (' . $dbHost . ':' . $dbPort . ')';
+        if ($netAttempt > 0) {
+            $info['db_network'] .= " (بعد {$netAttempt} إعادة محاولة)";
+        }
         fclose($conn);
     } else {
         $info['db_network'] = 'لا يمكن الوصول ✗: ' . ($errstr ?: "errno={$errno}");
@@ -79,18 +92,34 @@ if ($dbHost !== '') {
 
 // ---- 5. محاولة اتصال فعلي بقاعدة البيانات ----
 if (extension_loaded('pdo_mysql') && $dbHost !== '' && $dbName !== '' && $dbUser !== '') {
-    try {
-        $pdo = new PDO(
-            "mysql:host={$dbHost};port={$dbPort};dbname={$dbName};charset=utf8mb4",
-            $dbUser, $dbPass,
-            [PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION, PDO::ATTR_TIMEOUT => 5]
-        );
+    $dsn = "mysql:host={$dbHost};port={$dbPort};dbname={$dbName};charset=utf8mb4";
+    $dbOpts = [PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION, PDO::ATTR_TIMEOUT => 5];
+    $pdo = null;
+    $lastErr = '';
+    $maxDbRetries = 3;
+    for ($dbAttempt = 0; $dbAttempt <= $maxDbRetries; $dbAttempt++) {
+        try {
+            $pdo = new PDO($dsn, $dbUser, $dbPass, $dbOpts);
+            break;
+        } catch (\Throwable $e) {
+            $lastErr = $e->getMessage();
+            $isTransient = str_contains($lastErr, 'getaddrinfo')
+                        || str_contains($lastErr, 'Connection refused')
+                        || str_contains($lastErr, 'Name or service not known');
+            if (!$isTransient || $dbAttempt >= $maxDbRetries) break;
+            sleep((int) pow(2, $dbAttempt)); // 1s, 2s, 4s
+        }
+    }
+    if ($pdo) {
         $info['db_connection'] = 'متصل بنجاح ✓';
+        if ($dbAttempt > 0) {
+            $info['db_connection'] .= " (بعد {$dbAttempt} إعادة محاولة)";
+        }
         $ver = $pdo->query('SELECT VERSION()')->fetchColumn();
         $info['mysql_version'] = $ver ?: 'غير معروف';
         $pdo = null;
-    } catch (\Throwable $e) {
-        $info['db_connection'] = 'فشل الاتصال ✗: ' . $e->getMessage();
+    } else {
+        $info['db_connection'] = 'فشل الاتصال ✗: ' . $lastErr;
     }
 } elseif (!extension_loaded('pdo_mysql')) {
     $info['db_connection'] = 'تخطّي — pdo_mysql غير مثبّت';

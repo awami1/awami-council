@@ -23,12 +23,37 @@ header('Content-Type: application/json; charset=utf-8');
     }
 })();
 
-// ---- قراءة متغيرات البيئة ----
-$dbHost = getenv('DB_HOST') ?: ($_ENV['DB_HOST'] ?? '');
-$dbName = getenv('DB_NAME') ?: ($_ENV['DB_NAME'] ?? '');
-$dbUser = getenv('DB_USER') ?: ($_ENV['DB_USER'] ?? '');
-$dbPass = getenv('DB_PASS') ?: ($_ENV['DB_PASS'] ?? '');
-$dbPort = getenv('DB_PORT') ?: ($_ENV['DB_PORT'] ?? '3306');
+// ---- قراءة متغيرات البيئة (يدعم DATABASE_URL, MYSQL_*, DB_*) ----
+$dbUrl  = getenv('DATABASE_URL') ?: ($_ENV['DATABASE_URL'] ?? '');
+
+// محاولة تحليل DATABASE_URL أولاً
+$dbHost = ''; $dbName = ''; $dbUser = ''; $dbPass = ''; $dbPort = '3306';
+if ($dbUrl) {
+    $parts = parse_url($dbUrl);
+    if ($parts && isset($parts['host'])) {
+        $dbHost = $parts['host'];
+        $dbPort = (string) ($parts['port'] ?? '3306');
+        $dbName = ltrim($parts['path'] ?? '', '/');
+        $dbUser = $parts['user'] ?? '';
+        $dbPass = $parts['pass'] ?? '';
+    }
+}
+// MYSQL_* fallback
+if (!$dbHost) {
+    $dbHost = getenv('MYSQL_HOST') ?: ($_ENV['MYSQL_HOST'] ?? '');
+    $dbName = getenv('MYSQL_DATABASE') ?: ($_ENV['MYSQL_DATABASE'] ?? '');
+    $dbUser = getenv('MYSQL_USER') ?: ($_ENV['MYSQL_USER'] ?? '');
+    $dbPass = getenv('MYSQL_PASSWORD') ?: ($_ENV['MYSQL_PASSWORD'] ?? '');
+    $dbPort = getenv('MYSQL_PORT') ?: ($_ENV['MYSQL_PORT'] ?? '3306');
+}
+// DB_* fallback
+if (!$dbHost) {
+    $dbHost = getenv('DB_HOST') ?: ($_ENV['DB_HOST'] ?? '');
+    $dbName = getenv('DB_NAME') ?: ($_ENV['DB_NAME'] ?? '');
+    $dbUser = getenv('DB_USER') ?: ($_ENV['DB_USER'] ?? '');
+    $dbPass = getenv('DB_PASS') ?: ($_ENV['DB_PASS'] ?? '');
+    $dbPort = getenv('DB_PORT') ?: ($_ENV['DB_PORT'] ?? '3306');
+}
 
 // ---- 1. معلومات PHP ----
 $info = [

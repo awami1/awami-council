@@ -71,8 +71,7 @@ function getPDO(): PDO
     $port = getenv('DB_PORT') ?: ($_ENV['DB_PORT'] ?? '3306');
 
     try {
-        $mysqlAvailable = extension_loaded('pdo_mysql');
-        if ($host && $name && $user && $mysqlAvailable) {
+        if ($host && $name && $user) {
             // MySQL mode (production — CranL)
             $pdo = new PDO(
                 "mysql:host={$host};port={$port};dbname={$name};charset=utf8mb4",
@@ -85,9 +84,6 @@ function getPDO(): PDO
             );
             $pdo->exec("SET NAMES utf8mb4 COLLATE utf8mb4_unicode_ci");
         } else {
-            if ($host && $name && $user && !$mysqlAvailable) {
-                error_log('WARNING: MySQL configured but pdo_mysql extension not installed. Falling back to SQLite.');
-            }
             // SQLite mode (local development)
             $dbPath = __DIR__ . '/../data/awami.db';
             $dbDir  = dirname($dbPath);

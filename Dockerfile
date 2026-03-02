@@ -15,6 +15,6 @@ COPY . .
 # Create data directory for SQLite (dev fallback)
 RUN mkdir -p data
 
-EXPOSE 3000
+EXPOSE 80
 
-CMD ["php", "-S", "0.0.0.0:3000", "router.php"]
+CMD ["php", "-S", "0.0.0.0:80", "router.php"]

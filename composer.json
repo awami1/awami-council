@@ -1,7 +1,11 @@
 {
-    "require": {
-          "ext-pdo_mysql": "*",
-          "ext-pdo": "*",
-          "ext-mbstring": "*"
+    "require": {},
+    "suggest": {
+        "ext-pdo_mysql": "Required for MySQL database (production)",
+        "ext-pdo": "Required for database access",
+        "ext-mbstring": "Required for multibyte string handling"
+    },
+    "config": {
+        "platform-check": false
     }
 }

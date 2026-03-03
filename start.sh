@@ -1,14 +1,15 @@
 #!/bin/bash
-# تشغيل سيرفر التطوير المحلي
-# Start development server
+# تشغيل سيرفر PHP المدمج
+# Start PHP built-in server
 
 PORT=${PORT:-80}
 HOST=${HOST:-0.0.0.0}
 
-echo "🚀 تشغيل سيرفر مجلس عائلة العوامي..."
-echo "📌 العنوان: http://localhost:${PORT}"
-echo "📌 اضغط Ctrl+C للإيقاف"
-echo ""
+echo "[startup] PHP version: $(php -v | head -1)"
+echo "[startup] Listening on ${HOST}:${PORT}"
+echo "[startup] Working directory: $(pwd)"
+echo "[startup] DB_HOST=${DB_HOST:-not set}"
+echo "[startup] DATABASE_URL=${DATABASE_URL:+set (hidden)}"
 
 cd "$(dirname "$0")"
-php -S "${HOST}:${PORT}" router.php
+exec php -S "${HOST}:${PORT}" router.php

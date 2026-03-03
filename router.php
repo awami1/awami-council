@@ -43,7 +43,16 @@ if (php_sapi_name() === 'cli-server') {
     }
 }
 
-require_once __DIR__ . '/includes/helpers.php';
+// تحميل helpers.php مع حماية من الأخطاء الفادحة
+// إذا فشل التحميل لأي سبب، نعرض رسالة خطأ بدل 502 فارغة
+try {
+    require_once __DIR__ . '/includes/helpers.php';
+} catch (\Throwable $e) {
+    error_log('FATAL: helpers.php failed to load: ' . $e->getMessage());
+    http_response_code(500);
+    echo '<!DOCTYPE html><html lang="ar" dir="rtl"><head><meta charset="utf-8"><title>خطأ مؤقت</title></head><body style="text-align:center;padding:50px;font-family:sans-serif"><h1>خطأ مؤقت في الخادم</h1><p>نعتذر عن هذا الخطأ. يرجى المحاولة لاحقاً.</p></body></html>';
+    exit;
+}
 
 // خريطة التوجيه
 $routes = [

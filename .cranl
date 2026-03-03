@@ -1,4 +1,4 @@
 {
-  "start": "php -S 0.0.0.0:80 router.php",
+  "start": "bash start.sh",
   "port": 80
 }

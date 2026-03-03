@@ -60,14 +60,22 @@ function setCorsHeaders(): void
 
 /**
  * اتصال MySQL مع إعادة المحاولة عند فشل DNS أو الشبكة
+ * ملاحظة: PHP built-in server يعمل single-threaded — أي تأخير يعلّق كل الطلبات
+ * لذلك نقلل الـ timeout والـ retries عند التشغيل عليه
  */
 function connectMySQL(string $dsn, string $user, string $pass, array $options, int $maxRetries = 1): PDO
 {
-    // Connection timeout قصير عشان ما يعلّق PHP built-in server (single-threaded)
-    if (defined('PDO::MYSQL_ATTR_CONNECT_TIMEOUT')) {
-        $options[PDO::MYSQL_ATTR_CONNECT_TIMEOUT] = 3;
+    // CLI server (single-threaded): لا تعيد المحاولة — كل ثانية تأخير تعلّق كل الطلبات
+    if (php_sapi_name() === 'cli-server') {
+        $maxRetries = 0;
     }
-    $options[PDO::ATTR_TIMEOUT] = 3;
+
+    // Connection timeout قصير عشان ما يعلّق PHP built-in server
+    $timeout = (php_sapi_name() === 'cli-server') ? 2 : 3;
+    if (defined('PDO::MYSQL_ATTR_CONNECT_TIMEOUT')) {
+        $options[PDO::MYSQL_ATTR_CONNECT_TIMEOUT] = $timeout;
+    }
+    $options[PDO::ATTR_TIMEOUT] = $timeout;
 
     $attempt = 0;
     while ($attempt <= $maxRetries) {
@@ -146,7 +154,15 @@ function getDbCredentials(): array
 function getPDO(): PDO
 {
     static $pdo = null;
+    static $failedMsg = null; // حفظ رسالة الفشل لتجنب محاولات متكررة في نفس الطلب
+
     if ($pdo !== null) return $pdo;
+
+    // إذا سبق وفشل الاتصال في هذا الطلب، لا تحاول مرة ثانية
+    // هذا يمنع تعليق PHP built-in server لأنه single-threaded
+    if ($failedMsg !== null) {
+        throw new \RuntimeException('Database connection failed (cached): ' . $failedMsg);
+    }
 
     $creds = getDbCredentials();
     $host = $creds['host'];
@@ -189,8 +205,10 @@ function getPDO(): PDO
                 'لم يتم العثور على بيانات اتصال MySQL (DB_HOST/DATABASE_URL) ولا يوجد pdo_sqlite كبديل.'
             );
         }
-    } catch (PDOException $e) {
-        throw new \RuntimeException('Database connection failed: ' . $e->getMessage());
+    } catch (\Throwable $e) {
+        $failedMsg = $e->getMessage();
+        error_log('getPDO() failed: ' . $failedMsg);
+        throw new \RuntimeException('Database connection failed: ' . $failedMsg);
     }
 
     return $pdo;

@@ -17,5 +17,4 @@ RUN mkdir -p data
 
 EXPOSE 80
 
-# استخدام start.sh لدعم PORT env variable
-CMD ["bash", "start.sh"]
+CMD ["php", "-S", "0.0.0.0:80", "router.php"]

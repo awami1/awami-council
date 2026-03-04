@@ -15,6 +15,12 @@ if (php_sapi_name() === 'cli-server') {
     if ($uri !== '/' && is_file($filePath)) {
         return false; // دع PHP يخدم الملف مباشرة
     }
+    // حماية migrate.php من الوصول عبر الويب
+    if ($uri === '/migrate.php') {
+        http_response_code(403);
+        echo 'Forbidden';
+        return;
+    }
     // API requests
     if (str_starts_with($uri, '/api/')) {
         $apiFile = __DIR__ . $uri;

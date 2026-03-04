@@ -1,0 +1,552 @@
+<?php
+/**
+ * migrate.php — تهيئة جداول قاعدة البيانات تلقائياً عند بدء التشغيل
+ *
+ * يعمل فقط من سطر الأوامر (CLI) — محمي من الوصول عبر الويب
+ * يُستدعى تلقائياً من Procfile قبل تشغيل السيرفر
+ * آمن لإعادة التشغيل (CREATE TABLE IF NOT EXISTS)
+ */
+declare(strict_types=1);
+
+// حماية: لا يعمل من الويب
+if (php_sapi_name() !== 'cli') {
+    http_response_code(403);
+    echo 'Forbidden';
+    exit(1);
+}
+
+require_once __DIR__ . '/api/config.php';
+
+$pdo    = getPDO();
+$sqlite = isSQLite();
+
+// ── تعريف الجداول ──
+
+if ($sqlite) {
+    $statements = [
+
+"CREATE TABLE IF NOT EXISTS family_branches (
+  id VARCHAR(36) NOT NULL PRIMARY KEY,
+  name VARCHAR(200) NOT NULL,
+  head VARCHAR(200) DEFAULT NULL,
+  count INTEGER NOT NULL DEFAULT 0,
+  color VARCHAR(20) NOT NULL DEFAULT '#47915C',
+  notes TEXT,
+  members TEXT DEFAULT NULL,
+  created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+)",
+
+"CREATE TABLE IF NOT EXISTS members (
+  id VARCHAR(36) NOT NULL PRIMARY KEY,
+  name VARCHAR(200) NOT NULL,
+  family VARCHAR(200) NOT NULL DEFAULT '',
+  phone VARCHAR(20) DEFAULT NULL,
+  id_num VARCHAR(20) DEFAULT NULL,
+  join_date DATE DEFAULT NULL,
+  status TEXT NOT NULL DEFAULT 'نشط' CHECK(status IN ('نشط','معفي','غير نشط')),
+  notes TEXT,
+  branch_id VARCHAR(36) DEFAULT NULL,
+  created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+)",
+
+"CREATE UNIQUE INDEX IF NOT EXISTS uq_id_num ON members(id_num)",
+
+"CREATE TABLE IF NOT EXISTS periods (
+  id VARCHAR(36) NOT NULL PRIMARY KEY,
+  name VARCHAR(200) NOT NULL,
+  fee_amount DECIMAL(10,2) NOT NULL DEFAULT 0,
+  start_date DATE DEFAULT NULL,
+  end_date DATE DEFAULT NULL,
+  created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+)",
+
+"CREATE TABLE IF NOT EXISTS payments (
+  id VARCHAR(36) NOT NULL PRIMARY KEY,
+  member_id VARCHAR(36) NOT NULL,
+  period_id VARCHAR(36) NOT NULL,
+  amount DECIMAL(10,2) NOT NULL DEFAULT 0,
+  required DECIMAL(10,2) NOT NULL DEFAULT 0,
+  pay_date DATE DEFAULT NULL,
+  method VARCHAR(100) DEFAULT NULL,
+  status TEXT NOT NULL DEFAULT 'لم يدفع' CHECK(status IN ('مدفوع','لم يدفع','معفي')),
+  notes TEXT,
+  created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  UNIQUE(member_id, period_id),
+  FOREIGN KEY (member_id) REFERENCES members(id) ON DELETE CASCADE,
+  FOREIGN KEY (period_id) REFERENCES periods(id) ON DELETE CASCADE
+)",
+
+"CREATE TABLE IF NOT EXISTS transactions (
+  id VARCHAR(36) NOT NULL PRIMARY KEY,
+  type TEXT NOT NULL CHECK(type IN ('إيراد','مصروف')),
+  amount DECIMAL(10,2) NOT NULL DEFAULT 0,
+  category VARCHAR(100) DEFAULT NULL,
+  committee_id VARCHAR(36) DEFAULT NULL,
+  description VARCHAR(500) NOT NULL DEFAULT '',
+  tx_date DATE DEFAULT NULL,
+  member_id VARCHAR(36) DEFAULT NULL,
+  period_id VARCHAR(36) DEFAULT NULL,
+  created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+)",
+
+"CREATE TABLE IF NOT EXISTS events (
+  id VARCHAR(36) NOT NULL PRIMARY KEY,
+  name VARCHAR(200) NOT NULL,
+  committee_id VARCHAR(36) DEFAULT NULL,
+  status TEXT NOT NULL DEFAULT 'قادم' CHECK(status IN ('قادم','جاري','مكتمل','ملغي')),
+  event_date DATE DEFAULT NULL,
+  budget DECIMAL(10,2) NOT NULL DEFAULT 0,
+  participants INTEGER NOT NULL DEFAULT 0,
+  lead VARCHAR(200) DEFAULT NULL,
+  notes TEXT,
+  icon VARCHAR(10) DEFAULT '🎉',
+  images TEXT DEFAULT NULL,
+  created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+)",
+
+"CREATE TABLE IF NOT EXISTS polls (
+  id VARCHAR(36) NOT NULL PRIMARY KEY,
+  title VARCHAR(500) NOT NULL,
+  options TEXT DEFAULT NULL,
+  committee_id VARCHAR(36) NOT NULL DEFAULT '',
+  end_date DATE DEFAULT NULL,
+  is_active INTEGER NOT NULL DEFAULT 1,
+  created_date DATE NOT NULL DEFAULT (date('now')),
+  created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+)",
+
+"CREATE TABLE IF NOT EXISTS poll_options (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  poll_id VARCHAR(36) NOT NULL,
+  sort_order INTEGER NOT NULL DEFAULT 0,
+  text VARCHAR(500) NOT NULL,
+  created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (poll_id) REFERENCES polls(id) ON DELETE CASCADE
+)",
+
+"CREATE TABLE IF NOT EXISTS poll_votes (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  poll_id VARCHAR(36) NOT NULL,
+  option_id INTEGER NOT NULL,
+  user_id VARCHAR(100) NOT NULL DEFAULT 'user_default',
+  voted_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  UNIQUE(poll_id, user_id),
+  FOREIGN KEY (poll_id) REFERENCES polls(id) ON DELETE CASCADE,
+  FOREIGN KEY (option_id) REFERENCES poll_options(id) ON DELETE CASCADE
+)",
+
+"CREATE TABLE IF NOT EXISTS committee_members (
+  committee_id VARCHAR(36) NOT NULL,
+  member_id VARCHAR(36) NOT NULL,
+  created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (committee_id, member_id),
+  FOREIGN KEY (member_id) REFERENCES members(id) ON DELETE CASCADE
+)",
+
+"CREATE TABLE IF NOT EXISTS website_settings (
+  id INTEGER NOT NULL DEFAULT 1 PRIMARY KEY,
+  data TEXT NOT NULL,
+  updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+)",
+
+"CREATE TABLE IF NOT EXISTS next_meeting (
+  id INTEGER NOT NULL DEFAULT 1 PRIMARY KEY,
+  date DATETIME DEFAULT NULL,
+  title VARCHAR(300) NOT NULL DEFAULT 'الجلسة العمومية للمجلس',
+  visible INTEGER NOT NULL DEFAULT 1,
+  updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+)",
+
+"CREATE TABLE IF NOT EXISTS family_tree (
+  id VARCHAR(36) NOT NULL PRIMARY KEY,
+  name VARCHAR(200) NOT NULL,
+  parent_id VARCHAR(36) DEFAULT NULL,
+  gender TEXT NOT NULL DEFAULT 'ذكر' CHECK(gender IN ('ذكر','أنثى')),
+  is_alive INTEGER NOT NULL DEFAULT 1,
+  spouse_name VARCHAR(200) DEFAULT NULL,
+  sort_order INTEGER NOT NULL DEFAULT 0,
+  created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (parent_id) REFERENCES family_tree(id) ON DELETE SET NULL
+)",
+
+"CREATE INDEX IF NOT EXISTS idx_ft_parent ON family_tree(parent_id)",
+
+"CREATE TABLE IF NOT EXISTS saved_reports (
+  id VARCHAR(36) NOT NULL PRIMARY KEY,
+  title VARCHAR(300) NOT NULL,
+  description TEXT,
+  report_type VARCHAR(50) NOT NULL DEFAULT 'smart_analysis',
+  report_data TEXT NOT NULL,
+  summary TEXT,
+  status VARCHAR(20) NOT NULL DEFAULT 'active' CHECK(status IN ('active','archived')),
+  file_name VARCHAR(200),
+  total_transactions INTEGER DEFAULT 0,
+  total_income DECIMAL(12,2) DEFAULT 0,
+  total_expense DECIMAL(12,2) DEFAULT 0,
+  net_profit DECIMAL(12,2) DEFAULT 0,
+  created_by VARCHAR(36),
+  created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+)",
+
+"CREATE INDEX IF NOT EXISTS idx_reports_status ON saved_reports(status)",
+"CREATE INDEX IF NOT EXISTS idx_reports_created ON saved_reports(created_at)",
+
+"CREATE TABLE IF NOT EXISTS gallery_stories (
+  id TEXT PRIMARY KEY,
+  title TEXT NOT NULL,
+  subtitle TEXT NOT NULL DEFAULT '',
+  type TEXT NOT NULL DEFAULT 'سيرة ذاتية',
+  year_range TEXT NOT NULL DEFAULT '',
+  quote TEXT NOT NULL DEFAULT '',
+  full_text TEXT NOT NULL DEFAULT '',
+  author_name TEXT NOT NULL DEFAULT '',
+  read_time INTEGER NOT NULL DEFAULT 5,
+  color_primary TEXT NOT NULL DEFAULT '#0B3D2E',
+  color_secondary TEXT NOT NULL DEFAULT '#1A6B4A',
+  color_accent TEXT NOT NULL DEFAULT '#D4AF37',
+  display_order INTEGER NOT NULL DEFAULT 0,
+  is_active INTEGER NOT NULL DEFAULT 1,
+  created_at TEXT NOT NULL DEFAULT (datetime('now')),
+  updated_at TEXT NOT NULL DEFAULT (datetime('now'))
+)",
+"CREATE INDEX IF NOT EXISTS idx_gs_active_order ON gallery_stories(is_active, display_order)",
+
+"CREATE TABLE IF NOT EXISTS stories (
+  id TEXT PRIMARY KEY,
+  title TEXT NOT NULL,
+  slug TEXT NOT NULL UNIQUE,
+  category TEXT NOT NULL DEFAULT 'biography',
+  excerpt TEXT NOT NULL DEFAULT '',
+  content TEXT NOT NULL DEFAULT '',
+  cover_image TEXT NOT NULL DEFAULT '',
+  person_name TEXT NOT NULL DEFAULT '',
+  person_image TEXT NOT NULL DEFAULT '',
+  person_bio TEXT NOT NULL DEFAULT '',
+  person_status TEXT NOT NULL DEFAULT 'alive',
+  author_name TEXT NOT NULL DEFAULT '',
+  status TEXT NOT NULL DEFAULT 'draft',
+  is_pinned INTEGER NOT NULL DEFAULT 0,
+  published_at TEXT,
+  created_at TEXT NOT NULL DEFAULT (datetime('now')),
+  updated_at TEXT NOT NULL DEFAULT (datetime('now'))
+)",
+
+"CREATE TABLE IF NOT EXISTS audit_log (
+  id VARCHAR(36) NOT NULL PRIMARY KEY,
+  user VARCHAR(100) NOT NULL DEFAULT 'admin',
+  action VARCHAR(50) NOT NULL,
+  entity_type VARCHAR(50) NOT NULL,
+  entity_id VARCHAR(36) DEFAULT '',
+  entity_name VARCHAR(300) DEFAULT '',
+  details TEXT DEFAULT '{}',
+  ip_address VARCHAR(45) DEFAULT '',
+  created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+)",
+
+    ]; // end SQLite
+} else {
+    $statements = [
+
+"CREATE TABLE IF NOT EXISTS `family_branches` (
+  `id` VARCHAR(36) NOT NULL,
+  `name` VARCHAR(200) NOT NULL,
+  `head` VARCHAR(200) DEFAULT NULL,
+  `count` INT NOT NULL DEFAULT 0,
+  `color` VARCHAR(20) NOT NULL DEFAULT '#47915C',
+  `notes` TEXT,
+  `members` JSON DEFAULT NULL,
+  `created_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci",
+
+"CREATE TABLE IF NOT EXISTS `members` (
+  `id` VARCHAR(36) NOT NULL,
+  `name` VARCHAR(200) NOT NULL,
+  `family` VARCHAR(200) NOT NULL DEFAULT '',
+  `phone` VARCHAR(20) DEFAULT NULL,
+  `id_num` VARCHAR(20) DEFAULT NULL,
+  `join_date` DATE DEFAULT NULL,
+  `status` ENUM('نشط','معفي','غير نشط') NOT NULL DEFAULT 'نشط',
+  `notes` TEXT,
+  `branch_id` VARCHAR(36) DEFAULT NULL,
+  `created_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uq_id_num` (`id_num`),
+  INDEX `idx_status` (`status`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci",
+
+"CREATE TABLE IF NOT EXISTS `periods` (
+  `id` VARCHAR(36) NOT NULL,
+  `name` VARCHAR(200) NOT NULL,
+  `fee_amount` DECIMAL(10,2) NOT NULL DEFAULT 0,
+  `start_date` DATE DEFAULT NULL,
+  `end_date` DATE DEFAULT NULL,
+  `created_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci",
+
+"CREATE TABLE IF NOT EXISTS `payments` (
+  `id` VARCHAR(36) NOT NULL,
+  `member_id` VARCHAR(36) NOT NULL,
+  `period_id` VARCHAR(36) NOT NULL,
+  `amount` DECIMAL(10,2) NOT NULL DEFAULT 0,
+  `required` DECIMAL(10,2) NOT NULL DEFAULT 0,
+  `pay_date` DATE DEFAULT NULL,
+  `method` VARCHAR(100) DEFAULT NULL,
+  `status` ENUM('مدفوع','لم يدفع','معفي') NOT NULL DEFAULT 'لم يدفع',
+  `notes` TEXT,
+  `created_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uq_member_period` (`member_id`, `period_id`),
+  CONSTRAINT `fk_pay_member` FOREIGN KEY (`member_id`) REFERENCES `members` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `fk_pay_period` FOREIGN KEY (`period_id`) REFERENCES `periods` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci",
+
+"CREATE TABLE IF NOT EXISTS `transactions` (
+  `id` VARCHAR(36) NOT NULL,
+  `type` ENUM('إيراد','مصروف') NOT NULL,
+  `amount` DECIMAL(10,2) NOT NULL DEFAULT 0,
+  `category` VARCHAR(100) DEFAULT NULL,
+  `committee_id` VARCHAR(36) DEFAULT NULL,
+  `description` VARCHAR(500) NOT NULL DEFAULT '',
+  `tx_date` DATE DEFAULT NULL,
+  `member_id` VARCHAR(36) DEFAULT NULL,
+  `period_id` VARCHAR(36) DEFAULT NULL,
+  `created_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  INDEX `idx_type` (`type`),
+  INDEX `idx_tx_date` (`tx_date`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci",
+
+"CREATE TABLE IF NOT EXISTS `events` (
+  `id` VARCHAR(36) NOT NULL,
+  `name` VARCHAR(200) NOT NULL,
+  `committee_id` VARCHAR(36) DEFAULT NULL,
+  `status` ENUM('قادم','جاري','مكتمل','ملغي') NOT NULL DEFAULT 'قادم',
+  `event_date` DATE DEFAULT NULL,
+  `budget` DECIMAL(10,2) NOT NULL DEFAULT 0,
+  `participants` INT NOT NULL DEFAULT 0,
+  `lead` VARCHAR(200) DEFAULT NULL,
+  `notes` TEXT,
+  `icon` VARCHAR(10) DEFAULT '🎉',
+  `images` JSON DEFAULT NULL,
+  `created_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci",
+
+"CREATE TABLE IF NOT EXISTS `polls` (
+  `id` VARCHAR(36) NOT NULL,
+  `title` VARCHAR(500) NOT NULL,
+  `options` JSON DEFAULT NULL,
+  `committee_id` VARCHAR(36) NOT NULL DEFAULT '',
+  `end_date` DATE DEFAULT NULL,
+  `is_active` TINYINT(1) NOT NULL DEFAULT 1,
+  `created_date` DATE NOT NULL DEFAULT (CURDATE()),
+  `created_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci",
+
+"CREATE TABLE IF NOT EXISTS `poll_options` (
+  `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  `poll_id` VARCHAR(36) NOT NULL,
+  `sort_order` TINYINT NOT NULL DEFAULT 0,
+  `text` VARCHAR(500) NOT NULL,
+  `created_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  INDEX `idx_po_poll_id` (`poll_id`),
+  CONSTRAINT `fk_po_poll` FOREIGN KEY (`poll_id`) REFERENCES `polls` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci",
+
+"CREATE TABLE IF NOT EXISTS `poll_votes` (
+  `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  `poll_id` VARCHAR(36) NOT NULL,
+  `option_id` BIGINT UNSIGNED NOT NULL,
+  `user_id` VARCHAR(100) NOT NULL DEFAULT 'user_default',
+  `voted_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uq_pv_poll_user` (`poll_id`, `user_id`),
+  CONSTRAINT `fk_pv_poll` FOREIGN KEY (`poll_id`) REFERENCES `polls` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `fk_pv_option` FOREIGN KEY (`option_id`) REFERENCES `poll_options` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci",
+
+"CREATE TABLE IF NOT EXISTS `committee_members` (
+  `committee_id` VARCHAR(36) NOT NULL,
+  `member_id` VARCHAR(36) NOT NULL,
+  `created_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`committee_id`, `member_id`),
+  CONSTRAINT `fk_cm_member` FOREIGN KEY (`member_id`) REFERENCES `members` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci",
+
+"CREATE TABLE IF NOT EXISTS `website_settings` (
+  `id` INT NOT NULL DEFAULT 1,
+  `data` JSON NOT NULL,
+  `updated_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci",
+
+"CREATE TABLE IF NOT EXISTS `next_meeting` (
+  `id` INT NOT NULL DEFAULT 1,
+  `date` DATETIME DEFAULT NULL,
+  `title` VARCHAR(300) NOT NULL DEFAULT 'الجلسة العمومية للمجلس',
+  `visible` TINYINT(1) NOT NULL DEFAULT 1,
+  `updated_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci",
+
+"CREATE TABLE IF NOT EXISTS `family_tree` (
+  `id` VARCHAR(36) NOT NULL,
+  `name` VARCHAR(200) NOT NULL,
+  `parent_id` VARCHAR(36) DEFAULT NULL,
+  `gender` ENUM('ذكر','أنثى') NOT NULL DEFAULT 'ذكر',
+  `is_alive` TINYINT(1) NOT NULL DEFAULT 1,
+  `spouse_name` VARCHAR(200) DEFAULT NULL,
+  `sort_order` INT NOT NULL DEFAULT 0,
+  `created_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  INDEX `idx_ft_parent` (`parent_id`),
+  CONSTRAINT `fk_ft_parent` FOREIGN KEY (`parent_id`) REFERENCES `family_tree` (`id`) ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci",
+
+"CREATE TABLE IF NOT EXISTS `saved_reports` (
+  `id` VARCHAR(36) NOT NULL,
+  `title` VARCHAR(300) NOT NULL,
+  `description` TEXT,
+  `report_type` VARCHAR(50) NOT NULL DEFAULT 'smart_analysis',
+  `report_data` JSON NOT NULL,
+  `summary` JSON DEFAULT NULL,
+  `status` ENUM('active','archived') NOT NULL DEFAULT 'active',
+  `file_name` VARCHAR(200) DEFAULT NULL,
+  `total_transactions` INT DEFAULT 0,
+  `total_income` DECIMAL(12,2) DEFAULT 0,
+  `total_expense` DECIMAL(12,2) DEFAULT 0,
+  `net_profit` DECIMAL(12,2) DEFAULT 0,
+  `created_by` VARCHAR(36) DEFAULT NULL,
+  `created_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  INDEX `idx_reports_status` (`status`),
+  INDEX `idx_reports_created` (`created_at`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci",
+
+"CREATE TABLE IF NOT EXISTS `stories` (
+  `id` VARCHAR(64) NOT NULL,
+  `title` VARCHAR(255) NOT NULL,
+  `slug` VARCHAR(255) NOT NULL,
+  `category` VARCHAR(50) NOT NULL DEFAULT 'biography',
+  `excerpt` TEXT,
+  `content` LONGTEXT,
+  `cover_image` VARCHAR(500) NOT NULL DEFAULT '',
+  `person_name` VARCHAR(255) NOT NULL DEFAULT '',
+  `person_image` VARCHAR(500) NOT NULL DEFAULT '',
+  `person_bio` TEXT,
+  `person_status` ENUM('deceased','alive') NOT NULL DEFAULT 'alive',
+  `author_name` VARCHAR(255) NOT NULL DEFAULT '',
+  `status` ENUM('draft','published') NOT NULL DEFAULT 'draft',
+  `is_pinned` TINYINT NOT NULL DEFAULT 0,
+  `published_at` DATETIME NULL,
+  `created_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `slug` (`slug`),
+  INDEX `idx_stories_status` (`status`),
+  INDEX `idx_stories_published` (`published_at`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci",
+
+"CREATE TABLE IF NOT EXISTS `gallery_stories` (
+  `id` VARCHAR(64) NOT NULL,
+  `title` VARCHAR(255) NOT NULL,
+  `subtitle` VARCHAR(500) NOT NULL DEFAULT '',
+  `type` ENUM('سيرة ذاتية','رثاء','قصة نجاح','ذكريات','وصايا') NOT NULL DEFAULT 'سيرة ذاتية',
+  `year_range` VARCHAR(100) NOT NULL DEFAULT '',
+  `quote` TEXT,
+  `full_text` LONGTEXT,
+  `author_name` VARCHAR(255) NOT NULL DEFAULT '',
+  `read_time` INT NOT NULL DEFAULT 5,
+  `color_primary` VARCHAR(7) NOT NULL DEFAULT '#0B3D2E',
+  `color_secondary` VARCHAR(7) NOT NULL DEFAULT '#1A6B4A',
+  `color_accent` VARCHAR(7) NOT NULL DEFAULT '#D4AF37',
+  `display_order` INT NOT NULL DEFAULT 0,
+  `is_active` TINYINT(1) NOT NULL DEFAULT 1,
+  `created_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  INDEX `idx_gs_active_order` (`is_active`, `display_order`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci",
+
+"CREATE TABLE IF NOT EXISTS `audit_log` (
+  `id` VARCHAR(36) NOT NULL,
+  `user` VARCHAR(100) NOT NULL DEFAULT 'admin',
+  `action` VARCHAR(50) NOT NULL,
+  `entity_type` VARCHAR(50) NOT NULL,
+  `entity_id` VARCHAR(36) DEFAULT '',
+  `entity_name` VARCHAR(300) DEFAULT '',
+  `details` JSON DEFAULT NULL,
+  `ip_address` VARCHAR(45) DEFAULT '',
+  `created_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  INDEX `idx_audit_entity` (`entity_type`),
+  INDEX `idx_audit_action` (`action`),
+  INDEX `idx_audit_date` (`created_at`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci",
+
+    ]; // end MySQL
+}
+
+// ── تنفيذ ──
+$errors  = [];
+$created = [];
+
+foreach ($statements as $sql) {
+    try {
+        $pdo->exec($sql);
+        if (preg_match('/CREATE TABLE IF NOT EXISTS [`"]?(\w+)[`"]?/', $sql, $m)) {
+            $created[] = $m[1];
+        }
+    } catch (PDOException $e) {
+        $errors[] = $e->getMessage();
+    }
+}
+
+// MySQL migrations
+if (!$sqlite) {
+    $migrations = [
+        "ALTER TABLE `family_branches` ADD COLUMN IF NOT EXISTS `members` JSON DEFAULT NULL",
+    ];
+    foreach ($migrations as $sql) {
+        try { $pdo->exec($sql); } catch (PDOException $e) { /* ignore */ }
+    }
+}
+
+// ── فهارس الأداء ──
+$indexes = $sqlite ? [
+    "CREATE INDEX IF NOT EXISTS idx_payments_member ON payments(member_id)",
+    "CREATE INDEX IF NOT EXISTS idx_payments_period ON payments(period_id)",
+    "CREATE INDEX IF NOT EXISTS idx_events_date ON events(event_date)",
+    "CREATE INDEX IF NOT EXISTS idx_stories_status ON stories(status)",
+    "CREATE INDEX IF NOT EXISTS idx_stories_published ON stories(published_at)",
+] : [
+    "CREATE INDEX idx_payments_member ON payments(member_id)",
+    "CREATE INDEX idx_payments_period ON payments(period_id)",
+    "CREATE INDEX idx_events_date ON events(event_date)",
+    "CREATE INDEX idx_stories_status ON stories(status)",
+    "CREATE INDEX idx_stories_published ON stories(published_at)",
+];
+foreach ($indexes as $sql) {
+    try { $pdo->exec($sql); } catch (PDOException $e) { /* index may already exist */ }
+}
+
+// ── النتيجة ──
+$result = [
+    'status'  => empty($errors) ? 'SUCCESS' : 'PARTIAL — check errors',
+    'driver'  => $sqlite ? 'SQLite' : 'MySQL',
+    'tables'  => array_unique($created),
+    'errors'  => $errors,
+];
+
+echo json_encode($result, JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT) . "\n";
+exit(empty($errors) ? 0 : 1);

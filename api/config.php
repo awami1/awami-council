@@ -61,14 +61,8 @@ function setCorsHeaders(): void
 /**
  * اتصال MySQL مع إعادة المحاولة عند فشل DNS أو الشبكة
  */
-function connectMySQL(string $dsn, string $user, string $pass, array $options, int $maxRetries = 1): PDO
+function connectMySQL(string $dsn, string $user, string $pass, array $options, int $maxRetries = 3): PDO
 {
-    // Connection timeout قصير عشان ما يعلّق PHP built-in server (single-threaded)
-    if (defined('PDO::MYSQL_ATTR_CONNECT_TIMEOUT')) {
-        $options[PDO::MYSQL_ATTR_CONNECT_TIMEOUT] = 3;
-    }
-    $options[PDO::ATTR_TIMEOUT] = 3;
-
     $attempt = 0;
     while ($attempt <= $maxRetries) {
         try {
@@ -83,8 +77,9 @@ function connectMySQL(string $dsn, string $user, string $pass, array $options, i
             if (!$isTransient || $attempt >= $maxRetries) {
                 throw $e;
             }
-            error_log("MySQL connection attempt " . ($attempt + 1) . " failed ({$msg}), retrying in 1s...");
-            sleep(1);
+            $delay = (int) pow(2, $attempt); // 1s, 2s, 4s
+            error_log("MySQL connection attempt " . ($attempt + 1) . " failed ({$msg}), retrying in {$delay}s...");
+            sleep($delay);
             $attempt++;
         }
     }

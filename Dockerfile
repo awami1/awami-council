@@ -1,8 +1,5 @@
 FROM php:8.1-cli
 
-# Install system dependency for mbstring (Oniguruma regex library)
-RUN apt-get update && apt-get install -y libonig-dev && rm -rf /var/lib/apt/lists/*
-
 # Install required PHP extensions
 RUN docker-php-ext-install pdo_mysql mysqli mbstring
 
@@ -15,6 +12,6 @@ COPY . .
 # Create data directory for SQLite (dev fallback)
 RUN mkdir -p data
 
-EXPOSE 3000
+EXPOSE 80
 
-CMD ["php", "-S", "0.0.0.0:3000", "router.php"]
+CMD ["php", "-S", "0.0.0.0:80", "router.php"]

@@ -86,69 +86,17 @@ function connectMySQL(string $dsn, string $user, string $pass, array $options, i
     throw new \PDOException('فشل الاتصال بقاعدة البيانات');
 }
 
-/**
- * تحليل DATABASE_URL إلى مكوّناتها
- * يدعم صيغة: mysql://user:pass@host:port/dbname
- */
-function parseDatabaseUrl(string $url): ?array
-{
-    $parts = parse_url($url);
-    if (!$parts || !isset($parts['host'])) return null;
-    return [
-        'host' => $parts['host'],
-        'port' => (string) ($parts['port'] ?? '3306'),
-        'name' => ltrim($parts['path'] ?? '', '/'),
-        'user' => $parts['user'] ?? '',
-        'pass' => $parts['pass'] ?? '',
-    ];
-}
-
-/**
- * جلب بيانات اتصال قاعدة البيانات من متغيرات البيئة
- * يدعم: DATABASE_URL, MYSQL_*, DB_*
- */
-function getDbCredentials(): array
-{
-    // 1) DATABASE_URL (CranL internal connection URL)
-    $dbUrl = getenv('DATABASE_URL') ?: ($_ENV['DATABASE_URL'] ?? '');
-    if ($dbUrl) {
-        $parsed = parseDatabaseUrl($dbUrl);
-        if ($parsed && $parsed['host'] && $parsed['name'] && $parsed['user']) {
-            return $parsed;
-        }
-    }
-
-    // 2) MYSQL_* variants (common in Docker/CranL)
-    $host = getenv('MYSQL_HOST') ?: ($_ENV['MYSQL_HOST'] ?? '');
-    $name = getenv('MYSQL_DATABASE') ?: ($_ENV['MYSQL_DATABASE'] ?? '');
-    $user = getenv('MYSQL_USER') ?: ($_ENV['MYSQL_USER'] ?? '');
-    $pass = getenv('MYSQL_PASSWORD') ?: ($_ENV['MYSQL_PASSWORD'] ?? '');
-    $port = getenv('MYSQL_PORT') ?: ($_ENV['MYSQL_PORT'] ?? '');
-    if ($host && $name && $user) {
-        return ['host' => $host, 'name' => $name, 'user' => $user, 'pass' => $pass, 'port' => $port ?: '3306'];
-    }
-
-    // 3) DB_* variants (our .env format)
-    $host = getenv('DB_HOST') ?: ($_ENV['DB_HOST'] ?? '');
-    $name = getenv('DB_NAME') ?: ($_ENV['DB_NAME'] ?? '');
-    $user = getenv('DB_USER') ?: ($_ENV['DB_USER'] ?? '');
-    $pass = getenv('DB_PASS') ?: ($_ENV['DB_PASS'] ?? '');
-    $port = getenv('DB_PORT') ?: ($_ENV['DB_PORT'] ?? '3306');
-
-    return ['host' => $host, 'name' => $name, 'user' => $user, 'pass' => $pass, 'port' => $port];
-}
-
 function getPDO(): PDO
 {
     static $pdo = null;
     if ($pdo !== null) return $pdo;
 
-    $creds = getDbCredentials();
-    $host = $creds['host'];
-    $name = $creds['name'];
-    $user = $creds['user'];
-    $pass = $creds['pass'];
-    $port = $creds['port'];
+    // .env already loaded by the closure above
+    $host = getenv('DB_HOST') ?: ($_ENV['DB_HOST'] ?? '');
+    $name = getenv('DB_NAME') ?: ($_ENV['DB_NAME'] ?? '');
+    $user = getenv('DB_USER') ?: ($_ENV['DB_USER'] ?? '');
+    $pass = getenv('DB_PASS') ?: ($_ENV['DB_PASS'] ?? '');
+    $port = getenv('DB_PORT') ?: ($_ENV['DB_PORT'] ?? '3306');
 
     try {
         if ($host && $name && $user) {
@@ -161,8 +109,8 @@ function getPDO(): PDO
             ];
             $pdo = connectMySQL($dsn, $user, $pass, $opts);
             $pdo->exec("SET NAMES utf8mb4 COLLATE utf8mb4_unicode_ci");
-        } elseif (extension_loaded('pdo_sqlite')) {
-            // SQLite mode (local development) — only if driver available
+        } else {
+            // SQLite mode (local development)
             $dbPath = __DIR__ . '/../data/awami.db';
             $dbDir  = dirname($dbPath);
             if (!is_dir($dbDir)) {
@@ -179,10 +127,6 @@ function getPDO(): PDO
             );
             $pdo->exec("PRAGMA journal_mode=WAL");
             $pdo->exec("PRAGMA foreign_keys=ON");
-        } else {
-            throw new \RuntimeException(
-                'لم يتم العثور على بيانات اتصال MySQL (DB_HOST/DATABASE_URL) ولا يوجد pdo_sqlite كبديل.'
-            );
         }
     } catch (PDOException $e) {
         throw new \RuntimeException('Database connection failed: ' . $e->getMessage());

@@ -1,5 +1,0 @@
-.git
-.env
-data/*.db
-*.md
-.gitignore

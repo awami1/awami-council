@@ -5,22 +5,11 @@
 declare(strict_types=1);
 require_once __DIR__ . '/config.php';
 require_once __DIR__ . '/auth_guard.php';
+requireAuth();
 
 // حماية من إعادة التنفيذ في بيئة الإنتاج
 if (getenv('SETUP_DISABLED') === 'true') {
     respond(403, ['error' => 'Setup disabled in production.']);
-}
-
-// السماح بالتشغيل الأول بدون تسجيل دخول (إذا لم تكن الجداول موجودة)
-$firstTimeSetup = false;
-try {
-    $testPdo = getPDO();
-    $testPdo->query("SELECT 1 FROM members LIMIT 1");
-    // الجداول موجودة — يجب تسجيل الدخول
-    requireAuth();
-} catch (\Throwable $e) {
-    // الجداول غير موجودة — تشغيل أول بدون تسجيل دخول
-    $firstTimeSetup = true;
 }
 
 $pdo = getPDO();
@@ -238,54 +227,6 @@ if ($sqlite) {
   published_at TEXT,
   created_at TEXT NOT NULL DEFAULT (datetime('now')),
   updated_at TEXT NOT NULL DEFAULT (datetime('now'))
-)",
-
-"CREATE TABLE IF NOT EXISTS committees (
-  id VARCHAR(36) NOT NULL PRIMARY KEY,
-  name VARCHAR(200) NOT NULL,
-  icon VARCHAR(10) NOT NULL DEFAULT '🏛️',
-  color VARCHAR(200) NOT NULL DEFAULT 'linear-gradient(135deg,#47915C,#2d6b40)',
-  description TEXT DEFAULT NULL,
-  advisory INTEGER NOT NULL DEFAULT 0,
-  members_count INTEGER NOT NULL DEFAULT 0,
-  sort_order INTEGER NOT NULL DEFAULT 0,
-  created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
-)",
-
-"CREATE TABLE IF NOT EXISTS news (
-  id VARCHAR(64) NOT NULL PRIMARY KEY,
-  title VARCHAR(500) NOT NULL,
-  content TEXT,
-  excerpt VARCHAR(500) NOT NULL DEFAULT '',
-  image VARCHAR(500) NOT NULL DEFAULT '',
-  category VARCHAR(100) NOT NULL DEFAULT 'عام',
-  author VARCHAR(200) NOT NULL DEFAULT '',
-  status TEXT NOT NULL DEFAULT 'published' CHECK(status IN ('published','draft')),
-  created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
-)",
-
-"CREATE TABLE IF NOT EXISTS messages (
-  id VARCHAR(64) NOT NULL PRIMARY KEY,
-  name VARCHAR(200) NOT NULL,
-  email VARCHAR(300) NOT NULL DEFAULT '',
-  phone VARCHAR(50) NOT NULL DEFAULT '',
-  subject VARCHAR(500) NOT NULL DEFAULT '',
-  message TEXT NOT NULL,
-  is_read INTEGER NOT NULL DEFAULT 0,
-  created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
-)",
-
-"CREATE TABLE IF NOT EXISTS audit_log (
-  id VARCHAR(36) NOT NULL PRIMARY KEY,
-  user VARCHAR(100) NOT NULL DEFAULT 'admin',
-  action VARCHAR(50) NOT NULL,
-  entity_type VARCHAR(50) NOT NULL,
-  entity_id VARCHAR(36) DEFAULT '',
-  entity_name VARCHAR(300) DEFAULT '',
-  details TEXT DEFAULT NULL,
-  ip_address VARCHAR(45) DEFAULT '',
-  created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
 )",
 
     ]; // end SQLite
@@ -518,61 +459,6 @@ if ($sqlite) {
   `updated_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`),
   INDEX `idx_gs_active_order` (`is_active`, `display_order`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci",
-
-"CREATE TABLE IF NOT EXISTS `committees` (
-  `id` VARCHAR(36) NOT NULL,
-  `name` VARCHAR(200) NOT NULL,
-  `icon` VARCHAR(10) NOT NULL DEFAULT '🏛️',
-  `color` VARCHAR(200) NOT NULL DEFAULT 'linear-gradient(135deg,#47915C,#2d6b40)',
-  `description` TEXT DEFAULT NULL,
-  `advisory` TINYINT(1) NOT NULL DEFAULT 0,
-  `members_count` INT NOT NULL DEFAULT 0,
-  `sort_order` INT NOT NULL DEFAULT 0,
-  `created_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  PRIMARY KEY (`id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci",
-
-"CREATE TABLE IF NOT EXISTS `news` (
-  `id` VARCHAR(64) NOT NULL,
-  `title` VARCHAR(500) NOT NULL,
-  `content` TEXT,
-  `excerpt` VARCHAR(500) NOT NULL DEFAULT '',
-  `image` VARCHAR(500) NOT NULL DEFAULT '',
-  `category` VARCHAR(100) NOT NULL DEFAULT 'عام',
-  `author` VARCHAR(200) NOT NULL DEFAULT '',
-  `status` ENUM('published','draft') NOT NULL DEFAULT 'published',
-  `created_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  `updated_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-  PRIMARY KEY (`id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci",
-
-"CREATE TABLE IF NOT EXISTS `messages` (
-  `id` VARCHAR(64) NOT NULL,
-  `name` VARCHAR(200) NOT NULL,
-  `email` VARCHAR(300) NOT NULL DEFAULT '',
-  `phone` VARCHAR(50) NOT NULL DEFAULT '',
-  `subject` VARCHAR(500) NOT NULL DEFAULT '',
-  `message` TEXT NOT NULL,
-  `is_read` TINYINT(1) NOT NULL DEFAULT 0,
-  `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  PRIMARY KEY (`id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci",
-
-"CREATE TABLE IF NOT EXISTS `audit_log` (
-  `id` VARCHAR(36) NOT NULL,
-  `user` VARCHAR(100) NOT NULL DEFAULT 'admin',
-  `action` VARCHAR(50) NOT NULL,
-  `entity_type` VARCHAR(50) NOT NULL,
-  `entity_id` VARCHAR(36) DEFAULT '',
-  `entity_name` VARCHAR(300) DEFAULT '',
-  `details` JSON DEFAULT NULL,
-  `ip_address` VARCHAR(45) DEFAULT '',
-  `created_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  PRIMARY KEY (`id`),
-  INDEX `idx_audit_entity` (`entity_type`),
-  INDEX `idx_audit_action` (`action`),
-  INDEX `idx_audit_date` (`created_at`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci",
 
     ]; // end MySQL

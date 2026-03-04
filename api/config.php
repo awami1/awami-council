@@ -58,34 +58,6 @@ function setCorsHeaders(): void
     }
 })();
 
-/**
- * اتصال MySQL مع إعادة المحاولة عند فشل DNS أو الشبكة
- */
-function connectMySQL(string $dsn, string $user, string $pass, array $options, int $maxRetries = 3): PDO
-{
-    $attempt = 0;
-    while ($attempt <= $maxRetries) {
-        try {
-            return new PDO($dsn, $user, $pass, $options);
-        } catch (\PDOException $e) {
-            $msg = $e->getMessage();
-            $isTransient = str_contains($msg, 'getaddrinfo')
-                        || str_contains($msg, 'Connection refused')
-                        || str_contains($msg, 'Network is unreachable')
-                        || str_contains($msg, 'Connection timed out')
-                        || str_contains($msg, 'Name or service not known');
-            if (!$isTransient || $attempt >= $maxRetries) {
-                throw $e;
-            }
-            $delay = (int) pow(2, $attempt); // 1s, 2s, 4s
-            error_log("MySQL connection attempt " . ($attempt + 1) . " failed ({$msg}), retrying in {$delay}s...");
-            sleep($delay);
-            $attempt++;
-        }
-    }
-    throw new \PDOException('فشل الاتصال بقاعدة البيانات');
-}
-
 function getPDO(): PDO
 {
     static $pdo = null;
@@ -101,13 +73,15 @@ function getPDO(): PDO
     try {
         if ($host && $name && $user) {
             // MySQL mode (production — CranL)
-            $dsn = "mysql:host={$host};port={$port};dbname={$name};charset=utf8mb4";
-            $opts = [
-                PDO::ATTR_ERRMODE            => PDO::ERRMODE_EXCEPTION,
-                PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
-                PDO::ATTR_EMULATE_PREPARES   => false,
-            ];
-            $pdo = connectMySQL($dsn, $user, $pass, $opts);
+            $pdo = new PDO(
+                "mysql:host={$host};port={$port};dbname={$name};charset=utf8mb4",
+                $user, $pass,
+                [
+                    PDO::ATTR_ERRMODE            => PDO::ERRMODE_EXCEPTION,
+                    PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
+                    PDO::ATTR_EMULATE_PREPARES   => false,
+                ]
+            );
             $pdo->exec("SET NAMES utf8mb4 COLLATE utf8mb4_unicode_ci");
         } else {
             // SQLite mode (local development)

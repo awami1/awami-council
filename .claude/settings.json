@@ -1,0 +1,36 @@
+{
+  "$schema": "https://json.schemastore.org/claude-code-settings.json",
+  "permissions": {
+    "allow": [
+      "Bash(php -S*)",
+      "Bash(git *)",
+      "Bash(ls *)",
+      "Bash(cat .env.example)",
+      "Bash(bash start.sh)",
+      "Read",
+      "Edit",
+      "Write",
+      "Glob",
+      "Grep",
+      "Skill"
+    ],
+    "deny": [
+      "Bash(rm -rf *)",
+      "Bash(* > .env)",
+      "Bash(* --force *)"
+    ]
+  },
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "Edit|Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash .claude/hooks/check-page-sync.sh"
+          }
+        ]
+      }
+    ]
+  }
+}

@@ -10,7 +10,8 @@
     '/gallery': ['/public/js/media.js'],
     '/news':    ['/public/js/news.js'],
     '/events':  [],
-    '/eid':     ['/public/js/eid.js']
+    '/eid':     ['/public/js/eid.js'],
+    '/contact': []
   };
 
   // سكريبتات تم تحميلها

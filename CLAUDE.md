@@ -107,7 +107,22 @@ awami-council/
 ├── manifest.json          # PWA manifest (Arabic, RTL)
 ├── sw.js                  # Service Worker (offline fallback)
 ├── sitemap.php            # Dynamic sitemap generator
-└── offline.html           # Offline fallback page
+├── offline.html           # Offline fallback page
+├── .claude/               # Claude Code configuration
+│   ├── settings.json      # Project permissions & hooks
+│   ├── hooks/
+│   │   └── check-page-sync.sh  # Auto-validates router↔ajax-nav sync
+│   └── skills/
+│       ├── new-api-endpoint/SKILL.md  # Skill: generate full API endpoint
+│       ├── new-page/SKILL.md          # Skill: generate page + dual-register
+│       └── code-review/SKILL.md       # Skill: review code per project standards
+└── docs/                  # Architecture documentation
+    ├── architecture.md    # System architecture overview
+    ├── decisions/         # Architecture Decision Records (ADR)
+    │   └── 001-template.md
+    └── runbooks/          # Operational guides
+        ├── add-feature.md
+        └── database-changes.md
 ```
 
 ## Architecture & Patterns
@@ -233,6 +248,9 @@ There are **no automated tests** currently. Test manually by:
 ## Common Tasks
 
 ### Adding a New API Endpoint
+**Quick way**: Use `/new-api-endpoint` skill in Claude Code (see [SKILL.md](.claude/skills/new-api-endpoint/SKILL.md))
+
+Manual steps:
 1. Create `api/new-resource.php`
 2. Include `config.php`, `auth_guard.php`, `audit_helper.php`, `validation.php`
 3. Call `requireAuth()` and `verifyCsrf()` if protected
@@ -242,6 +260,9 @@ There are **no automated tests** currently. Test manually by:
 7. Add the API client in `public/js/api.js`
 
 ### Adding a New Public Page
+**Quick way**: Use `/new-page` skill in Claude Code (see [SKILL.md](.claude/skills/new-page/SKILL.md)) — handles dual-registration automatically
+
+Manual steps:
 1. Create `pages/new-page.php` with the page content
 2. Add a route entry in `router.php` (path, file, page key, title, scripts)
 3. Add navigation link in `includes/header.php`
@@ -296,3 +317,25 @@ There are **no automated tests** currently. Test manually by:
   - `api/config.php` — blocked via `nginx.conf` (`location = /api/config.php`)
 - **Note**: PHP's built-in dev server does NOT read `.htaccess`. In development, `router.php` handles routing, but direct requests to `.env` are not blocked by server config. Keep `.env` out of the document root or use Nginx/Apache in production
 - **Recommendation**: When deploying, verify that sensitive file access returns 403. Test with: `curl -I https://your-domain/.env`
+
+## Claude Code Tools
+
+### Skills (slash commands)
+| Command | Purpose |
+|---------|---------|
+| `/new-api-endpoint` | Generate a complete API endpoint with DB schema, validation, CRUD handlers, and JS client |
+| `/new-page` | Generate a public page with automatic dual-registration (router.php + ajax-nav.js) |
+| `/code-review` | Review code against project standards (strict_types, CSRF, audit, Arabic, RTL, dark mode) |
+
+### Hooks (automatic)
+| Hook | Trigger | Action |
+|------|---------|--------|
+| `check-page-sync.sh` | After file edit/write | Validates that all routes in `router.php` have matching `pageScripts` entries in `ajax-nav.js` |
+
+### Documentation
+| File | Purpose |
+|------|---------|
+| `docs/architecture.md` | System architecture overview with request flow diagrams |
+| `docs/decisions/001-template.md` | ADR template for documenting architectural decisions |
+| `docs/runbooks/add-feature.md` | Step-by-step guide for adding pages, APIs, admin sections |
+| `docs/runbooks/database-changes.md` | Guide for modifying schema across MySQL and SQLite |

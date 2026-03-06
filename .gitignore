@@ -1,7 +1,32 @@
+# Database files
 data/*.db
 data/*.db-wal
 data/*.db-shm
+
+# Environment variables
 .env
 .env.*
+!.env.example
+
+# Uploads (user content)
 uploads/stories/*
 !uploads/stories/.gitkeep
+
+# Dependencies
+vendor/
+node_modules/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# IDE files
+.vscode/
+.idea/
+
+# Logs
+*.log
+error_log
+
+# Cache
+*.cache

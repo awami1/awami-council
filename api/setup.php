@@ -38,7 +38,9 @@ if ($sqlite) {
   phone VARCHAR(20) DEFAULT NULL,
   id_num VARCHAR(20) DEFAULT NULL,
   join_date DATE DEFAULT NULL,
-  status TEXT NOT NULL DEFAULT 'نشط' CHECK(status IN ('نشط','معفي','غير نشط')),
+  status TEXT NOT NULL DEFAULT 'نشط' CHECK(status IN ('نشط','منقطع','معفي','غير نشط')),
+  status_override INTEGER NOT NULL DEFAULT 0,
+  status_override_note VARCHAR(300) DEFAULT NULL,
   notes TEXT,
   branch_id VARCHAR(36) DEFAULT NULL,
   created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -135,6 +137,9 @@ if ($sqlite) {
 "CREATE TABLE IF NOT EXISTS committee_members (
   committee_id VARCHAR(36) NOT NULL,
   member_id VARCHAR(36) NOT NULL,
+  role VARCHAR(100) DEFAULT NULL,
+  start_year INTEGER DEFAULT NULL,
+  end_year INTEGER DEFAULT NULL,
   created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
   PRIMARY KEY (committee_id, member_id),
   FOREIGN KEY (member_id) REFERENCES members(id) ON DELETE CASCADE
@@ -229,6 +234,40 @@ if ($sqlite) {
   updated_at TEXT NOT NULL DEFAULT (datetime('now'))
 )",
 
+"CREATE TABLE IF NOT EXISTS member_users (
+  id VARCHAR(36) NOT NULL PRIMARY KEY,
+  member_id VARCHAR(36) NOT NULL,
+  awm_id VARCHAR(10) NOT NULL,
+  password_hash VARCHAR(255) NOT NULL,
+  first_login INTEGER NOT NULL DEFAULT 1,
+  temp_token VARCHAR(100) DEFAULT NULL,
+  token_expiry DATETIME DEFAULT NULL,
+  last_login DATETIME DEFAULT NULL,
+  is_active INTEGER NOT NULL DEFAULT 0,
+  created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (member_id) REFERENCES members(id) ON DELETE CASCADE
+)",
+"CREATE UNIQUE INDEX IF NOT EXISTS uq_member_users_member ON member_users(member_id)",
+"CREATE UNIQUE INDEX IF NOT EXISTS uq_member_users_awm_id ON member_users(awm_id)",
+
+"CREATE TABLE IF NOT EXISTS member_objections (
+  id VARCHAR(36) NOT NULL PRIMARY KEY,
+  member_id VARCHAR(36) NOT NULL,
+  subject VARCHAR(200) NOT NULL,
+  body TEXT NOT NULL,
+  related_to TEXT NOT NULL DEFAULT 'أخرى' CHECK(related_to IN ('دفعة','لجنة','بيانات','أخرى')),
+  related_id VARCHAR(36) DEFAULT NULL,
+  status TEXT NOT NULL DEFAULT 'جديد' CHECK(status IN ('جديد','قيد المراجعة','تمت المعالجة','مرفوض')),
+  admin_reply TEXT DEFAULT NULL,
+  replied_at DATETIME DEFAULT NULL,
+  created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (member_id) REFERENCES members(id) ON DELETE CASCADE
+)",
+"CREATE INDEX IF NOT EXISTS idx_objections_member ON member_objections(member_id)",
+"CREATE INDEX IF NOT EXISTS idx_objections_status ON member_objections(status)",
+
     ]; // end SQLite
 } else {
     $statements = [
@@ -252,7 +291,9 @@ if ($sqlite) {
   `phone` VARCHAR(20) DEFAULT NULL,
   `id_num` VARCHAR(20) DEFAULT NULL,
   `join_date` DATE DEFAULT NULL,
-  `status` ENUM('نشط','معفي','غير نشط') NOT NULL DEFAULT 'نشط',
+  `status` ENUM('نشط','منقطع','معفي','غير نشط') NOT NULL DEFAULT 'نشط',
+  `status_override` TINYINT(1) NOT NULL DEFAULT 0 COMMENT '1 = حالة يدوية، 0 = تلقائية',
+  `status_override_note` VARCHAR(300) DEFAULT NULL,
   `notes` TEXT,
   `branch_id` VARCHAR(36) DEFAULT NULL,
   `created_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -360,6 +401,9 @@ if ($sqlite) {
 "CREATE TABLE IF NOT EXISTS `committee_members` (
   `committee_id` VARCHAR(36) NOT NULL,
   `member_id` VARCHAR(36) NOT NULL,
+  `role` VARCHAR(100) DEFAULT NULL COMMENT 'مثال: رئيس، نائب، أمين صندوق، عضو',
+  `start_year` YEAR DEFAULT NULL,
+  `end_year` YEAR DEFAULT NULL COMMENT 'NULL = عضوية حالية',
   `created_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
   PRIMARY KEY (`committee_id`, `member_id`),
   CONSTRAINT `fk_cm_member` FOREIGN KEY (`member_id`) REFERENCES `members` (`id`) ON DELETE CASCADE
@@ -461,6 +505,42 @@ if ($sqlite) {
   INDEX `idx_gs_active_order` (`is_active`, `display_order`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci",
 
+"CREATE TABLE IF NOT EXISTS `member_users` (
+  `id` VARCHAR(36) NOT NULL,
+  `member_id` VARCHAR(36) NOT NULL,
+  `awm_id` VARCHAR(10) NOT NULL,
+  `password_hash` VARCHAR(255) NOT NULL,
+  `first_login` TINYINT(1) NOT NULL DEFAULT 1 COMMENT '1 = يجب تغيير كلمة السر',
+  `temp_token` VARCHAR(100) DEFAULT NULL COMMENT 'رمز التفعيل المؤقت',
+  `token_expiry` DATETIME DEFAULT NULL COMMENT 'صلاحية 48 ساعة',
+  `last_login` DATETIME DEFAULT NULL,
+  `is_active` TINYINT(1) NOT NULL DEFAULT 0 COMMENT '0 = لم يُفعَّل بعد',
+  `created_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uq_member_users_member` (`member_id`),
+  UNIQUE KEY `uq_member_users_awm_id` (`awm_id`),
+  CONSTRAINT `fk_member_users_member` FOREIGN KEY (`member_id`) REFERENCES `members` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci",
+
+"CREATE TABLE IF NOT EXISTS `member_objections` (
+  `id` VARCHAR(36) NOT NULL,
+  `member_id` VARCHAR(36) NOT NULL,
+  `subject` VARCHAR(200) NOT NULL,
+  `body` TEXT NOT NULL,
+  `related_to` ENUM('دفعة','لجنة','بيانات','أخرى') NOT NULL DEFAULT 'أخرى',
+  `related_id` VARCHAR(36) DEFAULT NULL COMMENT 'معرف الكيان المعترض عليه',
+  `status` ENUM('جديد','قيد المراجعة','تمت المعالجة','مرفوض') NOT NULL DEFAULT 'جديد',
+  `admin_reply` TEXT DEFAULT NULL,
+  `replied_at` DATETIME DEFAULT NULL,
+  `created_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  INDEX `idx_objections_member` (`member_id`),
+  INDEX `idx_objections_status` (`status`),
+  CONSTRAINT `fk_objections_member` FOREIGN KEY (`member_id`) REFERENCES `members` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci",
+
     ]; // end MySQL
 }
 
@@ -483,6 +563,13 @@ foreach ($statements as $sql) {
 if (!$sqlite) {
     $migrations = [
         "ALTER TABLE `family_branches` ADD COLUMN IF NOT EXISTS `members` JSON DEFAULT NULL",
+        // المرحلة الأولى — نظام هوية الأعضاء
+        "ALTER TABLE `members` MODIFY COLUMN `status` ENUM('نشط','منقطع','معفي','غير نشط') NOT NULL DEFAULT 'نشط'",
+        "ALTER TABLE `members` ADD COLUMN IF NOT EXISTS `status_override` TINYINT(1) NOT NULL DEFAULT 0 COMMENT '1 = حالة يدوية، 0 = تلقائية'",
+        "ALTER TABLE `members` ADD COLUMN IF NOT EXISTS `status_override_note` VARCHAR(300) DEFAULT NULL",
+        "ALTER TABLE `committee_members` ADD COLUMN IF NOT EXISTS `role` VARCHAR(100) DEFAULT NULL COMMENT 'مثال: رئيس، نائب، أمين صندوق، عضو'",
+        "ALTER TABLE `committee_members` ADD COLUMN IF NOT EXISTS `start_year` YEAR DEFAULT NULL",
+        "ALTER TABLE `committee_members` ADD COLUMN IF NOT EXISTS `end_year` YEAR DEFAULT NULL COMMENT 'NULL = عضوية حالية'",
     ];
     foreach ($migrations as $sql) {
         try { $pdo->exec($sql); } catch (PDOException $e) { /* ignore */ }

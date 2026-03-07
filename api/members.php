@@ -244,6 +244,206 @@ function handleRemoveFromCommittee(): void
 
 /*
 |--------------------------------------------------------------------------
+| MEMBER ACCOUNT: ACTIVATE + RESET PASSWORD (Admin actions)
+|--------------------------------------------------------------------------
+*/
+
+/**
+ * تفعيل حساب عضو — يولّد AWM-ID تسلسلي + رمز مؤقت
+ * POST /api/members.php?action=activate_account
+ * Body: { member_id }
+ */
+function handleActivateAccount(): void
+{
+    $pdo  = getPDO();
+    $data = bodyJson();
+
+    $memberId = trim($data['member_id'] ?? '');
+    if ($memberId === '') {
+        respond(422, ['error' => 'معرّف العضو مطلوب']);
+    }
+
+    // تأكد أن العضو موجود
+    $stmt = $pdo->prepare('SELECT id, name, phone FROM members WHERE id = :id LIMIT 1');
+    $stmt->execute([':id' => $memberId]);
+    $member = $stmt->fetch();
+
+    if (!$member) {
+        respond(404, ['error' => 'العضو غير موجود']);
+    }
+
+    // تأكد أن العضو ليس لديه حساب مسبق
+    $stmt = $pdo->prepare('SELECT id, awm_id FROM member_users WHERE member_id = :mid LIMIT 1');
+    $stmt->execute([':mid' => $memberId]);
+    $existing = $stmt->fetch();
+
+    if ($existing) {
+        respond(409, ['error' => 'العضو لديه حساب مسبق برقم ' . $existing['awm_id']]);
+    }
+
+    // توليد AWM-ID تسلسلي (أعلى رقم + 1)
+    $stmt = $pdo->query("SELECT awm_id FROM member_users ORDER BY awm_id DESC LIMIT 1");
+    $lastAwm = $stmt->fetchColumn();
+    if ($lastAwm && preg_match('/^AWM-(\d+)$/', $lastAwm, $m)) {
+        $nextNum = (int) $m[1] + 1;
+    } else {
+        $nextNum = 1;
+    }
+    $awmId = 'AWM-' . str_pad((string) $nextNum, 4, '0', STR_PAD_LEFT);
+
+    // توليد رمز مؤقت (8 أحرف hex)
+    $tempToken   = strtoupper(bin2hex(random_bytes(4)));
+    $tokenExpiry = date('Y-m-d H:i:s', time() + 172800); // 48 ساعة
+    $now         = date('Y-m-d H:i:s');
+
+    // كلمة سر عشوائية مؤقتة (لا يمكن استخدامها — العضو يستخدم الرمز)
+    $tempHash = password_hash(bin2hex(random_bytes(32)), PASSWORD_BCRYPT);
+
+    $userId = uid();
+
+    $stmt = $pdo->prepare(
+        "INSERT INTO member_users (id, member_id, awm_id, password_hash, first_login, temp_token, token_expiry, is_active, created_at, updated_at)
+         VALUES (:id, :mid, :awm, :hash, 1, :token, :expiry, 0, :now, :now2)"
+    );
+    $stmt->execute([
+        ':id'     => $userId,
+        ':mid'    => $memberId,
+        ':awm'    => $awmId,
+        ':hash'   => $tempHash,
+        ':token'  => $tempToken,
+        ':expiry' => $tokenExpiry,
+        ':now'    => $now,
+        ':now2'   => $now,
+    ]);
+
+    logAudit('تفعيل حساب عضو', 'member_auth', $memberId, $member['name'], ['awm_id' => $awmId]);
+
+    // بناء رسالة واتساب جاهزة
+    $waMessage = "مرحباً {$member['name']}\n\n"
+               . "تم إنشاء حسابك في موقع عائلة العوامي\n\n"
+               . "رقم العضوية: {$awmId}\n"
+               . "رمز الدخول: {$tempToken}\n\n"
+               . "رابط الدخول: alawami.site/login\n\n"
+               . "الرمز صالح لمدة 48 ساعة\n"
+               . "عند أول دخول سيُطلب منك تغيير كلمة السر";
+
+    respond(201, [
+        'message'    => 'تم إنشاء الحساب بنجاح',
+        'awm_id'     => $awmId,
+        'temp_token' => $tempToken,
+        'member_name'=> $member['name'],
+        'phone'      => $member['phone'] ?? '',
+        'wa_message' => $waMessage,
+    ]);
+}
+
+/**
+ * إعادة تعيين كلمة سر عضو — يولّد رمز مؤقت جديد + يلغي كلمة السر القديمة
+ * POST /api/members.php?action=reset_password
+ * Body: { member_id }
+ */
+function handleResetPassword(): void
+{
+    $pdo  = getPDO();
+    $data = bodyJson();
+
+    $memberId = trim($data['member_id'] ?? '');
+    if ($memberId === '') {
+        respond(422, ['error' => 'معرّف العضو مطلوب']);
+    }
+
+    // جلب بيانات الحساب
+    $stmt = $pdo->prepare(
+        'SELECT mu.id AS user_id, mu.awm_id, mu.is_active,
+                m.name AS member_name, m.phone
+         FROM member_users mu
+         JOIN members m ON m.id = mu.member_id
+         WHERE mu.member_id = :mid
+         LIMIT 1'
+    );
+    $stmt->execute([':mid' => $memberId]);
+    $user = $stmt->fetch();
+
+    if (!$user) {
+        respond(404, ['error' => 'لا يوجد حساب لهذا العضو']);
+    }
+
+    // توليد رمز مؤقت جديد
+    $tempToken   = strtoupper(bin2hex(random_bytes(4)));
+    $tokenExpiry = date('Y-m-d H:i:s', time() + 172800); // 48 ساعة
+    $now         = date('Y-m-d H:i:s');
+
+    // إلغاء كلمة السر القديمة
+    $tempHash = password_hash(bin2hex(random_bytes(32)), PASSWORD_BCRYPT);
+
+    $stmt = $pdo->prepare(
+        'UPDATE member_users
+         SET temp_token = :token,
+             token_expiry = :expiry,
+             password_hash = :hash,
+             first_login = 1,
+             updated_at = :updated
+         WHERE id = :id'
+    );
+    $stmt->execute([
+        ':token'   => $tempToken,
+        ':expiry'  => $tokenExpiry,
+        ':hash'    => $tempHash,
+        ':updated' => $now,
+        ':id'      => $user['user_id'],
+    ]);
+
+    logAudit('إعادة تعيين كلمة السر', 'member_auth', $memberId, $user['member_name']);
+
+    // بناء رسالة واتساب
+    $waMessage = "مرحباً {$user['member_name']}\n\n"
+               . "تم إعادة تعيين كلمة السر لحسابك في موقع\n"
+               . "عائلة العوامي\n\n"
+               . "رقم العضوية: {$user['awm_id']}\n"
+               . "رمز الدخول الجديد: {$tempToken}\n\n"
+               . "رابط الدخول: alawami.site/login\n\n"
+               . "الرمز صالح لمدة 48 ساعة\n"
+               . "سيُطلب منك تغيير كلمة السر فور الدخول";
+
+    respond(200, [
+        'message'    => 'تم إعادة تعيين كلمة السر بنجاح',
+        'awm_id'     => $user['awm_id'],
+        'temp_token' => $tempToken,
+        'member_name'=> $user['member_name'],
+        'phone'      => $user['phone'] ?? '',
+        'wa_message' => $waMessage,
+    ]);
+}
+
+/**
+ * جلب حالات حسابات الأعضاء
+ * GET /api/members.php?action=accounts_status
+ */
+function handleGetAccountsStatus(): void
+{
+    $pdo = getPDO();
+
+    $stmt = $pdo->query(
+        'SELECT mu.member_id, mu.awm_id, mu.is_active, mu.last_login, mu.first_login
+         FROM member_users mu'
+    );
+    $accounts = $stmt->fetchAll();
+
+    $map = [];
+    foreach ($accounts as $a) {
+        $map[$a['member_id']] = [
+            'awm_id'      => $a['awm_id'],
+            'is_active'   => (int) $a['is_active'],
+            'last_login'  => $a['last_login'],
+            'first_login' => (int) $a['first_login'],
+        ];
+    }
+
+    respond(200, ['data' => $map]);
+}
+
+/*
+|--------------------------------------------------------------------------
 | ROUTER
 |--------------------------------------------------------------------------
 */
@@ -254,8 +454,11 @@ $action = $_GET['action'] ?? '';
 
 match (true) {
 
-    $method === 'POST' && $action === 'add_committee'    => handleAddToCommittee(),
-    $method === 'POST' && $action === 'remove_committee' => handleRemoveFromCommittee(),
+    $method === 'POST' && $action === 'activate_account'  => handleActivateAccount(),
+    $method === 'POST' && $action === 'reset_password'     => handleResetPassword(),
+    $method === 'GET'  && $action === 'accounts_status'    => handleGetAccountsStatus(),
+    $method === 'POST' && $action === 'add_committee'      => handleAddToCommittee(),
+    $method === 'POST' && $action === 'remove_committee'   => handleRemoveFromCommittee(),
     $method === 'GET'    && $id === null => handleGetAll(),
     $method === 'GET'    && $id !== null => handleGetOne($id),
     $method === 'POST'                   => handlePost(),

@@ -195,9 +195,10 @@ var CSRF_TOKEN = '<?php echo getCsrfToken(); ?>';
           <button class="btn btn-accent btn-sm" onclick="openImportExcel()">📥 استيراد Excel</button>
           <input class="search-input" id="m-search" placeholder="بحث بالاسم أو الجوال..." oninput="debouncedRenderMembers()">
           <select class="filter-select" style="width:130px" id="m-flt-status" onchange="_pageState.members=1;renderMembers()"><option value="">كل الحالات</option><option>نشط</option><option>معفي</option><option>غير نشط</option></select>
+          <select class="filter-select" style="width:140px" id="m-flt-account" onchange="_pageState.members=1;renderMembers()"><option value="">كل الحسابات</option><option value="active">مُفعَّل</option><option value="inactive">غير مُفعَّل</option><option value="none">بدون حساب</option></select>
           <button class="btn btn-outline btn-sm" onclick="exportMembersExcel()">📊 Excel</button>
         </div>
-        <div class="table-wrap mobile-cards"><table><thead><tr><th>#</th><th>العضو</th><th>الجوال</th><th>اللجان</th><th>الانضمام</th><th>الحالة</th><th>الدفع</th><th>إجراءات</th></tr></thead><tbody id="members-tbody"></tbody></table></div>
+        <div class="table-wrap mobile-cards"><table><thead><tr><th>#</th><th>العضو</th><th>AWM-ID</th><th>الجوال</th><th>اللجان</th><th>الانضمام</th><th>الحالة</th><th>الحساب</th><th>الدفع</th><th>إجراءات</th></tr></thead><tbody id="members-tbody"></tbody></table></div>
         <div id="members-pagination"></div>
         <div style="padding:12px 18px;border-top:1px solid var(--border);display:flex;justify-content:space-between;align-items:center">
           <span style="font-size:12px;color:var(--text-muted)" id="members-count">0 عضو</span>

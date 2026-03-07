@@ -627,9 +627,10 @@ function renderMembers(page){
     <td data-label="الجوال">${m.phone||'—'}</td>
     <td data-label="اللجان" style="font-size:11px;max-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${memberCommittees(m.id)}</td>
     <td data-label="الانضمام" style="font-size:11px">${m.joinDate||'—'}</td><td data-label="الحالة">${sb}</td><td data-label="الدفع">${pb}</td>
-    <td data-label="إجراءات"><div style="display:flex;gap:4px">
+    <td data-label="إجراءات"><div style="display:flex;gap:4px;flex-wrap:wrap">
       <button class="btn btn-outline btn-xs" onclick="editMember('${m.id}')">✏️</button>
       ${p?`<button class="btn btn-accent btn-xs" onclick="openPayModal('${m.id}')">💳</button>`:''}
+      ${typeof memberAuthButtons==='function'?memberAuthButtons(m.id):''}
       <button class="btn btn-danger btn-xs" onclick="deleteMember('${m.id}')">🗑️</button>
     </div></td></tr>`;
   }).join('');

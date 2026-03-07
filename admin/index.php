@@ -1273,6 +1273,7 @@ var CSRF_TOKEN = '<?php echo getCsrfToken(); ?>';
 </script>
 <script src="js/admin-core.js"></script>
 <script src="js/admin-app.js"></script>
+<script src="js/admin-members-auth.js"></script>
 <script src="js/admin-riwaq.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <script src="js/admin-import.js"></script>

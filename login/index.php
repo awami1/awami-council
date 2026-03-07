@@ -341,6 +341,27 @@ function handleLogin(e) {
   })
   .then(function(res) { return res.json().then(function(data) { return { status: res.status, data: data }; }); })
   .then(function(res) {
+    /* ── حساب غير مُفعَّل → محاولة تفعيل تلقائي بالرمز المؤقت ── */
+    if (res.status === 403) {
+      return fetch('/api/auth/activate.php', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ awm_id: awmId, temp_token: password })
+      })
+      .then(function(r) { return r.json().then(function(d) { return { status: r.status, data: d }; }); })
+      .then(function(actRes) {
+        if (actRes.data.error) {
+          showAlert(alert, res.data.error, 'error');
+          btn.disabled = false;
+          btn.textContent = 'تسجيل الدخول';
+          return;
+        }
+        csrfToken = actRes.data.csrf_token || '';
+        document.getElementById('login-section').style.display = 'none';
+        document.getElementById('change-pw-section').style.display = 'block';
+      });
+    }
+
     if (res.data.error) {
       showAlert(alert, res.data.error, 'error');
       btn.disabled = false;

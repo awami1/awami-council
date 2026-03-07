@@ -365,7 +365,14 @@ var CSRF_TOKEN = '<?php echo getCsrfToken(); ?>';
 
     <!-- MESSAGES -->
     <div class="page" id="page-messages">
-      <div class="card">
+      <!-- تبويبات: رسائل التواصل + الاعتراضات -->
+      <div style="display:flex;gap:0;margin-bottom:16px;border-bottom:2px solid var(--border)">
+        <button class="btn btn-outline" id="msg-tab-messages" onclick="switchMsgTab('messages')" style="border-radius:8px 8px 0 0;border-bottom:none;font-weight:700">📨 رسائل التواصل</button>
+        <button class="btn btn-outline" id="msg-tab-objections" onclick="switchMsgTab('objections')" style="border-radius:8px 8px 0 0;border-bottom:none">⚠️ الاعتراضات <span id="obj-badge" class="badge badge-warning" style="font-size:10px;margin-right:4px;display:none">0</span></button>
+      </div>
+
+      <!-- تبويب رسائل التواصل -->
+      <div id="msg-panel-messages" class="card">
         <div class="search-bar">
           <input class="search-input" id="msg-search" placeholder="بحث في الرسائل..." oninput="debouncedRenderMessages()">
           <select class="filter-select" style="width:130px" id="msg-flt-read" onchange="_pageState.messages=1;renderMessages()"><option value="">كل الرسائل</option><option value="0">غير مقروءة</option><option value="1">مقروءة</option></select>
@@ -373,6 +380,23 @@ var CSRF_TOKEN = '<?php echo getCsrfToken(); ?>';
         <div class="table-wrap mobile-cards"><table><thead><tr><th>#</th><th>المرسل</th><th>الموضوع</th><th>الرسالة</th><th>التاريخ</th><th>الحالة</th><th>إجراءات</th></tr></thead><tbody id="msg-tbody"></tbody></table></div>
         <div id="messages-pagination"></div>
         <div style="padding:12px 18px;border-top:1px solid var(--border)"><span style="font-size:12px;color:var(--text-muted)" id="msg-count">0 رسالة</span></div>
+      </div>
+
+      <!-- تبويب الاعتراضات -->
+      <div id="msg-panel-objections" class="card" style="display:none">
+        <div class="search-bar">
+          <select class="filter-select" style="width:160px" id="obj-flt-status" onchange="_pageState.objections=1;renderObjections()">
+            <option value="">كل الحالات</option>
+            <option value="جديد">جديد</option>
+            <option value="قيد المراجعة">قيد المراجعة</option>
+            <option value="تمت المعالجة">تمت المعالجة</option>
+            <option value="مرفوض">مرفوض</option>
+          </select>
+          <div style="display:flex;gap:6px;font-size:12px;align-items:center;flex-wrap:wrap" id="obj-status-counts"></div>
+        </div>
+        <div class="table-wrap mobile-cards"><table><thead><tr><th>#</th><th>العضو</th><th>AWM-ID</th><th>النوع</th><th>الموضوع</th><th>التاريخ</th><th>الحالة</th><th>إجراءات</th></tr></thead><tbody id="obj-tbody"></tbody></table></div>
+        <div id="objections-pagination"></div>
+        <div style="padding:12px 18px;border-top:1px solid var(--border)"><span style="font-size:12px;color:var(--text-muted)" id="obj-count">0 اعتراض</span></div>
       </div>
     </div>
 
@@ -1256,6 +1280,18 @@ var CSRF_TOKEN = '<?php echo getCsrfToken(); ?>';
     <div class="modal-body" id="msg-detail-body"></div>
     <div class="modal-footer">
       <button class="btn btn-outline" onclick="closeModal('modal-msg-detail')">إغلاق</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: Objection Detail -->
+<div class="modal-overlay" id="modal-objection-detail">
+  <div class="modal" style="max-width:600px">
+    <div class="modal-header"><span>⚠️ تفاصيل الاعتراض</span><button onclick="closeModal('modal-objection-detail')">&times;</button></div>
+    <div class="modal-body" id="obj-detail-body"></div>
+    <div class="modal-footer" style="gap:8px">
+      <button class="btn btn-primary" onclick="saveObjectionReply()">💾 حفظ</button>
+      <button class="btn btn-outline" onclick="closeModal('modal-objection-detail')">إغلاق</button>
     </div>
   </div>
 </div>

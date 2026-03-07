@@ -23,6 +23,20 @@ if (php_sapi_name() === 'cli-server') {
             return;
         }
     }
+    // Member login
+    if ($uri === '/login' || $uri === '/login/') {
+        include __DIR__ . '/login/index.php';
+        return;
+    }
+    // Member area
+    if (str_starts_with($uri, '/member')) {
+        $memberPath = $uri === '/member' || $uri === '/member/' ? '/member/index.php' : $uri;
+        $memberFile = __DIR__ . $memberPath;
+        if (is_file($memberFile)) {
+            include $memberFile;
+            return;
+        }
+    }
     // Admin panel
     if (str_starts_with($uri, '/admin')) {
         $adminPath = $uri === '/admin' || $uri === '/admin/' ? '/admin/index.php' : $uri;
@@ -56,6 +70,7 @@ $routes = [
     '/contact' => ['file' => 'pages/contact.php',  'page' => 'contact', 'title' => 'تواصل معنا',          'scripts' => []],
     '/eid'     => ['file' => 'pages/eid.php',      'page' => 'eid',     'title' => 'تهنئة العيد',         'scripts' => ['/public/js/eid.js']],
     '/riwaq'   => ['file' => 'pages/riwaq.php',   'page' => 'riwaq',   'title' => 'الرِّوَاق',          'scripts' => [], 'standalone' => true],
+    '/login'   => ['file' => 'login/index.php',  'page' => 'login',   'title' => 'تسجيل الدخول',       'scripts' => [], 'standalone' => true],
 ];
 
 $route = $routes[$uri] ?? null;

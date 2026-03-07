@@ -64,23 +64,36 @@ function getPDO(): PDO
     if ($pdo !== null) return $pdo;
 
     // .env already loaded by the closure above
-    $host = getenv('DB_HOST') ?: ($_ENV['DB_HOST'] ?? '');
-    $name = getenv('DB_NAME') ?: ($_ENV['DB_NAME'] ?? '');
-    $user = getenv('DB_USER') ?: ($_ENV['DB_USER'] ?? '');
-    $pass = getenv('DB_PASS') ?: ($_ENV['DB_PASS'] ?? '');
-    $port = getenv('DB_PORT') ?: ($_ENV['DB_PORT'] ?? '3306');
+    // Support both DB_* vars and CranL/DigitalOcean lowercase vars
+    $host = getenv('DB_HOST') ?: ($_ENV['DB_HOST'] ?? (getenv('host') ?: ($_ENV['host'] ?? '')));
+    $name = getenv('DB_NAME') ?: ($_ENV['DB_NAME'] ?? (getenv('database') ?: ($_ENV['database'] ?? '')));
+    $user = getenv('DB_USER') ?: ($_ENV['DB_USER'] ?? (getenv('username') ?: ($_ENV['username'] ?? '')));
+    $pass = getenv('DB_PASS') ?: ($_ENV['DB_PASS'] ?? (getenv('password') ?: ($_ENV['password'] ?? '')));
+    $port = getenv('DB_PORT') ?: ($_ENV['DB_PORT'] ?? (getenv('port') ?: ($_ENV['port'] ?? '3306')));
+    $sslmode = getenv('sslmode') ?: ($_ENV['sslmode'] ?? (getenv('DB_SSLMODE') ?: ($_ENV['DB_SSLMODE'] ?? '')));
 
     try {
         if ($host && $name && $user) {
-            // MySQL mode (production — CranL)
+            // MySQL mode (production — CranL / DigitalOcean)
+            $options = [
+                PDO::ATTR_ERRMODE            => PDO::ERRMODE_EXCEPTION,
+                PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
+                PDO::ATTR_EMULATE_PREPARES   => false,
+            ];
+
+            // DigitalOcean Managed MySQL requires SSL
+            if (strtolower($sslmode) === 'required') {
+                $options[PDO::MYSQL_ATTR_SSL_VERIFY_SERVER_CERT] = false;
+                $sslCa = getenv('DB_SSL_CA') ?: ($_ENV['DB_SSL_CA'] ?? '');
+                if ($sslCa && is_file($sslCa)) {
+                    $options[PDO::MYSQL_ATTR_SSL_CA] = $sslCa;
+                }
+            }
+
             $pdo = new PDO(
                 "mysql:host={$host};port={$port};dbname={$name};charset=utf8mb4",
                 $user, $pass,
-                [
-                    PDO::ATTR_ERRMODE            => PDO::ERRMODE_EXCEPTION,
-                    PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
-                    PDO::ATTR_EMULATE_PREPARES   => false,
-                ]
+                $options
             );
             $pdo->exec("SET NAMES utf8mb4 COLLATE utf8mb4_unicode_ci");
         } else {

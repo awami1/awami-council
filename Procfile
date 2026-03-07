@@ -1,1 +1,1 @@
-web: php -S 0.0.0.0:80 router.php
+web: bash start.sh

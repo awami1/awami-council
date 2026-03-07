@@ -1,6 +1,6 @@
 <?php
 // config.php — الإعدادات المشتركة لجميع API endpoints
-// يدعم MySQL (على CranL) و SQLite (للتطوير المحلي)
+// يدعم MySQL (على DigitalOcean) و SQLite (للتطوير المحلي)
 
 declare(strict_types=1);
 
@@ -68,19 +68,29 @@ function getPDO(): PDO
     $name = getenv('DB_NAME') ?: ($_ENV['DB_NAME'] ?? '');
     $user = getenv('DB_USER') ?: ($_ENV['DB_USER'] ?? '');
     $pass = getenv('DB_PASS') ?: ($_ENV['DB_PASS'] ?? '');
-    $port = getenv('DB_PORT') ?: ($_ENV['DB_PORT'] ?? '3306');
+    $port = getenv('DB_PORT') ?: ($_ENV['DB_PORT'] ?? '25060');
 
     try {
         if ($host && $name && $user) {
-            // MySQL mode (production — CranL)
+            // MySQL mode (production — DigitalOcean)
+            $sslCa = getenv('DB_SSL_CA') ?: ($_ENV['DB_SSL_CA'] ?? '');
+
+            $options = [
+                PDO::ATTR_ERRMODE            => PDO::ERRMODE_EXCEPTION,
+                PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
+                PDO::ATTR_EMULATE_PREPARES   => false,
+            ];
+
+            if ($sslCa && is_file($sslCa)) {
+                $options[PDO::MYSQL_ATTR_SSL_CA] = $sslCa;
+            } else {
+                $options[PDO::MYSQL_ATTR_SSL_VERIFY_SERVER_CERT] = false;
+            }
+
             $pdo = new PDO(
                 "mysql:host={$host};port={$port};dbname={$name};charset=utf8mb4",
                 $user, $pass,
-                [
-                    PDO::ATTR_ERRMODE            => PDO::ERRMODE_EXCEPTION,
-                    PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
-                    PDO::ATTR_EMULATE_PREPARES   => false,
-                ]
+                $options
             );
             $pdo->exec("SET NAMES utf8mb4 COLLATE utf8mb4_unicode_ci");
         } else {

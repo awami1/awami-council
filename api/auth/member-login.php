@@ -85,8 +85,25 @@ if (!$user['is_active']) {
 }
 
 // ── التحقق من كلمة السر ──
-// الدعم: كلمة سر عادية (بعد التفعيل) أو رمز مؤقت (أول دخول)
+// الدعم: كلمة سر عادية (بعد التفعيل) أو رمز مؤقت (أول دخول / إعادة تعيين)
 $validPassword = password_verify($password, $user['password_hash']);
+
+// إذا فشلت كلمة السر العادية — نتحقق من الرمز المؤقت (إن وجد وغير منتهي)
+if (!$validPassword && !empty($user['temp_token'])) {
+    if (hash_equals($user['temp_token'], $password)) {
+        // التحقق من صلاحية الرمز (token_expiry)
+        $stmt2 = $pdo->prepare('SELECT token_expiry FROM member_users WHERE id = :id');
+        $stmt2->execute([':id' => $user['user_id']]);
+        $tokenRow = $stmt2->fetch();
+        $expiry = $tokenRow ? strtotime($tokenRow['token_expiry'] ?? '') : false;
+        if ($expiry !== false && time() <= $expiry) {
+            $validPassword = true;
+            // مسح الرمز المؤقت بعد استخدامه
+            $pdo->prepare('UPDATE member_users SET temp_token = NULL, token_expiry = NULL WHERE id = :id')
+                ->execute([':id' => $user['user_id']]);
+        }
+    }
+}
 
 if (!$validPassword) {
     recordFailedAttempt($rlFile, $rlData);

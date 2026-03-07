@@ -36,7 +36,7 @@ $stmt = $pdo->prepare(
             mu.awm_id, b.name AS branch_name
      FROM members m
      JOIN member_users mu ON mu.member_id = m.id
-     LEFT JOIN branches b ON b.id = m.branch_id
+     LEFT JOIN family_branches b ON b.id = m.branch_id
      WHERE m.id = :id LIMIT 1'
 );
 $stmt->execute([':id' => $memberId]);

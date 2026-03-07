@@ -444,6 +444,159 @@ function handleGetAccountsStatus(): void
 
 /*
 |--------------------------------------------------------------------------
+| STATUS REVIEW: حساب الحالة التلقائي (§4.1)
+|--------------------------------------------------------------------------
+*/
+
+/**
+ * مراجعة حالات الأعضاء — حساب الحالة المقترحة بناءً على سجل الدفع
+ * GET /api/members.php?action=review_statuses
+ *
+ * القواعد:
+ * - نشط: دفع آخر فترتين متتاليتين
+ * - منقطع: انقطاع فترتين متتاليتين بالضبط
+ * - غير نشط: انقطاع أكثر من فترتين متتاليتين
+ * - معفي: لا يُغيَّر (يدوي)
+ * - status_override = 1: يُتجاهل (تجاوز يدوي)
+ */
+function handleReviewStatuses(): void
+{
+    $pdo = getPDO();
+
+    // جلب الفترات مرتبة من الأقدم للأحدث
+    $periods = $pdo->query('SELECT id, name FROM periods ORDER BY start_date ASC, created_at ASC')->fetchAll();
+    if (count($periods) < 1) {
+        respond(200, ['data' => [], 'message' => 'لا توجد فترات مالية']);
+    }
+
+    // جلب الأعضاء
+    $members = $pdo->query(
+        "SELECT id, name, status, status_override, status_override_note FROM members"
+    )->fetchAll();
+
+    // جلب جميع المدفوعات
+    $payments = $pdo->query(
+        "SELECT member_id, period_id, status FROM payments"
+    )->fetchAll();
+
+    // بناء خريطة الدفع: member_id -> { period_id -> status }
+    $payMap = [];
+    foreach ($payments as $p) {
+        $payMap[$p['member_id']][$p['period_id']] = $p['status'];
+    }
+
+    $periodIds = array_column($periods, 'id');
+    $periodCount = count($periodIds);
+
+    $changes = [];
+
+    foreach ($members as $m) {
+        // تجاهل الأعضاء بتجاوز يدوي
+        if ((int)($m['status_override'] ?? 0) === 1) {
+            continue;
+        }
+
+        // تجاهل المعفيين (حالة يدوية)
+        if ($m['status'] === 'معفي') {
+            continue;
+        }
+
+        // حساب عدد الفترات المتتالية غير المدفوعة من الأحدث
+        $unpaidStreak = 0;
+        for ($i = $periodCount - 1; $i >= 0; $i--) {
+            $pid = $periodIds[$i];
+            $payStatus = $payMap[$m['id']][$pid] ?? 'لم يدفع';
+            if ($payStatus === 'مدفوع' || $payStatus === 'معفي') {
+                break;
+            }
+            $unpaidStreak++;
+        }
+
+        // تحديد الحالة المقترحة
+        if ($unpaidStreak === 0 || $unpaidStreak === 1) {
+            $suggested = 'نشط';
+        } elseif ($unpaidStreak === 2) {
+            $suggested = 'منقطع';
+        } else {
+            $suggested = 'غير نشط';
+        }
+
+        // فقط أضف إذا الحالة مختلفة
+        if ($suggested !== $m['status']) {
+            $changes[] = [
+                'member_id'      => $m['id'],
+                'member_name'    => $m['name'],
+                'current_status' => $m['status'],
+                'suggested'      => $suggested,
+                'unpaid_periods' => $unpaidStreak,
+            ];
+        }
+    }
+
+    respond(200, [
+        'data'          => $changes,
+        'total'         => count($changes),
+        'total_periods' => $periodCount,
+    ]);
+}
+
+/**
+ * تطبيق تغييرات الحالة — تأكيد الكل أو فردي
+ * POST /api/members.php?action=apply_statuses
+ * Body: { changes: [{ member_id, new_status, override?, override_note? }] }
+ */
+function handleApplyStatuses(): void
+{
+    $pdo  = getPDO();
+    $data = bodyJson();
+
+    $changes = $data['changes'] ?? [];
+    if (empty($changes)) {
+        respond(422, ['error' => 'لا توجد تغييرات للتطبيق']);
+    }
+
+    $allowedStatus = ['نشط', 'منقطع', 'معفي', 'غير نشط'];
+    $applied = 0;
+    $now = date('Y-m-d H:i:s');
+
+    foreach ($changes as $c) {
+        $memberId  = trim($c['member_id'] ?? '');
+        $newStatus = trim($c['new_status'] ?? '');
+        $override  = (int)($c['override'] ?? 0);
+        $overrideNote = trim($c['override_note'] ?? '');
+
+        if ($memberId === '' || !in_array($newStatus, $allowedStatus, true)) {
+            continue;
+        }
+
+        // تحديث بيانات العضو
+        if (isSQLite()) {
+            $sql = "UPDATE members SET status = :status, status_override = :ovr, status_override_note = :note, updated_at = :updated WHERE id = :id";
+        } else {
+            $sql = "UPDATE members SET status = :status, status_override = :ovr, status_override_note = :note, updated_at = :updated WHERE id = :id";
+        }
+
+        $pdo->prepare($sql)->execute([
+            ':status'  => $newStatus,
+            ':ovr'     => $override,
+            ':note'    => $overrideNote ?: null,
+            ':updated' => $now,
+            ':id'      => $memberId,
+        ]);
+
+        $applied++;
+    }
+
+    logAudit('تحديث حالات الأعضاء', 'member_status', '', '', ['count' => $applied]);
+
+    respond(200, [
+        'message' => "تم تحديث {$applied} عضو بنجاح",
+        'applied' => $applied,
+    ]);
+}
+
+/*
+|--------------------------------------------------------------------------
 | ROUTER
 |--------------------------------------------------------------------------
 */
@@ -456,7 +609,9 @@ match (true) {
 
     $method === 'POST' && $action === 'activate_account'  => handleActivateAccount(),
     $method === 'POST' && $action === 'reset_password'     => handleResetPassword(),
+    $method === 'POST' && $action === 'apply_statuses'     => handleApplyStatuses(),
     $method === 'GET'  && $action === 'accounts_status'    => handleGetAccountsStatus(),
+    $method === 'GET'  && $action === 'review_statuses'    => handleReviewStatuses(),
     $method === 'POST' && $action === 'add_committee'      => handleAddToCommittee(),
     $method === 'POST' && $action === 'remove_committee'   => handleRemoveFromCommittee(),
     $method === 'GET'    && $id === null => handleGetAll(),

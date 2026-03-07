@@ -228,6 +228,22 @@ var CSRF_TOKEN = '<?php echo getCsrfToken(); ?>';
         <div class="table-wrap mobile-cards"><table><thead><tr><th>العضو</th><th>المطلوب</th><th>المدفوع</th><th>التاريخ</th><th>الطريقة</th><th>الحالة</th><th>إجراءات</th></tr></thead><tbody id="fees-tbody"></tbody></table></div>
         <div id="fees-pagination"></div>
       </div>
+
+      <!-- قسم مراجعة الحالات -->
+      <div class="card" id="status-review-panel" style="display:none;margin-top:16px">
+        <div class="card-header">
+          <div class="card-title">🔄 مراجعة حالات الأعضاء</div>
+          <div style="display:flex;gap:8px;align-items:center">
+            <button class="btn btn-primary btn-sm" onclick="confirmAllStatuses()">✅ تأكيد الكل</button>
+            <button class="btn btn-outline btn-sm" onclick="loadStatusReview()">🔄 تحديث</button>
+            <button class="btn btn-outline btn-sm" onclick="hideStatusReview()">✕ إخفاء</button>
+          </div>
+        </div>
+        <div class="card-body">
+          <p style="font-size:13px;color:var(--text-muted);margin-bottom:14px" id="status-review-desc">يتم حساب حالة كل عضو تلقائياً بناءً على سجل دفعاته. الأعضاء بتجاوز يدوي أو حالة "معفي" لا يُعرضون.</p>
+          <div id="status-review-body"></div>
+        </div>
+      </div>
     </div>
 
     <!-- REMINDERS -->

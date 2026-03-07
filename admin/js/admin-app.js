@@ -610,23 +610,42 @@ function deleteMember(id){
 function renderMembers(page){
   const s=document.getElementById('m-search').value;
   const sf=document.getElementById('m-flt-status').value;
+  const af=document.getElementById('m-flt-account')?.value||'';
   let list=State.getMembers();
-  if(s) list=list.filter(m=>m.name.includes(s)||m.phone?.includes(s));
+  if(s) list=list.filter(m=>{
+    if(m.name.includes(s)||m.phone?.includes(s)) return true;
+    var acc=typeof getMemberAccount==='function'?getMemberAccount(m.id):null;
+    return acc && acc.awm_id && acc.awm_id.toLowerCase().includes(s.toLowerCase());
+  });
   if(sf) list=list.filter(m=>m.status===sf);
+  // فلترة حسب حالة الحساب
+  if(af && typeof getMemberAccount==='function'){
+    list=list.filter(m=>{
+      const acc=getMemberAccount(m.id);
+      if(af==='none') return !acc;
+      if(af==='active') return acc && acc.is_active;
+      if(af==='inactive') return acc && !acc.is_active;
+      return true;
+    });
+  }
   const p=curPeriod();
   const tbody=document.getElementById('members-tbody');
-  if(!list.length){tbody.innerHTML='<tr><td colspan="8"><div class="empty-state"><div class="empty-icon">👥</div><p>لا يوجد أعضاء</p></div></td></tr>';var mp=document.getElementById('members-pagination');if(mp)mp.innerHTML='';return;}
+  if(!list.length){tbody.innerHTML='<tr><td colspan="10"><div class="empty-state"><div class="empty-icon">👥</div><p>لا يوجد أعضاء</p></div></td></tr>';var mp=document.getElementById('members-pagination');if(mp)mp.innerHTML='';return;}
   var pg = paginate(list, 'members', page, 25);
   var startIdx = (pg.page - 1) * 25;
   tbody.innerHTML=pg.data.map((m,i)=>{
     const pay=p?State.getPayments().find(x=>x.memberId===m.id&&x.periodId===p.id):null;
     const pb=!p?'<span class="badge badge-gray">لا دورة</span>':pay?.status==='مدفوع'?'<span class="badge badge-success">✅ مدفوع</span>':pay?.status==='معفي'?'<span class="badge badge-purple">🔖 معفي</span>':'<span class="badge badge-warning">⏳ لم يدفع</span>';
     const sb=m.status==='نشط'?'<span class="badge badge-success">نشط</span>':m.status==='معفي'?'<span class="badge badge-purple">معفي</span>':'<span class="badge badge-gray">غير نشط</span>';
+    const acc=typeof getMemberAccount==='function'?getMemberAccount(m.id):null;
+    const awmId=acc?acc.awm_id:'—';
+    const accBadge=typeof memberAccountBadge==='function'?memberAccountBadge(m.id):'';
     return `<tr><td data-label="#" style="color:var(--text-muted);font-size:11px">${startIdx+i+1}</td>
     <td data-label="العضو"><div style="display:flex;align-items:center;gap:8px"><div class="avatar" style="background:${avColor(m.name)}">${avInit(m.name)}</div><div><div style="font-weight:600">${m.name}</div><div style="font-size:11px;color:var(--text-muted)">${m.family}</div></div></div></td>
+    <td data-label="AWM-ID" style="font-size:12px;font-weight:600;color:var(--green-dark);font-family:monospace">${awmId}</td>
     <td data-label="الجوال">${m.phone||'—'}</td>
     <td data-label="اللجان" style="font-size:11px;max-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${memberCommittees(m.id)}</td>
-    <td data-label="الانضمام" style="font-size:11px">${m.joinDate||'—'}</td><td data-label="الحالة">${sb}</td><td data-label="الدفع">${pb}</td>
+    <td data-label="الانضمام" style="font-size:11px">${m.joinDate||'—'}</td><td data-label="الحالة">${sb}</td><td data-label="الحساب">${accBadge}</td><td data-label="الدفع">${pb}</td>
     <td data-label="إجراءات"><div style="display:flex;gap:4px;flex-wrap:wrap">
       <button class="btn btn-outline btn-xs" onclick="editMember('${m.id}')">✏️</button>
       ${p?`<button class="btn btn-accent btn-xs" onclick="openPayModal('${m.id}')">💳</button>`:''}

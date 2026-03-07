@@ -668,6 +668,8 @@ function createPeriod(){
   if(!amount||amount<=0){toast('مبلغ الرسوم يجب أن يكون أكبر من صفر','error');document.getElementById('pd-amount').classList.add('invalid');return;}
   const data={name,feeAmount:amount,start:document.getElementById('pd-start').value||today(),end:document.getElementById('pd-end').value||''};
   FinanceService.createPeriod(data);
+  // بعد إنشاء الدورة — عرض مراجعة الحالات تلقائياً
+  setTimeout(function(){ loadStatusReview(); }, 800);
 }
 
 function openPayModal(memberId){
@@ -1847,6 +1849,149 @@ function updateMessageBadge() {
   var count = getMessagesUnread();
   badge.textContent = count;
   badge.style.display = count > 0 ? 'inline-block' : 'none';
+}
+
+// =================== STATUS REVIEW (مراجعة حالات الأعضاء) ===================
+var _statusChanges = [];
+
+async function loadStatusReview() {
+    var panel = document.getElementById('status-review-panel');
+    var body = document.getElementById('status-review-body');
+    if (!panel || !body) return;
+
+    body.innerHTML = '<div style="text-align:center;padding:20px;color:var(--text-muted)">جاري حساب الحالات...</div>';
+    panel.style.display = '';
+
+    try {
+        var res = await apiFetch('/api/members.php?action=review_statuses');
+        _statusChanges = res.data || [];
+
+        if (!_statusChanges.length) {
+            body.innerHTML = '<div style="text-align:center;padding:30px;color:var(--text-muted)"><div style="font-size:32px;margin-bottom:8px">✅</div>لا توجد تغييرات مقترحة — جميع الحالات متطابقة</div>';
+            return;
+        }
+
+        document.getElementById('status-review-desc').textContent =
+            'تم العثور على ' + _statusChanges.length + ' عضو بحالة مختلفة عن المحسوبة (من أصل ' + (res.total_periods || 0) + ' فترة مالية). الأعضاء بتجاوز يدوي أو حالة "معفي" لا يُعرضون.';
+
+        renderStatusReview();
+    } catch (e) {
+        body.innerHTML = '<div style="text-align:center;padding:20px;color:#991b1b">خطأ: ' + (e.message || 'فشل التحميل') + '</div>';
+    }
+}
+
+function renderStatusReview() {
+    var body = document.getElementById('status-review-body');
+    if (!body || !_statusChanges.length) return;
+
+    var html = '<div class="table-wrap mobile-cards"><table><thead><tr>' +
+        '<th>#</th><th>العضو</th><th>الحالة الحالية</th><th></th><th>الحالة المقترحة</th><th>فترات الانقطاع</th><th>القرار</th>' +
+        '</tr></thead><tbody>';
+
+    _statusChanges.forEach(function(c, i) {
+        html += '<tr>' +
+            '<td>' + (i + 1) + '</td>' +
+            '<td style="font-weight:600">' + c.member_name + '</td>' +
+            '<td>' + statusBadgeReview(c.current_status) + '</td>' +
+            '<td style="font-size:18px;text-align:center">←</td>' +
+            '<td>' + statusBadgeReview(c.suggested) + '</td>' +
+            '<td style="text-align:center">' + c.unpaid_periods + '</td>' +
+            '<td><div style="display:flex;gap:4px;align-items:center">' +
+                '<button class="btn btn-primary btn-xs" onclick="acceptStatusChange(' + i + ')" title="تأكيد">✅</button>' +
+                '<button class="btn btn-outline btn-xs" onclick="overrideStatusChange(' + i + ')" title="تجاوز يدوي">✋</button>' +
+            '</div></td>' +
+            '</tr>';
+    });
+
+    html += '</tbody></table></div>';
+    body.innerHTML = html;
+}
+
+function statusBadgeReview(status) {
+    if (status === 'نشط') return '<span class="badge badge-success">نشط</span>';
+    if (status === 'منقطع') return '<span class="badge badge-warning">منقطع</span>';
+    if (status === 'غير نشط') return '<span class="badge badge-gray">غير نشط</span>';
+    if (status === 'معفي') return '<span class="badge badge-purple">معفي</span>';
+    return '<span class="badge badge-gray">' + status + '</span>';
+}
+
+async function acceptStatusChange(idx) {
+    var c = _statusChanges[idx];
+    if (!c) return;
+
+    try {
+        await apiFetch('/api/members.php?action=apply_statuses', {
+            method: 'POST',
+            body: JSON.stringify({
+                changes: [{ member_id: c.member_id, new_status: c.suggested, override: 0 }]
+            })
+        });
+        toast('تم تحديث حالة ' + c.member_name);
+        _statusChanges.splice(idx, 1);
+        if (_statusChanges.length) {
+            renderStatusReview();
+        } else {
+            document.getElementById('status-review-body').innerHTML =
+                '<div style="text-align:center;padding:30px;color:var(--text-muted)"><div style="font-size:32px;margin-bottom:8px">✅</div>تم مراجعة جميع الحالات</div>';
+        }
+        renderMembers();
+    } catch (e) {
+        toast(e.message || 'خطأ في التحديث', 'error');
+    }
+}
+
+function overrideStatusChange(idx) {
+    var c = _statusChanges[idx];
+    if (!c) return;
+
+    var note = prompt('سبب التجاوز اليدوي لـ "' + c.member_name + '":\n(اترك الحقل فارغاً للإلغاء)');
+    if (note === null || note.trim() === '') return;
+
+    apiFetch('/api/members.php?action=apply_statuses', {
+        method: 'POST',
+        body: JSON.stringify({
+            changes: [{ member_id: c.member_id, new_status: c.current_status, override: 1, override_note: note.trim() }]
+        })
+    }).then(function() {
+        toast('تم تثبيت حالة ' + c.member_name + ' يدوياً');
+        _statusChanges.splice(idx, 1);
+        if (_statusChanges.length) {
+            renderStatusReview();
+        } else {
+            document.getElementById('status-review-body').innerHTML =
+                '<div style="text-align:center;padding:30px;color:var(--text-muted)"><div style="font-size:32px;margin-bottom:8px">✅</div>تم مراجعة جميع الحالات</div>';
+        }
+        renderMembers();
+    }).catch(function(e) {
+        toast(e.message || 'خطأ', 'error');
+    });
+}
+
+async function confirmAllStatuses() {
+    if (!_statusChanges.length) { toast('لا توجد تغييرات', 'error'); return; }
+    if (!confirm('هل تريد تأكيد جميع التغييرات المقترحة (' + _statusChanges.length + ' عضو)؟')) return;
+
+    try {
+        var changes = _statusChanges.map(function(c) {
+            return { member_id: c.member_id, new_status: c.suggested, override: 0 };
+        });
+        var res = await apiFetch('/api/members.php?action=apply_statuses', {
+            method: 'POST',
+            body: JSON.stringify({ changes: changes })
+        });
+        toast(res.message || 'تم التحديث');
+        _statusChanges = [];
+        document.getElementById('status-review-body').innerHTML =
+            '<div style="text-align:center;padding:30px;color:var(--text-muted)"><div style="font-size:32px;margin-bottom:8px">✅</div>تم تأكيد جميع التغييرات</div>';
+        renderMembers();
+    } catch (e) {
+        toast(e.message || 'خطأ', 'error');
+    }
+}
+
+function hideStatusReview() {
+    var panel = document.getElementById('status-review-panel');
+    if (panel) panel.style.display = 'none';
 }
 
 // =================== OBJECTIONS (اعتراضات الأعضاء) ===================

@@ -1849,6 +1849,191 @@ function updateMessageBadge() {
   badge.style.display = count > 0 ? 'inline-block' : 'none';
 }
 
+// =================== OBJECTIONS (اعتراضات الأعضاء) ===================
+var _objections = [];
+var _objectionCounts = {};
+var _currentMsgTab = 'messages';
+
+function switchMsgTab(tab) {
+    _currentMsgTab = tab;
+    document.getElementById('msg-panel-messages').style.display = tab === 'messages' ? '' : 'none';
+    document.getElementById('msg-panel-objections').style.display = tab === 'objections' ? '' : 'none';
+    var btnMsg = document.getElementById('msg-tab-messages');
+    var btnObj = document.getElementById('msg-tab-objections');
+    btnMsg.style.fontWeight = tab === 'messages' ? '700' : '400';
+    btnMsg.style.background = tab === 'messages' ? 'var(--surface)' : '';
+    btnObj.style.fontWeight = tab === 'objections' ? '700' : '400';
+    btnObj.style.background = tab === 'objections' ? 'var(--surface)' : '';
+    if (tab === 'objections') loadObjections();
+}
+
+async function loadObjections() {
+    try {
+        var res = await apiFetch('/api/objections.php');
+        _objections = res.data || [];
+        _objectionCounts = res.counts || {};
+        updateObjBadge();
+        renderObjections();
+    } catch (e) {
+        toast('خطأ في تحميل الاعتراضات: ' + e.message, 'error');
+    }
+}
+
+function updateObjBadge() {
+    var badge = document.getElementById('obj-badge');
+    var c = _objectionCounts['جديد'] || 0;
+    if (badge) {
+        badge.textContent = c;
+        badge.style.display = c > 0 ? 'inline-block' : 'none';
+    }
+}
+
+function renderObjections(page) {
+    var flt = (document.getElementById('obj-flt-status') || {}).value || '';
+    var list = _objections;
+    if (flt) list = list.filter(function(o) { return o.status === flt; });
+
+    // عرض عداد الحالات
+    var countsEl = document.getElementById('obj-status-counts');
+    if (countsEl) {
+        countsEl.innerHTML =
+            '<span class="badge badge-warning">جديد: ' + (_objectionCounts['جديد'] || 0) + '</span>' +
+            '<span class="badge badge-info" style="background:#3b82f6;color:#fff">قيد المراجعة: ' + (_objectionCounts['قيد المراجعة'] || 0) + '</span>' +
+            '<span class="badge badge-success">تمت المعالجة: ' + (_objectionCounts['تمت المعالجة'] || 0) + '</span>' +
+            '<span class="badge badge-gray">مرفوض: ' + (_objectionCounts['مرفوض'] || 0) + '</span>';
+    }
+
+    var tbody = document.getElementById('obj-tbody');
+    if (!tbody) return;
+
+    if (!list.length) {
+        tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;padding:40px;color:var(--text-muted)">لا توجد اعتراضات</td></tr>';
+        document.getElementById('obj-count').textContent = '0 اعتراض';
+        document.getElementById('objections-pagination').innerHTML = '';
+        return;
+    }
+
+    var info = paginate(list, 'objections', page, 15);
+    var startIdx = (info.page - 1) * 15;
+
+    tbody.innerHTML = info.data.map(function(o, i) {
+        var sb = objStatusBadge(o.status);
+        var typeBadge = '<span class="badge badge-gray" style="font-size:10px">' + (o.related_to || 'أخرى') + '</span>';
+        return '<tr>' +
+            '<td data-label="#">' + (startIdx + i + 1) + '</td>' +
+            '<td data-label="العضو" style="font-weight:600">' + (o.member_name || '—') + '</td>' +
+            '<td data-label="AWM-ID" style="font-family:monospace;font-size:12px;color:var(--green-dark)">' + (o.awm_id || '—') + '</td>' +
+            '<td data-label="النوع">' + typeBadge + '</td>' +
+            '<td data-label="الموضوع">' + (o.subject || '—') + '</td>' +
+            '<td data-label="التاريخ" style="font-size:11px">' + (o.created_at || '').substring(0, 10) + '</td>' +
+            '<td data-label="الحالة">' + sb + '</td>' +
+            '<td data-label="إجراءات">' +
+                '<button class="btn btn-primary btn-sm" onclick="viewObjection(\'' + o.id + '\')">عرض</button>' +
+            '</td></tr>';
+    }).join('');
+
+    document.getElementById('obj-count').textContent = list.length + ' اعتراض';
+    document.getElementById('objections-pagination').innerHTML = renderPaginationHTML(info, 'renderObjections');
+}
+
+function objStatusBadge(status) {
+    if (status === 'جديد') return '<span class="badge badge-warning">جديد</span>';
+    if (status === 'قيد المراجعة') return '<span class="badge" style="background:#3b82f6;color:#fff">قيد المراجعة</span>';
+    if (status === 'تمت المعالجة') return '<span class="badge badge-success">تمت المعالجة</span>';
+    if (status === 'مرفوض') return '<span class="badge badge-gray">مرفوض</span>';
+    return '<span class="badge badge-gray">' + status + '</span>';
+}
+
+var _currentObjId = null;
+
+function viewObjection(id) {
+    var o = _objections.find(function(x) { return x.id === id; });
+    if (!o) return;
+    _currentObjId = id;
+
+    var body = document.getElementById('obj-detail-body');
+    body.innerHTML =
+        '<div style="display:flex;gap:12px;margin-bottom:16px;flex-wrap:wrap">' +
+            '<div style="flex:1;min-width:200px">' +
+                '<div style="font-size:12px;color:var(--text-muted);margin-bottom:4px">العضو</div>' +
+                '<div style="font-weight:700">' + (o.member_name || '—') + ' <span style="font-family:monospace;color:var(--green-dark)">' + (o.awm_id || '') + '</span></div>' +
+            '</div>' +
+            '<div>' +
+                '<div style="font-size:12px;color:var(--text-muted);margin-bottom:4px">النوع</div>' +
+                '<span class="badge badge-gray">' + (o.related_to || 'أخرى') + '</span>' +
+            '</div>' +
+            '<div>' +
+                '<div style="font-size:12px;color:var(--text-muted);margin-bottom:4px">التاريخ</div>' +
+                '<div style="font-size:13px">' + (o.created_at || '') + '</div>' +
+            '</div>' +
+        '</div>' +
+        '<div style="margin-bottom:16px">' +
+            '<div style="font-size:12px;color:var(--text-muted);margin-bottom:4px">الموضوع</div>' +
+            '<div style="font-weight:700;font-size:15px">' + (o.subject || '') + '</div>' +
+        '</div>' +
+        '<div style="margin-bottom:16px">' +
+            '<div style="font-size:12px;color:var(--text-muted);margin-bottom:4px">التفاصيل</div>' +
+            '<div style="background:var(--bg);padding:14px;border-radius:8px;line-height:1.8;white-space:pre-wrap;max-height:200px;overflow-y:auto">' + escapeHtmlObj(o.body || '') + '</div>' +
+        '</div>' +
+        '<div style="margin-bottom:12px">' +
+            '<label style="font-weight:700;font-size:13px;display:block;margin-bottom:6px">الحالة:</label>' +
+            '<select id="obj-reply-status" class="filter-select" style="width:100%">' +
+                '<option value="جديد"' + (o.status === 'جديد' ? ' selected' : '') + '>جديد</option>' +
+                '<option value="قيد المراجعة"' + (o.status === 'قيد المراجعة' ? ' selected' : '') + '>قيد المراجعة</option>' +
+                '<option value="تمت المعالجة"' + (o.status === 'تمت المعالجة' ? ' selected' : '') + '>تمت المعالجة</option>' +
+                '<option value="مرفوض"' + (o.status === 'مرفوض' ? ' selected' : '') + '>مرفوض</option>' +
+            '</select>' +
+        '</div>' +
+        '<div>' +
+            '<label style="font-weight:700;font-size:13px;display:block;margin-bottom:6px">رد المدير:</label>' +
+            '<textarea id="obj-reply-text" rows="4" style="width:100%;padding:12px;border:2px solid var(--border);border-radius:8px;font-family:inherit;font-size:13px;line-height:1.7;background:var(--bg);color:var(--text);resize:vertical" placeholder="اكتب ردك هنا...">' + escapeHtmlObj(o.admin_reply || '') + '</textarea>' +
+            (o.replied_at ? '<div style="font-size:11px;color:var(--text-muted);margin-top:4px">آخر رد: ' + o.replied_at + '</div>' : '') +
+        '</div>';
+
+    openModal('modal-objection-detail');
+}
+
+function escapeHtmlObj(str) {
+    var d = document.createElement('div');
+    d.textContent = str;
+    return d.innerHTML;
+}
+
+async function saveObjectionReply() {
+    if (!_currentObjId) return;
+    var status = document.getElementById('obj-reply-status').value;
+    var reply = document.getElementById('obj-reply-text').value.trim();
+
+    try {
+        await apiFetch('/api/objections.php?id=' + _currentObjId, {
+            method: 'PUT',
+            body: JSON.stringify({ status: status, admin_reply: reply })
+        });
+        toast('تم حفظ الرد بنجاح');
+        closeModal('modal-objection-detail');
+        loadObjections();
+    } catch (e) {
+        toast(e.message || 'خطأ في الحفظ', 'error');
+    }
+}
+
+// تحميل الاعتراضات عند فتح صفحة الرسائل لتحديث الشارة
+var _origRenderMessages = typeof renderMessages === 'function' ? null : null;
+(function() {
+    var origShowPage = window.showPage;
+    if (!origShowPage) return;
+    // تحميل الاعتراضات عند فتح صفحة الرسائل
+    var _objLoaded = false;
+    var _origShowPage = origShowPage;
+    window.showPage = function(name, el) {
+        _origShowPage(name, el);
+        if (name === 'messages' && !_objLoaded) {
+            _objLoaded = true;
+            loadObjections();
+        }
+    };
+})();
+
 // =================== REPORTS ===================
 // =====================================================
 // AI SMART REPORTS - تحليل ذكي بالذكاء الاصطناعي

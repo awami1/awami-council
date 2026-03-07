@@ -7,6 +7,7 @@
 declare(strict_types=1);
 
 require_once __DIR__ . '/../config.php';
+require_once __DIR__ . '/member-guard.php';
 require_once __DIR__ . '/../audit_helper.php';
 
 $method = $_SERVER['REQUEST_METHOD'] ?? 'GET';
@@ -15,18 +16,9 @@ if ($method !== 'POST') {
     respond(405, ['error' => 'طريقة الطلب غير مسموحة']);
 }
 
-// بدء جلسة العضو
-if (session_status() === PHP_SESSION_NONE) {
-    session_name('awami_member');
-    session_set_cookie_params([
-        'lifetime' => 0,
-        'path'     => '/',
-        'secure'   => isset($_SERVER['HTTPS']),
-        'httponly'  => true,
-        'samesite'  => 'Strict',
-    ]);
-    session_start();
-}
+// بدء جلسة العضو + التحقق من CSRF
+startMemberSession();
+verifyMemberCsrf();
 
 // تسجيل الخروج في سجل التدقيق (قبل تدمير الجلسة)
 $memberId = $_SESSION['member_id'] ?? '';

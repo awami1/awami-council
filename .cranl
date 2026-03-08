@@ -1,4 +1,4 @@
 {
-  "start": "bash start.sh",
+  "start": "sh start.sh",
   "port": 80
 }

@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/bin/sh
 # Start the web server (development & production)
 
 PORT=${PORT:-80}

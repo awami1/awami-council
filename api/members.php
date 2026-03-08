@@ -27,7 +27,7 @@ if (isset($_GET['setup'])) {
                 phone VARCHAR(20) DEFAULT NULL,
                 id_num VARCHAR(20) DEFAULT NULL,
                 join_date DATE DEFAULT NULL,
-                status TEXT NOT NULL DEFAULT 'نشط' CHECK(status IN ('نشط','معفي','غير نشط')),
+                status TEXT NOT NULL DEFAULT 'مشترك' CHECK(status IN ('مشترك','منقطع','غير مشترك')),
                 notes TEXT,
                 branch_id VARCHAR(36) DEFAULT NULL,
                 created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -44,7 +44,7 @@ if (isset($_GET['setup'])) {
                 `phone` VARCHAR(20) DEFAULT NULL,
                 `id_num` VARCHAR(20) DEFAULT NULL,
                 `join_date` DATE DEFAULT NULL,
-                `status` ENUM('نشط','معفي','غير نشط') NOT NULL DEFAULT 'نشط',
+                `status` ENUM('مشترك','منقطع','غير مشترك') NOT NULL DEFAULT 'مشترك',
                 `notes` TEXT,
                 `branch_id` VARCHAR(36) DEFAULT NULL,
                 `created_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -136,7 +136,7 @@ function handlePost(): void
         ':phone'     => $data['phone'] ?? '',
         ':id_num'    => $data['id_num'] ?? '',
         ':join_date' => $data['join_date'] ?? null,
-        ':status'    => $data['status'] ?? 'نشط',
+        ':status'    => $data['status'] ?? 'مشترك',
         ':notes'     => $data['notes'] ?? '',
         ':branch_id' => $data['branch_id'] ?? null,
     ]);
@@ -453,10 +453,9 @@ function handleGetAccountsStatus(): void
  * GET /api/members.php?action=review_statuses
  *
  * القواعد:
- * - نشط: دفع آخر فترتين متتاليتين
- * - منقطع: انقطاع فترتين متتاليتين بالضبط
- * - غير نشط: انقطاع أكثر من فترتين متتاليتين
- * - معفي: لا يُغيَّر (يدوي)
+ * - مشترك: دفع آخر فترتين متتاليتين (unpaidStreak = 0 أو 1)
+ * - منقطع: انقطاع فترتين بالضبط (unpaidStreak = 2)
+ * - غير مشترك: انقطاع أكثر من فترتين (unpaidStreak > 2)
  * - status_override = 1: يُتجاهل (تجاوز يدوي)
  */
 function handleReviewStatuses(): void
@@ -496,17 +495,12 @@ function handleReviewStatuses(): void
             continue;
         }
 
-        // تجاهل المعفيين (حالة يدوية)
-        if ($m['status'] === 'معفي') {
-            continue;
-        }
-
         // حساب عدد الفترات المتتالية غير المدفوعة من الأحدث
         $unpaidStreak = 0;
         for ($i = $periodCount - 1; $i >= 0; $i--) {
             $pid = $periodIds[$i];
             $payStatus = $payMap[$m['id']][$pid] ?? 'لم يدفع';
-            if ($payStatus === 'مدفوع' || $payStatus === 'معفي') {
+            if ($payStatus === 'مدفوع') {
                 break;
             }
             $unpaidStreak++;
@@ -514,11 +508,11 @@ function handleReviewStatuses(): void
 
         // تحديد الحالة المقترحة
         if ($unpaidStreak === 0 || $unpaidStreak === 1) {
-            $suggested = 'نشط';
+            $suggested = 'مشترك';
         } elseif ($unpaidStreak === 2) {
             $suggested = 'منقطع';
         } else {
-            $suggested = 'غير نشط';
+            $suggested = 'غير مشترك';
         }
 
         // فقط أضف إذا الحالة مختلفة
@@ -555,7 +549,7 @@ function handleApplyStatuses(): void
         respond(422, ['error' => 'لا توجد تغييرات للتطبيق']);
     }
 
-    $allowedStatus = ['نشط', 'منقطع', 'معفي', 'غير نشط'];
+    $allowedStatus = ['مشترك', 'منقطع', 'غير مشترك'];
     $applied = 0;
     $now = date('Y-m-d H:i:s');
 

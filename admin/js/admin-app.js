@@ -577,14 +577,14 @@ function renderCouncil(){
 
 // =================== MEMBERS ===================
 function openAddMember(){ clearMemberForm(); document.getElementById('modal-member-title').textContent='➕ إضافة عضو جديد'; openModal('modal-member'); }
-function clearMemberForm(){ ['mm-id','mm-name','mm-phone','mm-idnum','mm-family','mm-notes'].forEach(id=>document.getElementById(id).value=''); document.getElementById('mm-join').value=today(); document.getElementById('mm-status').value='مشترك'; }
+function clearMemberForm(){ ['mm-id','mm-name','mm-phone','mm-notes'].forEach(id=>document.getElementById(id).value=''); document.getElementById('mm-join').value=today(); document.getElementById('mm-status').value='مشترك'; }
 
 async function saveMember(){
   clearValidation();
   if(!validateRequired('mm-name','اسم العضو')) return;
   const name=document.getElementById('mm-name').value.trim();
   const id=document.getElementById('mm-id').value;
-  const data={name,phone:document.getElementById('mm-phone').value,idNum:document.getElementById('mm-idnum').value,family:document.getElementById('mm-family').value||'غير محدد',joinDate:document.getElementById('mm-join').value||today(),status:document.getElementById('mm-status').value,notes:document.getElementById('mm-notes').value};
+  const data={name,phone:document.getElementById('mm-phone').value,joinDate:document.getElementById('mm-join').value||today(),status:document.getElementById('mm-status').value,notes:document.getElementById('mm-notes').value};
   const btn=document.getElementById('btn-save-member');
   setBtnLoading(btn,true);
   try{ await MemberService.saveMember(id, data); }finally{ setBtnLoading(btn,false); }
@@ -592,12 +592,9 @@ async function saveMember(){
 
 function editMember(id){
   const m=State.getMembers().find(x=>x.id===id); if(!m) return;
-  ['mm-id','mm-name','mm-phone','mm-idnum','mm-family','mm-join','mm-notes'].forEach(fid=>document.getElementById(fid).value=m[fid.replace('mm-',''=='mm-id'?'id':fid.replace('mm-',''))]||'');
   document.getElementById('mm-id').value=id;
   document.getElementById('mm-name').value=m.name;
   document.getElementById('mm-phone').value=m.phone||'';
-  document.getElementById('mm-idnum').value=m.idNum||'';
-  document.getElementById('mm-family').value=m.family||'';
   document.getElementById('mm-join').value=m.joinDate||'';
   document.getElementById('mm-notes').value=m.notes||'';
   document.getElementById('mm-status').value=m.status;

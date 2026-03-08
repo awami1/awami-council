@@ -31,7 +31,7 @@ $stats = getDynamicStats();
       </div>
       <div>
         <div class="num" data-count="<?= (int)preg_replace('/\D/', '', $stats['members']) ?>" data-prefix="+"><?= esc((string)$stats['members']) ?></div>
-        <div class="lbl">عضو نشط</div>
+        <div class="lbl">عضو مشترك</div>
       </div>
     </div>
 

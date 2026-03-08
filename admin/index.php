@@ -141,7 +141,7 @@ var CSRF_TOKEN = '<?php echo getCsrfToken(); ?>';
     <div class="page active" id="page-dashboard">
       <div class="stats-grid">
         <div class="stat-card green"><div class="stat-label">الرصيد الكلي</div><div class="stat-value" id="d-balance">0</div><div class="stat-sub">ريال سعودي</div><div class="stat-icon">💰</div></div>
-        <div class="stat-card gold"><div class="stat-label">الأعضاء النشطون</div><div class="stat-value" id="d-members">0</div><div class="stat-sub">من أصل <span id="d-total">0</span></div><div class="stat-icon">👥</div></div>
+        <div class="stat-card gold"><div class="stat-label">الأعضاء المشتركون</div><div class="stat-value" id="d-members">0</div><div class="stat-sub">من أصل <span id="d-total">0</span></div><div class="stat-icon">👥</div></div>
         <div class="stat-card blue"><div class="stat-label">عدد اللجان</div><div class="stat-value" id="d-committees">0</div><div class="stat-sub">لجنة نشطة</div><div class="stat-icon">🏛️</div></div>
         <div class="stat-card orange"><div class="stat-label">المتأخرون</div><div class="stat-value" id="d-unpaid">0</div><div class="stat-sub">عضو لم يدفع</div><div class="stat-icon">⏳</div></div>
       </div>
@@ -150,10 +150,9 @@ var CSRF_TOKEN = '<?php echo getCsrfToken(); ?>';
           <div class="card-header"><div class="card-title">حالة الدفع - الدورة الحالية</div><span id="d-period-lbl" class="badge badge-info">--</span></div>
           <div class="card-body">
             <div style="margin-bottom:12px"><div style="display:flex;justify-content:space-between;margin-bottom:5px"><span style="font-size:12px;color:var(--text-muted)">نسبة الإنجاز</span><span style="font-weight:700;color:var(--green)" id="d-pct">0%</span></div><div class="progress-bar"><div class="progress-fill" id="d-bar" style="width:0%"></div></div></div>
-            <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;text-align:center">
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;text-align:center">
               <div style="background:#dcfce7;border-radius:10px;padding:10px"><div style="font-size:18px;font-weight:900;color:#166534" id="d-paid">0</div><div style="font-size:11px;color:#166534">دفعوا ✅</div></div>
               <div style="background:#fef9c3;border-radius:10px;padding:10px"><div style="font-size:18px;font-weight:900;color:#854d0e" id="d-pending">0</div><div style="font-size:11px;color:#854d0e">لم يدفعوا ⏳</div></div>
-              <div style="background:#f3e8ff;border-radius:10px;padding:10px"><div style="font-size:18px;font-weight:900;color:#7e22ce" id="d-exempt">0</div><div style="font-size:11px;color:#7e22ce">معفيون 🔖</div></div>
             </div>
           </div>
         </div>
@@ -194,7 +193,7 @@ var CSRF_TOKEN = '<?php echo getCsrfToken(); ?>';
           <button class="btn btn-primary btn-sm" onclick="openAddMember()">+ إضافة عضو</button>
           <button class="btn btn-accent btn-sm" onclick="openImportExcel()">📥 استيراد Excel</button>
           <input class="search-input" id="m-search" placeholder="بحث بالاسم أو الجوال..." oninput="debouncedRenderMembers()">
-          <select class="filter-select" style="width:130px" id="m-flt-status" onchange="_pageState.members=1;renderMembers()"><option value="">كل الحالات</option><option>نشط</option><option>معفي</option><option>غير نشط</option></select>
+          <select class="filter-select" style="width:130px" id="m-flt-status" onchange="_pageState.members=1;renderMembers()"><option value="">كل الحالات</option><option>مشترك</option><option>منقطع</option><option>غير مشترك</option></select>
           <select class="filter-select" style="width:140px" id="m-flt-account" onchange="_pageState.members=1;renderMembers()"><option value="">كل الحسابات</option><option value="active">مُفعَّل</option><option value="inactive">غير مُفعَّل</option><option value="none">بدون حساب</option></select>
           <button class="btn btn-outline btn-sm" onclick="exportMembersExcel()">📊 Excel</button>
         </div>
@@ -218,12 +217,12 @@ var CSRF_TOKEN = '<?php echo getCsrfToken(); ?>';
             <button class="btn btn-outline btn-sm" onclick="exportFeesExcel()">📊 Excel</button>
           </div>
         </div>
-        <div class="card-body"><div id="fees-stats" style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px"></div></div>
+        <div class="card-body"><div id="fees-stats" style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px"></div></div>
       </div>
       <div class="card">
         <div class="search-bar">
           <input class="search-input" id="fees-search" placeholder="بحث..." oninput="debouncedRenderFees()">
-          <select class="filter-select" style="width:160px" id="fees-flt" onchange="_pageState.fees=1;renderFees()"><option value="">كل الحالات</option><option value="مدفوع">مدفوع ✅</option><option value="لم يدفع">لم يدفع ⏳</option><option value="معفي">معفي 🔖</option></select>
+          <select class="filter-select" style="width:160px" id="fees-flt" onchange="_pageState.fees=1;renderFees()"><option value="">كل الحالات</option><option value="مدفوع">مدفوع ✅</option><option value="لم يدفع">لم يدفع ⏳</option></select>
         </div>
         <div class="table-wrap mobile-cards"><table><thead><tr><th>العضو</th><th>المطلوب</th><th>المدفوع</th><th>التاريخ</th><th>الطريقة</th><th>الحالة</th><th>إجراءات</th></tr></thead><tbody id="fees-tbody"></tbody></table></div>
         <div id="fees-pagination"></div>
@@ -240,7 +239,7 @@ var CSRF_TOKEN = '<?php echo getCsrfToken(); ?>';
           </div>
         </div>
         <div class="card-body">
-          <p style="font-size:13px;color:var(--text-muted);margin-bottom:14px" id="status-review-desc">يتم حساب حالة كل عضو تلقائياً بناءً على سجل دفعاته. الأعضاء بتجاوز يدوي أو حالة "معفي" لا يُعرضون.</p>
+          <p style="font-size:13px;color:var(--text-muted);margin-bottom:14px" id="status-review-desc">يتم حساب حالة كل عضو تلقائياً بناءً على سجل دفعاته. الأعضاء بتجاوز يدوي لا يُعرضون.</p>
           <div id="status-review-body"></div>
         </div>
       </div>

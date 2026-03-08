@@ -318,10 +318,9 @@ function renderProfile(data) {
 
   var statusEl = document.getElementById('member-status');
   var statusMap = {
-    'نشط':     { cls: 'status-active',   label: '● نشط' },
-    'منقطع':    { cls: 'status-lapsed',   label: '⚠️ منقطع' },
-    'غير نشط': { cls: 'status-inactive', label: '❌ غير نشط' },
-    'معفي':     { cls: 'status-exempt',   label: '🔒 معفي' }
+    'مشترك':     { cls: 'status-active',   label: '● مشترك' },
+    'منقطع':      { cls: 'status-lapsed',   label: '⚠️ منقطع' },
+    'غير مشترك': { cls: 'status-inactive', label: '❌ غير مشترك' }
   };
   var s = statusMap[p.status] || { cls: 'status-active', label: p.status };
   statusEl.className = 'id-status ' + s.cls;
@@ -370,8 +369,8 @@ function renderProfile(data) {
   } else {
     tbody.innerHTML = data.subscriptions.map(function(sub) {
       var status = sub.pay_status || 'لم يدفع';
-      var cls = status === 'مدفوع' ? 'pay-paid' : (status === 'معفي' ? 'pay-exempt' : 'pay-unpaid');
-      var icon = status === 'مدفوع' ? '✅' : (status === 'معفي' ? '🔒' : '❌');
+      var cls = status === 'مدفوع' ? 'pay-paid' : 'pay-unpaid';
+      var icon = status === 'مدفوع' ? '✅' : '❌';
       var paid = status === 'مدفوع' ? formatNum(sub.paid_amount) + ' ريال' : '—';
       return '<tr><td>' + esc(sub.period_name) + '</td>'
         + '<td>' + formatNum(sub.fee_amount) + ' ريال</td>'

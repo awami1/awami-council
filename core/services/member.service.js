@@ -60,7 +60,7 @@ const MemberService = (function () {
       phone:    row.phone     || '',
       idNum:    row.id_num    || '',
       joinDate: row.join_date || '',
-      status:   row.status    || 'نشط',
+      status:   row.status    || 'مشترك',
       notes:    row.notes     || '',
       branchId: row.branch_id || null,
     };
@@ -77,7 +77,7 @@ const MemberService = (function () {
       phone:     data.phone    || '',
       id_num:    data.idNum    || '',
       join_date: data.joinDate || '',
-      status:    data.status   || 'نشط',
+      status:    data.status   || 'مشترك',
       notes:     data.notes    || '',
       branch_id: data.branchId || null,
     };

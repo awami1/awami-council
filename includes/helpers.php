@@ -163,7 +163,7 @@ function getActiveGalleryStories(): array {
 function getActiveMembersCount(): int {
     try {
         $pdo = getPDO();
-        $row = $pdo->query("SELECT COUNT(*) as cnt FROM members WHERE status = 'نشط'")->fetch();
+        $row = $pdo->query("SELECT COUNT(*) as cnt FROM members WHERE status = 'مشترك'")->fetch();
         return (int)($row['cnt'] ?? 0);
     } catch (Throwable $e) { error_log('getActiveMembersCount() failed: ' . $e->getMessage()); return 0; }
 }

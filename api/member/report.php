@@ -322,10 +322,9 @@ exit;
 function getStatusLabel(string $status): string
 {
     return match ($status) {
-        'نشط'     => 'نشط ✅',
-        'منقطع'    => 'منقطع ⚠️',
-        'غير نشط' => 'غير نشط ❌',
-        'معفي'     => 'معفي 🔒',
-        default    => $status,
+        'مشترك'     => 'مشترك ✅',
+        'منقطع'      => 'منقطع ⚠️',
+        'غير مشترك' => 'غير مشترك ❌',
+        default      => $status,
     };
 }

@@ -404,7 +404,7 @@ const State = (function () {
           required: p.feeAmount,
           date:     '',
           method:   '',
-          status:   data.status === 'معفي' ? 'معفي' : 'لم يدفع',
+          status:   'لم يدفع',
           notes:    ''
         });
       }
@@ -448,7 +448,7 @@ const State = (function () {
     DB.periods.push(p);
 
     DB.members.forEach(function (m) {
-      if (m.status !== 'غير نشط') {
+      if (m.status !== 'غير مشترك') {
         DB.payments.push({
           id:       uid(),
           memberId: m.id,
@@ -457,7 +457,7 @@ const State = (function () {
           required: data.feeAmount,
           date:     '',
           method:   '',
-          status:   m.status === 'معفي' ? 'معفي' : 'لم يدفع',
+          status:   'لم يدفع',
           notes:    ''
         });
       }
@@ -793,7 +793,7 @@ const State = (function () {
         phone:    row[2],
         idNum:    '1' + (100000000 + i),
         joinDate: '2023-0' + ((i % 9) + 1) + '-01',
-        status:   i === 7 ? 'معفي' : 'نشط',
+        status:   i === 7 ? 'غير مشترك' : 'مشترك',
         notes:    ''
       });
     });
@@ -802,7 +802,7 @@ const State = (function () {
     DB.periods.push(p);
 
     DB.members.forEach(function (m, i) {
-      var s = m.status === 'معفي' ? 'معفي' : i < 7 ? 'مدفوع' : 'لم يدفع';
+      var s = i < 7 ? 'مدفوع' : 'لم يدفع';
       DB.payments.push({
         id:       'pay' + i,
         memberId: m.id,

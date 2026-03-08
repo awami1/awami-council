@@ -213,19 +213,21 @@
 
 <!-- IMPORT EXCEL MODAL -->
 <div class="modal-overlay" id="modal-import-excel" role="dialog" aria-modal="true" aria-labelledby="modal-import-title">
-  <div class="modal">
+  <div class="modal" style="max-width:700px">
     <div class="modal-header"><div class="modal-title" id="modal-import-title">📥 استيراد أعضاء من Excel</div><button class="modal-close" onclick="closeModal('modal-import-excel')" aria-label="إغلاق">✕</button></div>
     <div class="modal-body">
       <div style="background:#fef9c3;border:1px solid #fde047;border-radius:10px;padding:14px;margin-bottom:16px">
         <div style="font-size:13px;color:#854d0e;font-weight:600;margin-bottom:6px">📊 الأعمدة المطلوبة في Excel:</div>
-        <div style="font-size:12px;color:#854d0e">الاسم * الجوال (اختياري) * رقم الهوية (اختياري) * الحالة (اختياري)</div>
+        <div style="font-size:12px;color:#854d0e">الاسم * الجوال (اختياري) * الحالة (اختياري)</div>
       </div>
       <input type="file" id="excel-import-input" accept=".xlsx,.xls,.csv" style="display:none">
       <button class="btn btn-primary" style="width:100%" onclick="document.getElementById('excel-import-input').click()">📁 اختر ملف Excel</button>
       <div id="import-result" style="margin-top:16px;display:none"></div>
+      <div id="import-progress" style="margin-top:12px;display:none"></div>
     </div>
     <div class="modal-footer">
-      <button class="btn btn-outline" onclick="closeModal('modal-import-excel')">إغلاق</button>
+      <button class="btn btn-outline" onclick="cancelImport();closeModal('modal-import-excel')">إغلاق</button>
+      <button class="btn btn-primary" id="btn-import-save" onclick="saveImport()" style="display:none">💾 حفظ الكل</button>
     </div>
   </div>
 </div>

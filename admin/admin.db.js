@@ -120,7 +120,7 @@ family:   m.family ?? '',
 phone:    m.phone  ?? '',
 idNum:    m.id_num ?? m.idNum ?? '',
 joinDate: m.join_date ?? m.joinDate ?? '',
-status:   m.status ?? 'نشط',
+status:   m.status ?? 'مشترك',
 notes:    m.notes  ?? '',
 branchId: m.branch_id ?? '',
 };
@@ -215,7 +215,7 @@ family:    data.family   ?? '',
 phone:     data.phone    ?? '',
 id_num:    data.idNum    ?? '',
 join_date: data.joinDate ?? null,
-status:    data.status   ?? 'نشط',
+status:    data.status   ?? 'مشترك',
 notes:     data.notes    ?? '',
 };
 let result;
@@ -316,7 +316,7 @@ const period = { id: r.data?.id ?? uid(), name: data.name, feeAmount: data.feeAm
 DB.periods.push(period);
 
     // أنشئ سجلات دفع لكل الأعضاء النشطين
-    const activeMembers = DB.members.filter(m => m.status === 'نشط');
+    const activeMembers = DB.members.filter(m => m.status === 'مشترك');
     for (const m of activeMembers) {
         await PaymentsAPI.save({
             member_id:  m.id,

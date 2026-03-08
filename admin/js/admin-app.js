@@ -577,7 +577,7 @@ function renderCouncil(){
 
 // =================== MEMBERS ===================
 function openAddMember(){ clearMemberForm(); document.getElementById('modal-member-title').textContent='➕ إضافة عضو جديد'; openModal('modal-member'); }
-function clearMemberForm(){ ['mm-id','mm-name','mm-phone','mm-idnum','mm-family','mm-notes'].forEach(id=>document.getElementById(id).value=''); document.getElementById('mm-join').value=today(); document.getElementById('mm-status').value='نشط'; }
+function clearMemberForm(){ ['mm-id','mm-name','mm-phone','mm-idnum','mm-family','mm-notes'].forEach(id=>document.getElementById(id).value=''); document.getElementById('mm-join').value=today(); document.getElementById('mm-status').value='مشترك'; }
 
 function saveMember(){
   clearValidation();
@@ -635,8 +635,8 @@ function renderMembers(page){
   var startIdx = (pg.page - 1) * 25;
   tbody.innerHTML=pg.data.map((m,i)=>{
     const pay=p?State.getPayments().find(x=>x.memberId===m.id&&x.periodId===p.id):null;
-    const pb=!p?'<span class="badge badge-gray">لا دورة</span>':pay?.status==='مدفوع'?'<span class="badge badge-success">✅ مدفوع</span>':pay?.status==='معفي'?'<span class="badge badge-purple">🔖 معفي</span>':'<span class="badge badge-warning">⏳ لم يدفع</span>';
-    const sb=m.status==='نشط'?'<span class="badge badge-success">نشط</span>':m.status==='معفي'?'<span class="badge badge-purple">معفي</span>':'<span class="badge badge-gray">غير نشط</span>';
+    const pb=!p?'<span class="badge badge-gray">لا دورة</span>':pay?.status==='مدفوع'?'<span class="badge badge-success">✅ مدفوع</span>':'<span class="badge badge-warning">⏳ لم يدفع</span>';
+    const sb=m.status==='مشترك'?'<span class="badge badge-success">مشترك</span>':m.status==='منقطع'?'<span class="badge badge-warning">منقطع</span>':'<span class="badge badge-gray">غير مشترك</span>';
     const acc=typeof getMemberAccount==='function'?getMemberAccount(m.id):null;
     const awmId=acc?acc.awm_id:'—';
     const accBadge=typeof memberAccountBadge==='function'?memberAccountBadge(m.id):'';
@@ -703,12 +703,11 @@ function renderFees(page){
   document.getElementById('fees-period-lbl').textContent=p?p.name:'لا توجد دورة';
   if(!p){ document.getElementById('fees-stats').innerHTML='<div style="grid-column:1/-1;text-align:center;color:var(--text-muted);padding:16px">أنشئ دورة أولاً</div>'; document.getElementById('fees-tbody').innerHTML=''; var fp=document.getElementById('fees-pagination');if(fp)fp.innerHTML=''; return; }
   const pays=State.getPayments().filter(x=>x.periodId===p.id);
-  const paid=pays.filter(x=>x.status==='مدفوع'); const unpaid=pays.filter(x=>x.status==='لم يدفع'); const exempt=pays.filter(x=>x.status==='معفي');
+  const paid=pays.filter(x=>x.status==='مدفوع'); const unpaid=pays.filter(x=>x.status==='لم يدفع');
   const collected=paid.reduce((s,x)=>s+x.amount,0);
   document.getElementById('fees-stats').innerHTML=`
     <div style="background:#dcfce7;border-radius:10px;padding:12px;text-align:center"><div style="font-size:20px;font-weight:900;color:#166534">${paid.length}</div><div style="font-size:11px;color:#166534">دفعوا ✅</div></div>
     <div style="background:#fef9c3;border-radius:10px;padding:12px;text-align:center"><div style="font-size:20px;font-weight:900;color:#854d0e">${unpaid.length}</div><div style="font-size:11px;color:#854d0e">لم يدفعوا ⏳</div></div>
-    <div style="background:#f3e8ff;border-radius:10px;padding:12px;text-align:center"><div style="font-size:20px;font-weight:900;color:#7e22ce">${exempt.length}</div><div style="font-size:11px;color:#7e22ce">معفيون 🔖</div></div>
     <div style="background:#dbeafe;border-radius:10px;padding:12px;text-align:center"><div style="font-size:20px;font-weight:900;color:#1e40af">${fmt(collected)}</div><div style="font-size:11px;color:#1e40af">ريال محصّلة 💰</div></div>`;
   let list=pays; const s=document.getElementById('fees-search').value; const sf=document.getElementById('fees-flt').value;
   if(s) list=list.filter(x=>{ const m=State.getMembers().find(y=>y.id===x.memberId); return m?.name.includes(s); });
@@ -716,7 +715,7 @@ function renderFees(page){
   var pg = paginate(list, 'fees', page, 25);
   document.getElementById('fees-tbody').innerHTML=pg.data.map(pay=>{
     const m=State.getMembers().find(x=>x.id===pay.memberId); if(!m) return '';
-    const sb=pay.status==='مدفوع'?'<span class="badge badge-success">✅ مدفوع</span>':pay.status==='معفي'?'<span class="badge badge-purple">🔖 معفي</span>':'<span class="badge badge-warning">⏳ لم يدفع</span>';
+    const sb=pay.status==='مدفوع'?'<span class="badge badge-success">✅ مدفوع</span>':'<span class="badge badge-warning">⏳ لم يدفع</span>';
     return `<tr><td data-label="العضو"><div style="display:flex;align-items:center;gap:8px"><div class="avatar" style="background:${avColor(m.name)};width:30px;height:30px;font-size:11px">${avInit(m.name)}</div><div><div style="font-weight:600">${m.name}</div><div style="font-size:11px;color:var(--text-muted)">${m.family}</div></div></div></td>
     <td data-label="المطلوب">${fmt(pay.required||p.feeAmount)} ريال</td>
     <td data-label="المدفوع" style="font-weight:700;color:${pay.status==='مدفوع'?'var(--green)':'var(--text-muted)'}">${pay.status==='مدفوع'?fmt(pay.amount)+' ريال':'—'}</td>
@@ -1335,7 +1334,7 @@ function loadPortal(){
       <div style="display:flex;align-items:center;gap:14px;margin-bottom:14px">
         <div class="avatar" style="background:${avColor(m.name)};width:52px;height:52px;font-size:18px">${avInit(m.name)}</div>
         <div><div style="font-size:20px;font-weight:800">${m.name}</div><div style="opacity:.7;font-size:12px">عضو منذ ${m.joinDate||'—'} • ${m.family}</div></div>
-        <div style="margin-right:auto"><span class="badge ${m.status==='نشط'?'badge-success':'badge-gold'}" style="font-size:12px">${m.status}</span></div>
+        <div style="margin-right:auto"><span class="badge ${m.status==='مشترك'?'badge-success':m.status==='منقطع'?'badge-warning':'badge-gray'}" style="font-size:12px">${m.status}</span></div>
       </div>
       <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;text-align:center">
         <div style="background:rgba(255,255,255,.1);border-radius:10px;padding:8px"><div style="font-size:16px;font-weight:700">${fmt(totalPaid)}</div><div style="font-size:10px;opacity:.7">ريال مدفوع</div></div>
@@ -1343,9 +1342,9 @@ function loadPortal(){
         <div style="background:rgba(255,255,255,.1);border-radius:10px;padding:8px"><div style="font-size:16px;font-weight:700">${coms.length}</div><div style="font-size:10px;opacity:.7">لجنة</div></div>
       </div>
     </div>
-    ${curP?`<div class="card" style="margin-bottom:12px"><div class="card-header"><div class="card-title">الدورة الحالية: ${curP.name}</div></div><div class="card-body"><div style="display:flex;align-items:center;justify-content:space-between"><div><div style="font-size:13px;color:var(--text-muted)">المطلوب: ${fmt(curP.feeAmount)} ريال</div><div style="font-size:13px">المدفوع: ${curPay?.status==='مدفوع'?fmt(curPay.amount)+' ريال':'لم يُسدَّد'}</div></div><span class="badge ${curPay?.status==='مدفوع'?'badge-success':curPay?.status==='معفي'?'badge-purple':'badge-warning'}" style="font-size:14px">${curPay?.status||'لم يدفع'}</span></div></div></div>`:''}
+    ${curP?`<div class="card" style="margin-bottom:12px"><div class="card-header"><div class="card-title">الدورة الحالية: ${curP.name}</div></div><div class="card-body"><div style="display:flex;align-items:center;justify-content:space-between"><div><div style="font-size:13px;color:var(--text-muted)">المطلوب: ${fmt(curP.feeAmount)} ريال</div><div style="font-size:13px">المدفوع: ${curPay?.status==='مدفوع'?fmt(curPay.amount)+' ريال':'لم يُسدَّد'}</div></div><span class="badge ${curPay?.status==='مدفوع'?'badge-success':'badge-warning'}" style="font-size:14px">${curPay?.status||'لم يدفع'}</span></div></div></div>`:''}
     ${coms.length?`<div class="card" style="margin-bottom:12px"><div class="card-header"><div class="card-title">🏛️ اللجان</div></div><div class="card-body"><div style="display:flex;flex-wrap:wrap;gap:6px">${coms.map(c=>`<span style="background:${c.color};color:#fff;padding:5px 12px;border-radius:20px;font-size:12px">${c.icon} ${c.name}</span>`).join('')}</div></div></div>`:''}
-    <div class="card"><div class="card-header"><div class="card-title">سجل المدفوعات</div></div><div class="table-wrap"><table><thead><tr><th>الدورة</th><th>المطلوب</th><th>المدفوع</th><th>التاريخ</th><th>الحالة</th></tr></thead><tbody>${allPays.map(pay=>{ const p=State.getPeriods().find(x=>x.id===pay.periodId); return `<tr><td>${p?.name||'—'}</td><td>${fmt(pay.required||0)} ريال</td><td style="font-weight:700">${pay.status==='مدفوع'?fmt(pay.amount)+' ريال':'—'}</td><td style="font-size:11px">${pay.date||'—'}</td><td><span class="badge ${pay.status==='مدفوع'?'badge-success':pay.status==='معفي'?'badge-purple':'badge-warning'}">${pay.status}</span></td></tr>`; }).join('')}</tbody></table></div></div>
+    <div class="card"><div class="card-header"><div class="card-title">سجل المدفوعات</div></div><div class="table-wrap"><table><thead><tr><th>الدورة</th><th>المطلوب</th><th>المدفوع</th><th>التاريخ</th><th>الحالة</th></tr></thead><tbody>${allPays.map(pay=>{ const p=State.getPeriods().find(x=>x.id===pay.periodId); return `<tr><td>${p?.name||'—'}</td><td>${fmt(pay.required||0)} ريال</td><td style="font-weight:700">${pay.status==='مدفوع'?fmt(pay.amount)+' ريال':'—'}</td><td style="font-size:11px">${pay.date||'—'}</td><td><span class="badge ${pay.status==='مدفوع'?'badge-success':'badge-warning'}">${pay.status}</span></td></tr>`; }).join('')}</tbody></table></div></div>
   `;
 }
 
@@ -1662,11 +1661,11 @@ function renderDashboard(){
   const inc=State.getTransactions().filter(t=>t.type==='إيراد').reduce((s,t)=>s+t.amount,0);
   const exp=State.getTransactions().filter(t=>t.type==='مصروف').reduce((s,t)=>s+t.amount,0);
   document.getElementById('d-balance').textContent=fmt(inc-exp);
-  document.getElementById('d-members').textContent=State.getMembers().filter(m=>m.status==='نشط').length;
+  document.getElementById('d-members').textContent=State.getMembers().filter(m=>m.status==='مشترك').length;
   document.getElementById('d-total').textContent=State.getMembers().length;
   document.getElementById('d-committees').textContent=State.getCommittees().length;
   const p=curPeriod(); const pays=p?State.getPayments().filter(x=>x.periodId===p.id):[];
-  const paid=pays.filter(x=>x.status==='مدفوع'); const unpaid=pays.filter(x=>x.status==='لم يدفع'); const exempt=pays.filter(x=>x.status==='معفي');
+  const paid=pays.filter(x=>x.status==='مدفوع'); const unpaid=pays.filter(x=>x.status==='لم يدفع');
   document.getElementById('d-unpaid').textContent=unpaid.length;
   document.getElementById('d-period-lbl').textContent=p?p.name:'لا دورة';
   const pct=pays.length>0?Math.round(paid.length/pays.length*100):0;
@@ -1674,7 +1673,6 @@ function renderDashboard(){
   document.getElementById('d-bar').style.width=pct+'%';
   document.getElementById('d-paid').textContent=paid.length;
   document.getElementById('d-pending').textContent=unpaid.length;
-  document.getElementById('d-exempt').textContent=exempt.length;
   const recent=[...State.getTransactions()].sort((a,b)=>b.date.localeCompare(a.date)).slice(0,5);
   document.getElementById('d-recent').innerHTML=recent.length?recent.map(tx=>`<div style="display:flex;align-items:center;gap:10px;padding:9px 18px;border-bottom:1px solid #f0f5f1"><div style="width:34px;height:34px;border-radius:10px;background:${tx.type==='إيراد'?'#dcfce7':'#fee2e2'};display:flex;align-items:center;justify-content:center;font-size:14px">${tx.type==='إيراد'?'⬆️':'⬇️'}</div><div style="flex:1"><div style="font-size:13px;font-weight:600">${tx.desc}</div><div style="font-size:11px;color:var(--text-muted)">${tx.date} · ${tx.category}</div></div><div style="font-weight:700;color:${tx.type==='إيراد'?'var(--green)':'var(--danger)'}">${tx.type==='إيراد'?'+':'-'}${fmt(tx.amount)}</div></div>`).join(''):'<div class="empty-state"><div class="empty-icon">📋</div><p>لا معاملات</p></div>';
   const upcoming=State.getEvents().filter(e=>e.status==='قادم'||e.status==='جاري').slice(0,4);
@@ -1872,7 +1870,7 @@ async function loadStatusReview() {
         }
 
         document.getElementById('status-review-desc').textContent =
-            'تم العثور على ' + _statusChanges.length + ' عضو بحالة مختلفة عن المحسوبة (من أصل ' + (res.total_periods || 0) + ' فترة مالية). الأعضاء بتجاوز يدوي أو حالة "معفي" لا يُعرضون.';
+            'تم العثور على ' + _statusChanges.length + ' عضو بحالة مختلفة عن المحسوبة (من أصل ' + (res.total_periods || 0) + ' فترة مالية). الأعضاء بتجاوز يدوي لا يُعرضون.';
 
         renderStatusReview();
     } catch (e) {
@@ -1908,10 +1906,9 @@ function renderStatusReview() {
 }
 
 function statusBadgeReview(status) {
-    if (status === 'نشط') return '<span class="badge badge-success">نشط</span>';
+    if (status === 'مشترك') return '<span class="badge badge-success">مشترك</span>';
     if (status === 'منقطع') return '<span class="badge badge-warning">منقطع</span>';
-    if (status === 'غير نشط') return '<span class="badge badge-gray">غير نشط</span>';
-    if (status === 'معفي') return '<span class="badge badge-purple">معفي</span>';
+    if (status === 'غير مشترك') return '<span class="badge badge-gray">غير مشترك</span>';
     return '<span class="badge badge-gray">' + status + '</span>';
 }
 
@@ -3022,10 +3019,10 @@ function switchTab(id,el){ document.querySelectorAll('.tab-content').forEach(t=>
 function loadSampleData(){
   if(State.getMembers().length) return;
   const names=[['منصور علي العوامي','العوامي','0501111111'],['حسين عبدالحميد العوامي','العوامي','0502222222'],['عبدالله عماد العوامي','العوامي','0503333333'],['محمود حسن العوامي','العوامي','0504444444'],['راضي ابراهيم العوامي','العوامي','0505555555'],['رضا حسين العوامي','العوامي','0506666666'],['مجتبى سلمان العوامي','العوامي','0507777777'],['حسن علي العوامي','العوامي','0508888888'],['أحمد غازي العوامي','العوامي','0509999999'],['عماد عبدالحميد العوامي','العوامي','0501010101']];
-  names.forEach(([name,family,phone],i)=>{ State.getMembers().push({id:'m'+i,name,family,phone,idNum:`1${100000000+i}`,joinDate:`2023-0${(i%9)+1}-01`,status:i===7?'معفي':'نشط',notes:''}); });
+  names.forEach(([name,family,phone],i)=>{ State.getMembers().push({id:'m'+i,name,family,phone,idNum:`1${100000000+i}`,joinDate:`2023-0${(i%9)+1}-01`,status:i===7?'غير مشترك':'مشترك',notes:''}); });
   const p={id:'p1',name:'الدورة الأولى 2025',feeAmount:400,start:'2025-01-01',end:'2025-06-30'};
   State.getPeriods().push(p);
-  State.getMembers().forEach((m,i)=>{ const s=m.status==='معفي'?'معفي':i<7?'مدفوع':'لم يدفع'; State.getPayments().push({id:'pay'+i,memberId:m.id,periodId:p.id,amount:s==='مدفوع'?400:0,required:400,date:s==='مدفوع'?`2025-0${(i%6)+1}-15`:'',method:'تحويل بنكي',status:s,notes:''}); });
+  State.getMembers().forEach((m,i)=>{ const s=i<7?'مدفوع':'لم يدفع'; State.getPayments().push({id:'pay'+i,memberId:m.id,periodId:p.id,amount:s==='مدفوع'?400:0,required:400,date:s==='مدفوع'?`2025-0${(i%6)+1}-15`:'',method:'تحويل بنكي',status:s,notes:''}); });
   [{type:'إيراد',amount:2800,category:'رسوم الأعضاء',committee:'',desc:'رسوم الأعضاء الدورة الأولى 2025',date:'2025-01-15'},{type:'مصروف',amount:8000,category:'رحلة العمرة',committee:'c1',desc:'تكاليف رحلة العمرة الرجبية',date:'2025-02-10'},{type:'مصروف',amount:3200,category:'غداء العيد',committee:'c2',desc:'غداء عيد الفطر',date:'2025-04-11'},{type:'إيراد',amount:1200,category:'تبرعات',committee:'',desc:'تبرع أحد الأعضاء',date:'2025-01-20'},{type:'مصروف',amount:500,category:'مصاريف إدارية',committee:'',desc:'مصاريف إدارية',date:'2025-03-05'}].forEach((t,i)=>State.getTransactions().push({id:'tx'+i,...t}));
   [{name:'رحلة العمرة الرجبية 2025',committeeId:'c1',status:'مكتمل',date:'2025-02-10',budget:8000,participants:15,lead:'عبدالله عماد',icon:'🕋',images:[]},{name:'غداء عيد الفطر',committeeId:'c2',status:'مكتمل',date:'2025-04-11',budget:3200,participants:40,lead:'محمود حسن',icon:'🍖',images:[]},{name:'المسابقة الرمضانية',committeeId:'c3',status:'قادم',date:'2025-03-01',budget:2000,participants:30,icon:'🌙',images:[]},{name:'رحلة الباحة الترفيهية',committeeId:'c4',status:'قادم',date:'2025-09-01',budget:5000,participants:25,icon:'🎡',images:[]},{name:'ليلة القدر',committeeId:'c5',status:'قادم',date:'2025-04-25',budget:1500,participants:35,icon:'✨',images:[]}].forEach((e,i)=>State.getEvents().push({id:'ev'+i,...e,type:'أخرى',notes:''}));
   State.setCommitteeMembers({'c1':['m2','m0'],'c2':['m3','m4'],'c3':['m0','m6'],'c4':['m3'],'c8':['m1','m2'],'c10':['m0','m7']});

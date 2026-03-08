@@ -14,7 +14,7 @@
         <div class="form-group"><label class="form-label" for="mm-idnum">رقم الهوية</label><input class="form-control" id="mm-idnum" pattern="\d{10}" inputmode="numeric"></div>
         <div class="form-group"><label class="form-label" for="mm-family">الفرع العائلي</label><input class="form-control" id="mm-family" placeholder="مثال: آل محمد"></div>
         <div class="form-group"><label class="form-label" for="mm-join">تاريخ الانضمام</label><input class="form-control" id="mm-join" type="date"></div>
-        <div class="form-group"><label class="form-label" for="mm-status">الحالة</label><select class="form-control" id="mm-status"><option>نشط</option><option>معفي</option><option>غير نشط</option></select></div>
+        <div class="form-group"><label class="form-label" for="mm-status">الحالة</label><select class="form-control" id="mm-status"><option>مشترك</option><option>منقطع</option><option>غير مشترك</option></select></div>
       </div>
       <div class="form-group"><label class="form-label" for="mm-notes">ملاحظات</label><textarea class="form-control" id="mm-notes" rows="2"></textarea></div>
     </div>
@@ -33,7 +33,7 @@
         <div class="form-group"><label class="form-label" for="pay-amount">المبلغ (ريال)</label><input class="form-control" id="pay-amount" type="number" min="0"></div>
         <div class="form-group"><label class="form-label" for="pay-date">التاريخ</label><input class="form-control" id="pay-date" type="date"></div>
         <div class="form-group"><label class="form-label" for="pay-method">الطريقة</label><select class="form-control" id="pay-method"><option>تحويل بنكي</option><option>نقدي</option><option>STCPay</option></select></div>
-        <div class="form-group"><label class="form-label" for="pay-status">الحالة</label><select class="form-control" id="pay-status"><option>مدفوع</option><option>لم يدفع</option><option>معفي</option></select></div>
+        <div class="form-group"><label class="form-label" for="pay-status">الحالة</label><select class="form-control" id="pay-status"><option>مدفوع</option><option>لم يدفع</option></select></div>
       </div>
       <div class="form-group"><label class="form-label" for="pay-notes">ملاحظات</label><textarea class="form-control" id="pay-notes" rows="2"></textarea></div>
     </div>

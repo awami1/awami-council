@@ -53,7 +53,7 @@ document.getElementById('excel-import-input').onchange=function(){
             idNum:row['رقم الهوية']||'',
             family:'العوامي',
             joinDate:today(),
-            status:'نشط',
+            status:'مشترك',
             type:'عادي',
             notes:'مستورد',
             payments:pay.paid?[{amount:pay.amount,date:today(),imported:true}]:[]

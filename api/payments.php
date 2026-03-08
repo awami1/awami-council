@@ -12,7 +12,7 @@ verifyCsrf();
 // VALIDATION
 // ──────────────────────────────────────────────────────────────
 
-const VALID_STATUSES = ['مدفوع', 'لم يدفع', 'معفي'];
+const VALID_STATUSES = ['مدفوع', 'لم يدفع'];
 
 function validatePayload(array $data, bool $requireAll = true): array
 {

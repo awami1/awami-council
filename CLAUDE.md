@@ -242,7 +242,7 @@ There are **no automated tests** currently. Test manually by:
 ### Arabic Content
 - All user-facing strings (error messages, labels, titles) are in Arabic
 - Code comments are primarily in Arabic
-- Member statuses use Arabic values: `'نشط'` (active), `'معفي'` (exempt), `'غير نشط'` (inactive)
+- Member statuses use Arabic values: `'مشترك'` (subscriber), `'منقطع'` (lapsed), `'غير مشترك'` (non-subscriber)
 - Event statuses: `'قادم'` (upcoming), etc.
 
 ## Common Tasks

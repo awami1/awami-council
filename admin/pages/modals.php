@@ -18,7 +18,7 @@
       </div>
       <div class="form-group"><label class="form-label" for="mm-notes">ملاحظات</label><textarea class="form-control" id="mm-notes" rows="2"></textarea></div>
     </div>
-    <div class="modal-footer"><button class="btn btn-outline" onclick="closeModal('modal-member')">إلغاء</button><button class="btn btn-primary" onclick="saveMember()">حفظ</button></div>
+    <div class="modal-footer"><button class="btn btn-outline" onclick="closeModal('modal-member')">إلغاء</button><button class="btn btn-primary" id="btn-save-member" onclick="saveMember()">حفظ</button></div>
   </div>
 </div>
 
@@ -37,7 +37,7 @@
       </div>
       <div class="form-group"><label class="form-label" for="pay-notes">ملاحظات</label><textarea class="form-control" id="pay-notes" rows="2"></textarea></div>
     </div>
-    <div class="modal-footer"><button class="btn btn-outline" onclick="closeModal('modal-pay')">إلغاء</button><button class="btn btn-primary" onclick="savePayment()">تسجيل</button></div>
+    <div class="modal-footer"><button class="btn btn-outline" onclick="closeModal('modal-pay')">إلغاء</button><button class="btn btn-primary" id="btn-save-payment" onclick="savePayment()">تسجيل</button></div>
   </div>
 </div>
 
@@ -53,7 +53,7 @@
         <div class="form-group"><label class="form-label" for="pd-end">تاريخ الانتهاء</label><input class="form-control" id="pd-end" type="date"></div>
       </div>
     </div>
-    <div class="modal-footer"><button class="btn btn-outline" onclick="closeModal('modal-period')">إلغاء</button><button class="btn btn-primary" onclick="createPeriod()">إنشاء</button></div>
+    <div class="modal-footer"><button class="btn btn-outline" onclick="closeModal('modal-period')">إلغاء</button><button class="btn btn-primary" id="btn-create-period" onclick="createPeriod()">إنشاء</button></div>
   </div>
 </div>
 
@@ -71,7 +71,7 @@
       </div>
       <div class="form-group"><label class="form-label">الوصف *</label><input class="form-control" id="tx-desc" placeholder="وصف المعاملة"></div>
     </div>
-    <div class="modal-footer"><button class="btn btn-outline" onclick="closeModal('modal-tx')">إلغاء</button><button class="btn btn-primary" onclick="addTransaction()">إضافة</button></div>
+    <div class="modal-footer"><button class="btn btn-outline" onclick="closeModal('modal-tx')">إلغاء</button><button class="btn btn-primary" id="btn-add-tx" onclick="addTransaction()">إضافة</button></div>
   </div>
 </div>
 
@@ -333,7 +333,7 @@
     <div class="modal-footer">
       <button class="btn btn-outline" onclick="closeModal('modal-add-committee')">إلغاء</button>
       <button class="btn btn-danger" id="cm-delete-btn" onclick="deleteCommitteeFromModal()" style="display:none">🗑 حذف</button>
-      <button class="btn btn-primary" onclick="saveCommittee()">💾 حفظ</button>
+      <button class="btn btn-primary" id="btn-save-committee" onclick="saveCommittee()">💾 حفظ</button>
     </div>
   </div>
 </div>

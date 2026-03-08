@@ -579,13 +579,15 @@ function renderCouncil(){
 function openAddMember(){ clearMemberForm(); document.getElementById('modal-member-title').textContent='➕ إضافة عضو جديد'; openModal('modal-member'); }
 function clearMemberForm(){ ['mm-id','mm-name','mm-phone','mm-idnum','mm-family','mm-notes'].forEach(id=>document.getElementById(id).value=''); document.getElementById('mm-join').value=today(); document.getElementById('mm-status').value='مشترك'; }
 
-function saveMember(){
+async function saveMember(){
   clearValidation();
   if(!validateRequired('mm-name','اسم العضو')) return;
   const name=document.getElementById('mm-name').value.trim();
   const id=document.getElementById('mm-id').value;
   const data={name,phone:document.getElementById('mm-phone').value,idNum:document.getElementById('mm-idnum').value,family:document.getElementById('mm-family').value||'غير محدد',joinDate:document.getElementById('mm-join').value||today(),status:document.getElementById('mm-status').value,notes:document.getElementById('mm-notes').value};
-  MemberService.saveMember(id, data);
+  const btn=document.getElementById('btn-save-member');
+  setBtnLoading(btn,true);
+  try{ await MemberService.saveMember(id, data); }finally{ setBtnLoading(btn,false); }
 }
 
 function editMember(id){
@@ -660,14 +662,16 @@ function renderMembers(page){
 var debouncedRenderMembers = debounce(function(){ _pageState.members=1; renderMembers(); });
 
 // =================== FEES ===================
-function createPeriod(){
+async function createPeriod(){
   clearValidation();
   if(!validateRequired('pd-name','اسم الدورة')) return;
   if(!validateRequired('pd-amount','مبلغ الرسوم')) return;
   const name=document.getElementById('pd-name').value.trim(); const amount=parseFloat(document.getElementById('pd-amount').value);
   if(!amount||amount<=0){toast('مبلغ الرسوم يجب أن يكون أكبر من صفر','error');document.getElementById('pd-amount').classList.add('invalid');return;}
   const data={name,feeAmount:amount,start:document.getElementById('pd-start').value||today(),end:document.getElementById('pd-end').value||''};
-  FinanceService.createPeriod(data);
+  const btn=document.getElementById('btn-create-period');
+  setBtnLoading(btn,true);
+  try{ await FinanceService.createPeriod(data); }finally{ setBtnLoading(btn,false); }
   // بعد إنشاء الدورة — عرض مراجعة الحالات تلقائياً
   setTimeout(function(){ loadStatusReview(); }, 800);
 }
@@ -686,7 +690,7 @@ function openPayModal(memberId){
   openModal('modal-pay');
 }
 
-function savePayment(){
+async function savePayment(){
   const memberId=document.getElementById('pay-mid').value; const p=curPeriod(); if(!p) return;
   const paymentData={
     status: document.getElementById('pay-status').value,
@@ -695,7 +699,9 @@ function savePayment(){
     method: document.getElementById('pay-method').value,
     notes:  document.getElementById('pay-notes').value
   };
-  FinanceService.savePayment(memberId, paymentData);
+  const btn=document.getElementById('btn-save-payment');
+  setBtnLoading(btn,true);
+  try{ await FinanceService.savePayment(memberId, paymentData); }finally{ setBtnLoading(btn,false); }
 }
 
 function renderFees(page){
@@ -800,7 +806,7 @@ function renderOrgChart(){
 }
 
 // =================== BUDGET ===================
-function addTransaction(){
+async function addTransaction(){
   clearValidation();
   if(!validateRequired('tx-desc','وصف المعاملة')) return;
   if(!validateRequired('tx-amount','المبلغ')) return;
@@ -814,7 +820,9 @@ function addTransaction(){
     desc,
     date:      document.getElementById('tx-date').value||today()
   };
-  FinanceService.addTransaction(data);
+  const btn=document.getElementById('btn-add-tx');
+  setBtnLoading(btn,true);
+  try{ await FinanceService.addTransaction(data); }finally{ setBtnLoading(btn,false); }
 }
 
 function renderBudget(page){
@@ -985,6 +993,8 @@ async function saveEvent(){
     if(existing) data.images=existing.images||[];
   }
 
+  const btn=document.getElementById('ev-save-btn');
+  setBtnLoading(btn,true);
   try {
     if(editId){
       await EventService.update(editId, data);
@@ -994,7 +1004,7 @@ async function saveEvent(){
       log(`فعالية جديدة: ${name}`,'🎉');
     }
     closeModalSilent('modal-event');
-  } catch(e){ toast('حدث خطأ: '+e.message,'error'); }
+  } catch(e){ toast('حدث خطأ: '+e.message,'error'); } finally { setBtnLoading(btn,false); }
 }
 
 function deleteEventFromModal(){
@@ -1516,11 +1526,15 @@ async function saveCommittee() {
     advisory: document.getElementById('cm-advisory').checked,
   };
 
-  if (id) {
-    await CommitteeService.update(id, data);
-  } else {
-    await CommitteeService.create(data);
-  }
+  const btn=document.getElementById('btn-save-committee');
+  setBtnLoading(btn,true);
+  try {
+    if (id) {
+      await CommitteeService.update(id, data);
+    } else {
+      await CommitteeService.create(data);
+    }
+  } finally { setBtnLoading(btn,false); }
 }
 
 function deleteCommitteeFromModal() {

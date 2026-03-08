@@ -726,11 +726,21 @@ function renderMembers(page){
       <button class="btn btn-danger btn-xs" onclick="deleteMember('${m.id}')" title="حذف">🗑️</button>
     </div></td></tr>`;
   }).join('');
-  document.getElementById('members-count').textContent=pg.total+' عضو';
+  var totalAll=State.getMembers().length;
+  var countEl=document.getElementById('members-count');
+  if(pg.total<totalAll) countEl.textContent='عرض '+pg.total+' من أصل '+totalAll+' عضو';
+  else countEl.textContent=pg.total+' عضو';
   var paginEl=document.getElementById('members-pagination');
   if(paginEl) paginEl.innerHTML = renderPaginationHTML(pg, 'renderMembers');
 }
-var debouncedRenderMembers = debounce(function(){ _pageState.members=1; renderMembers(); });
+function resetMembersFilters(){
+  document.getElementById('m-search').value='';
+  document.getElementById('m-flt-status').value='';
+  var accFlt=document.getElementById('m-flt-account'); if(accFlt) accFlt.value='';
+  _pageState.members=1;
+  renderMembers();
+}
+var debouncedRenderMembers = debounce(function(){ _pageState.members=1; renderMembers(); }, 200);
 
 // =================== FEES ===================
 async function createPeriod(){

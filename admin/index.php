@@ -199,6 +199,7 @@ var CSRF_TOKEN = '<?php echo getCsrfToken(); ?>';
           <input class="search-input" id="m-search" placeholder="بحث بالاسم أو الجوال..." oninput="debouncedRenderMembers()">
           <select class="filter-select" style="width:130px" id="m-flt-status" onchange="_pageState.members=1;renderMembers()"><option value="">كل الحالات</option><option>مشترك</option><option>منقطع</option><option>غير مشترك</option></select>
           <select class="filter-select" style="width:140px" id="m-flt-account" onchange="_pageState.members=1;renderMembers()"><option value="">كل الحسابات</option><option value="active">مُفعَّل</option><option value="inactive">غير مُفعَّل</option><option value="none">بدون حساب</option></select>
+          <button class="btn btn-outline btn-sm" onclick="resetMembersFilters()" title="إعادة ضبط الفلاتر">↺ ضبط</button>
           <button class="btn btn-outline btn-sm" onclick="exportMembersExcel()">📊 Excel</button>
         </div>
         <div class="table-wrap mobile-cards"><table><thead><tr><th>#</th><th>العضو</th><th>AWM-ID</th><th>الجوال</th><th>اللجان</th><th>الانضمام</th><th>الحالة</th><th>الحساب</th><th>الدفع</th><th>إجراءات</th></tr></thead><tbody id="members-tbody"></tbody></table></div>

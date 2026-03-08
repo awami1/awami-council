@@ -21,6 +21,7 @@ var CSRF_TOKEN = '<?php echo getCsrfToken(); ?>';
 // ── معالج 401 + CSRF + حماية من الطلبات المكررة ──
 (function () {
     var _pending = new Map();
+    var DEDUP_TIMEOUT = 10000; // 10 ثواني — حذف الطلبات المعلقة
     var _orig = apiFetch;
     apiFetch = async function (url, options) {
         var opts = options || {};
@@ -50,7 +51,10 @@ var CSRF_TOKEN = '<?php echo getCsrfToken(); ?>';
             return json;
         })().finally(function() { _pending.delete(dedupKey); });
 
-        if (dedup) _pending.set(dedupKey, promise);
+        if (dedup) {
+            _pending.set(dedupKey, promise);
+            setTimeout(function() { _pending.delete(dedupKey); }, DEDUP_TIMEOUT);
+        }
         return promise;
     };
 })();

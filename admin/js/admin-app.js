@@ -712,17 +712,18 @@ function renderMembers(page){
     const acc=typeof getMemberAccount==='function'?getMemberAccount(m.id):null;
     const awmId=acc?acc.awm_id:'—';
     const accBadge=typeof memberAccountBadge==='function'?memberAccountBadge(m.id):'';
+    var comms=memberCommittees(m.id);
     return `<tr><td data-label="#" style="color:var(--text-muted);font-size:11px">${startIdx+i+1}</td>
     <td data-label="العضو"><div style="display:flex;align-items:center;gap:8px"><div class="avatar" style="background:${avColor(m.name)}">${avInit(m.name)}</div><div><div style="font-weight:600">${m.name}</div><div style="font-size:11px;color:var(--text-muted)">${m.family}</div></div></div></td>
     <td data-label="AWM-ID" style="font-size:12px;font-weight:600;color:var(--green-dark);font-family:monospace">${awmId}</td>
     <td data-label="الجوال">${m.phone||'—'}</td>
-    <td data-label="اللجان" style="font-size:11px;max-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${memberCommittees(m.id)}</td>
+    <td data-label="اللجان" class="committee-cell" title="${comms.replace(/<[^>]*>/g,'')}">${comms}</td>
     <td data-label="الانضمام" style="font-size:11px">${m.joinDate||'—'}</td><td data-label="الحالة">${sb}</td><td data-label="الحساب">${accBadge}</td><td data-label="الدفع">${pb}</td>
-    <td data-label="إجراءات"><div style="display:flex;gap:4px;flex-wrap:wrap">
-      <button class="btn btn-outline btn-xs" onclick="editMember('${m.id}')">✏️</button>
-      ${p?`<button class="btn btn-accent btn-xs" onclick="openPayModal('${m.id}')">💳</button>`:''}
+    <td data-label="إجراءات"><div class="actions-cell">
+      <button class="btn btn-outline btn-xs" onclick="editMember('${m.id}')" title="تعديل">✏️</button>
+      ${p?`<button class="btn btn-accent btn-xs" onclick="openPayModal('${m.id}')" title="تسجيل دفع">💳</button>`:''}
       ${typeof memberAuthButtons==='function'?memberAuthButtons(m.id):''}
-      <button class="btn btn-danger btn-xs" onclick="deleteMember('${m.id}')">🗑️</button>
+      <button class="btn btn-danger btn-xs" onclick="deleteMember('${m.id}')" title="حذف">🗑️</button>
     </div></td></tr>`;
   }).join('');
   document.getElementById('members-count').textContent=pg.total+' عضو';

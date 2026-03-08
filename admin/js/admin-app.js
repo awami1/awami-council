@@ -576,18 +576,91 @@ function renderCouncil(){
 }
 
 // =================== MEMBERS ===================
-function openAddMember(){ clearMemberForm(); document.getElementById('modal-member-title').textContent='➕ إضافة عضو جديد'; openModal('modal-member'); }
-function clearMemberForm(){ ['mm-id','mm-name','mm-phone','mm-notes'].forEach(id=>document.getElementById(id).value=''); document.getElementById('mm-join').value=today(); document.getElementById('mm-status').value='مشترك'; }
+function openAddMember(){ clearMemberForm(); document.getElementById('modal-member-title').textContent='➕ إضافة عضو جديد'; openModal('modal-member'); _memberDupConfirmed=false; }
+function clearMemberForm(){ ['mm-id','mm-name','mm-phone','mm-notes'].forEach(id=>document.getElementById(id).value=''); document.getElementById('mm-join').value=today(); document.getElementById('mm-status').value='مشترك'; _memberDupConfirmed=false; }
+
+// ── متغير لتأكيد المتابعة عند التكرار ──
+var _memberDupConfirmed = false;
+
+// ── التحقق من بيانات العضو ──
+function validateMemberForm(){
+  var valid = true;
+  var editId = document.getElementById('mm-id').value;
+
+  // مسح أخطاء سابقة
+  clearValidation();
+  ['mm-name-error','mm-phone-error'].forEach(function(id){ var el=document.getElementById(id); if(el) el.textContent=''; });
+
+  // — الاسم: مطلوب + ثلاثي —
+  var nameEl = document.getElementById('mm-name');
+  var nameVal = nameEl.value.trim();
+  var nameWords = nameVal.split(/\s+/).filter(function(w){ return w.length>0; });
+
+  if(!nameVal){
+    setFieldError('mm-name','mm-name-error','يجب إدخال اسم العضو');
+    valid = false;
+  } else if(nameWords.length < 3){
+    setFieldError('mm-name','mm-name-error','يجب إدخال الاسم الثلاثي على الأقل');
+    valid = false;
+  }
+
+  // — الاسم: كشف التكرار —
+  if(valid && !_memberDupConfirmed){
+    var dupName = State.getMembers().find(function(m){
+      if(editId && m.id === editId) return false;
+      return m.name.trim().toLowerCase() === nameVal.toLowerCase();
+    });
+    if(dupName){
+      setFieldError('mm-name','mm-name-error','يوجد عضو بنفس الاسم — اضغط حفظ مرة أخرى للمتابعة');
+      _memberDupConfirmed = true;
+      return false;
+    }
+  }
+
+  // — الجوال: صيغة —
+  var phoneEl = document.getElementById('mm-phone');
+  var phoneVal = phoneEl.value.trim();
+  if(phoneVal){
+    if(!/^05\d{8}$/.test(phoneVal)){
+      setFieldError('mm-phone','mm-phone-error','صيغة رقم الجوال غير صحيحة — يجب أن يبدأ بـ 05 ويكون 10 أرقام');
+      valid = false;
+    } else {
+      // — الجوال: كشف التكرار —
+      var dupPhone = State.getMembers().find(function(m){
+        if(editId && m.id === editId) return false;
+        return m.phone && m.phone.replace(/\s/g,'') === phoneVal.replace(/\s/g,'');
+      });
+      if(dupPhone){
+        setFieldError('mm-phone','mm-phone-error','يوجد عضو بنفس رقم الجوال ('+dupPhone.name+')');
+        valid = false;
+      }
+    }
+  }
+
+  return valid;
+}
+
+function setFieldError(fieldId, errorId, msg){
+  var field = document.getElementById(fieldId);
+  var err = document.getElementById(errorId);
+  if(field){
+    field.classList.add('invalid');
+    var group = field.closest('.form-group');
+    if(group) group.classList.add('has-error');
+  }
+  if(err) err.textContent = msg;
+}
 
 async function saveMember(){
   clearValidation();
-  if(!validateRequired('mm-name','اسم العضو')) return;
+  ['mm-name-error','mm-phone-error'].forEach(function(id){ var el=document.getElementById(id); if(el) el.textContent=''; });
+  if(!validateMemberForm()) return;
   const name=document.getElementById('mm-name').value.trim();
   const id=document.getElementById('mm-id').value;
-  const data={name,phone:document.getElementById('mm-phone').value,joinDate:document.getElementById('mm-join').value||today(),status:document.getElementById('mm-status').value,notes:document.getElementById('mm-notes').value};
+  const data={name,phone:document.getElementById('mm-phone').value.trim(),joinDate:document.getElementById('mm-join').value||today(),status:document.getElementById('mm-status').value,notes:document.getElementById('mm-notes').value};
   const btn=document.getElementById('btn-save-member');
   setBtnLoading(btn,true);
-  try{ await MemberService.saveMember(id, data); }finally{ setBtnLoading(btn,false); }
+  try{ await MemberService.saveMember(id, data); _memberDupConfirmed=false; }finally{ setBtnLoading(btn,false); }
 }
 
 function editMember(id){

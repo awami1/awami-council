@@ -9,8 +9,8 @@
     <div class="modal-body">
       <input type="hidden" id="mm-id">
       <div class="form-grid">
-        <div class="form-group"><label class="form-label" for="mm-name">الاسم الكامل *</label><input class="form-control" id="mm-name" placeholder="الاسم" required></div>
-        <div class="form-group"><label class="form-label" for="mm-phone">رقم الجوال</label><input class="form-control" id="mm-phone" placeholder="05xxxxxxxx" pattern="05\d{8}" inputmode="tel"></div>
+        <div class="form-group"><label class="form-label" for="mm-name">الاسم الكامل *</label><input class="form-control" id="mm-name" placeholder="الاسم الثلاثي على الأقل" required><div class="form-error" id="mm-name-error"></div></div>
+        <div class="form-group"><label class="form-label" for="mm-phone">رقم الجوال</label><input class="form-control" id="mm-phone" placeholder="05xxxxxxxx" pattern="05\d{8}" inputmode="tel"><div class="form-error" id="mm-phone-error"></div></div>
         <div class="form-group"><label class="form-label" for="mm-join">تاريخ الانضمام</label><input class="form-control" id="mm-join" type="date"></div>
         <div class="form-group"><label class="form-label" for="mm-status">الحالة</label><select class="form-control" id="mm-status"><option>مشترك</option><option>منقطع</option><option>غير مشترك</option></select></div>
       </div>

@@ -112,6 +112,17 @@ update: (id, data)  => api.put('media.php', data, id),
 delete: (id)        => api.del('media.php', id),
 };
 
+// –– Positions (المناصب الإدارية) ––
+const PositionsAPI = {
+getAll: ()                     => api.get('positions.php'),
+get:    (id)                   => apiFetch(`${API_BASE}/positions.php?id=${id}`),
+create: (data)                 => api.post('positions.php', data),
+update: (id, data)             => api.put('positions.php', data, id),
+delete: (id)                   => api.del('positions.php', id),
+updateMembers: (id, memberIds) => apiFetch(`${API_BASE}/positions.php?id=${id}&action=members`, { method: 'POST', body: JSON.stringify({ member_ids: memberIds }), headers: { 'Content-Type': 'application/json' } }),
+updateTasks:   (id, tasks)     => apiFetch(`${API_BASE}/positions.php?id=${id}&action=tasks`,   { method: 'POST', body: JSON.stringify({ tasks }),                  headers: { 'Content-Type': 'application/json' } }),
+};
+
 // –– Committees (DB-backed CRUD) ––
 const CommitteesAPI = {
 getAll: ()          => api.get('committees.php'),

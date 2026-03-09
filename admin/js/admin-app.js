@@ -182,86 +182,294 @@ async function saveStatsSettings(){
   } catch(e) { toast('خطأ في الحفظ: ' + e.message, 'error'); }
 }
 
-// Positions
-function renderPositionsList(){
-  const list = document.getElementById('positions-list');
-  const positions = State.getWebsiteSettings().councilPositions || [];
-  list.innerHTML = positions.length ? positions.map((p,i)=>`
-    <div style="border:2px solid var(--border);border-radius:10px;padding:14px;margin-bottom:10px;cursor:pointer" onclick="editPosition(${i})">
-      <div style="display:flex;align-items:center;gap:10px">
-        <div style="font-size:24px">${p.icon||'👤'}</div>
-        <div style="flex:1"><div style="font-weight:700;font-size:14px">${p.role}</div><div style="font-size:12px;color:var(--text-muted)">${p.name}</div></div>
-        <span class="badge ${p.type==='president'?'badge-gold':p.type==='advisory'?'badge-purple':'badge-gray'}">${p.type==='president'?'رئيس':p.type==='advisory'?'استشاري':'عادي'}</span>
-      </div>
-    </div>
-  `).join('') : '<div class="empty-state"><div class="empty-icon">👑</div><p>لا توجد مناصب</p></div>';
+// =================== POSITIONS (DB-backed) ===================
+var _positionsData = [];
+var _positionsViewMode = 'table'; // 'table' or 'cards'
+var _posSelectedMembers = []; // [{member_id, name}]
+var _allMembersCache = null;
+
+async function loadPositions(){
+  try {
+    const r = await PositionsAPI.getAll();
+    _positionsData = (r.data || []).sort((a,b) => a.sort_order - b.sort_order);
+  } catch(e) {
+    _positionsData = [];
+    console.error('Failed to load positions:', e);
+  }
 }
 
-function openAddPosition(){
-  document.getElementById('position-index').value = '';
-  document.getElementById('position-role').value = '';
-  document.getElementById('position-name').value = '';
+async function renderPositionsList(){
+  await loadPositions();
+  renderPositionsTable();
+  renderPositionsCards();
+}
+
+function renderPositionsTable(){
+  const tbody = document.getElementById('positions-table-body');
+  if(!tbody) return;
+  tbody.innerHTML = _positionsData.length ? _positionsData.map((p,i)=>{
+    const memberNames = (p.members||[]).map(m=>m.name).join('، ') || '<span style="color:var(--text-muted)">—</span>';
+    const taskCount = (p.tasks||[]).length;
+    const isCore = p.is_core;
+    return `<tr>
+      <td>${p.sort_order}</td>
+      <td style="font-weight:700">${esc(p.title)}</td>
+      <td style="font-size:20px;text-align:center">${esc(p.icon)}</td>
+      <td style="font-size:12px">${memberNames}</td>
+      <td>${taskCount} ${taskCount===1?'مهمة':'مهام'}</td>
+      <td>${isCore?'<span class="badge badge-green">أساسي</span>':''}</td>
+      <td>
+        <div style="display:flex;gap:4px;flex-wrap:wrap">
+          <button class="btn btn-outline btn-xs" onclick="editPosition('${p.id}')">✏️ تعديل</button>
+          <button class="btn btn-outline btn-xs" onclick="movePosition('${p.id}',-1)" title="↑">↑</button>
+          <button class="btn btn-outline btn-xs" onclick="movePosition('${p.id}',1)" title="↓">↓</button>
+          ${!isCore?`<button class="btn btn-danger btn-xs" onclick="deletePositionById('${p.id}')">🗑</button>`:''}
+        </div>
+      </td>
+    </tr>`;
+  }).join('') : '<tr><td colspan="7" style="text-align:center;padding:40px;color:var(--text-muted)">👑 لا توجد مناصب</td></tr>';
+}
+
+function renderPositionsCards(){
+  const grid = document.getElementById('positions-grid');
+  if(!grid) return;
+  grid.innerHTML = _positionsData.map(p=>{
+    const isFirst = p.sort_order === 1;
+    const isLast = _positionsData.indexOf(p) === _positionsData.length - 1;
+    const memberNames = (p.members||[]).map(m=>m.name).join(' - ') || '';
+    return `<div class="position-card ${isFirst?'president':isLast?'advisory':''}" style="border:2px solid var(--border);border-radius:14px;padding:18px;${isFirst?'border-color:var(--accent);background:linear-gradient(135deg,#fffbf0,#fff)':isLast?'border-color:var(--primary);background:linear-gradient(135deg,#f0f5ff,#fff)':''}">
+      <div style="display:flex;align-items:center;gap:12px;margin-bottom:12px">
+        <div style="width:42px;height:42px;border-radius:12px;background:linear-gradient(135deg,var(--green-dark),var(--green));display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0">${esc(p.icon)}</div>
+        <div>
+          <div style="font-size:12px;color:var(--text-muted);font-weight:600">${esc(p.title)}</div>
+          <div style="font-size:13px;font-weight:700;color:var(--green-dark)">${esc(memberNames)}</div>
+        </div>
+        ${isFirst?'<span class="badge badge-gold" style="margin-right:auto">⭐ رئيس</span>':''}
+        ${isLast?'<span class="badge badge-purple" style="margin-right:auto">استشارية</span>':''}
+      </div>
+      ${(p.tasks||[]).length?`<div style="font-size:12px;font-weight:700;color:var(--text-muted);margin-bottom:6px">المهام الرئيسية:</div>
+      <div style="display:flex;flex-direction:column;gap:4px">
+        ${p.tasks.map(t=>`<div style="display:flex;align-items:flex-start;gap:6px;font-size:12px"><span style="color:var(--green);flex-shrink:0">•</span><span>${esc(t.task_text)}</span></div>`).join('')}
+      </div>`:''}
+    </div>`;
+  }).join('');
+}
+
+function togglePositionsView(){
+  const tableView = document.getElementById('positions-table-view');
+  const cardsView = document.getElementById('positions-cards-view');
+  const btn = document.getElementById('pos-view-toggle');
+  if(_positionsViewMode === 'table'){
+    _positionsViewMode = 'cards';
+    tableView.style.display = 'none';
+    cardsView.style.display = '';
+    btn.textContent = '📋 عرض الجدول';
+  } else {
+    _positionsViewMode = 'table';
+    tableView.style.display = '';
+    cardsView.style.display = 'none';
+    btn.textContent = '🃏 عرض الكروت';
+  }
+}
+
+async function openAddPosition(){
+  document.getElementById('position-id').value = '';
+  document.getElementById('position-title').value = '';
   document.getElementById('position-icon').value = '';
-  document.getElementById('position-tasks').value = '';
-  document.getElementById('position-type').value = '';
   document.getElementById('position-modal-title').textContent = '👑 إضافة منصب جديد';
   document.getElementById('position-delete-btn').style.display = 'none';
+  _posSelectedMembers = [];
+  renderPositionMemberTags();
+  clearPositionTaskFields();
+  addPositionTaskField();
+  await loadPositionCommittees();
+  document.getElementById('position-committee').value = '';
   openModal('modal-position');
 }
 
-function editPosition(idx){
-  const p = State.getWebsiteSettings().councilPositions[idx];
-  document.getElementById('position-index').value = idx;
-  document.getElementById('position-role').value = p.role;
-  document.getElementById('position-name').value = p.name;
+async function editPosition(id){
+  const p = _positionsData.find(x=>x.id===id);
+  if(!p) return;
+  document.getElementById('position-id').value = p.id;
+  document.getElementById('position-title').value = p.title;
   document.getElementById('position-icon').value = p.icon || '';
-  document.getElementById('position-tasks').value = (p.tasks||[]).join('\n');
-  document.getElementById('position-type').value = p.type || '';
-  document.getElementById('position-modal-title').textContent = '✏️ تعديل: ' + p.role;
-  document.getElementById('position-delete-btn').style.display = 'inline-flex';
+  document.getElementById('position-modal-title').textContent = '✏️ تعديل: ' + p.title;
+  document.getElementById('position-delete-btn').style.display = p.is_core ? 'none' : 'inline-flex';
+  _posSelectedMembers = (p.members||[]).map(m=>({member_id:m.member_id, name:m.name}));
+  renderPositionMemberTags();
+  clearPositionTaskFields();
+  (p.tasks||[]).forEach(t=>addPositionTaskField(t.task_text));
+  if(!(p.tasks||[]).length) addPositionTaskField();
+  await loadPositionCommittees();
+  document.getElementById('position-committee').value = p.committee_id || '';
   openModal('modal-position');
 }
 
 async function savePosition(){
-  const role = document.getElementById('position-role').value.trim();
-  const name = document.getElementById('position-name').value.trim();
-  if(!role || !name){toast('المنصب والاسم مطلوبان','error');return;}
+  const id = document.getElementById('position-id').value;
+  const title = document.getElementById('position-title').value.trim();
+  if(!title){toast('اسم المنصب مطلوب','error');return;}
 
-  const tasksText = document.getElementById('position-tasks').value.trim();
-  const data = {
-    role, name,
-    icon: document.getElementById('position-icon').value.trim() || '👤',
-    type: document.getElementById('position-type').value,
-    tasks: tasksText ? tasksText.split('\n').map(t=>t.trim()).filter(Boolean) : []
-  };
+  const icon = document.getElementById('position-icon').value.trim() || '📌';
+  const committeeId = document.getElementById('position-committee').value || null;
+  const tasks = getPositionTaskValues();
+  const memberIds = _posSelectedMembers.map(m=>m.member_id);
 
-  const idx = document.getElementById('position-index').value;
-  if(idx !== ''){
-    State.getWebsiteSettings().councilPositions[idx] = data;
-    log(`تعديل منصب: ${role}`,'✏️');
-  }else{
-    if(!State.getWebsiteSettings().councilPositions) State.getWebsiteSettings().councilPositions = [];
-    State.getWebsiteSettings().councilPositions.push(data);
-    log(`إضافة منصب: ${role}`,'👑');
-  }
+  const btn = document.getElementById('btn-save-position');
+  setBtnLoading(btn, true);
 
   try {
-    await AdminSettings.savePositions(State.getWebsiteSettings().councilPositions);
-    closeModalSilent('modal-position'); toast(idx!==''?'تم التحديث':'تم الإضافة'); renderPositionsList();
-  } catch(e) { toast('خطأ في الحفظ: ' + e.message, 'error'); }
+    let posId = id;
+    if(id){
+      // Update existing
+      await PositionsAPI.update(id, {title, icon, committee_id: committeeId});
+    } else {
+      // Create new
+      const maxSort = _positionsData.length ? Math.max(..._positionsData.map(p=>p.sort_order)) : 0;
+      const r = await PositionsAPI.create({title, icon, sort_order: maxSort + 1, committee_id: committeeId});
+      posId = r.data.id;
+    }
+    // Update members and tasks
+    await PositionsAPI.updateMembers(posId, memberIds);
+    await PositionsAPI.updateTasks(posId, tasks);
+
+    closeModalSilent('modal-position');
+    toast(id ? 'تم تحديث المنصب' : 'تم إضافة المنصب');
+    log(id ? `تعديل منصب: ${title}` : `إضافة منصب: ${title}`, id ? '✏️' : '👑');
+    await renderPositionsList();
+  } catch(e) {
+    toast('خطأ: ' + e.message, 'error');
+  } finally {
+    setBtnLoading(btn, false);
+  }
 }
 
 function deletePosition(){
-  const idx = document.getElementById('position-index').value;
-  const p = State.getWebsiteSettings().councilPositions[idx];
-  confirm2(`حذف منصب "${p.role}"؟`, async ()=>{
-    State.getWebsiteSettings().councilPositions.splice(idx,1);
+  const id = document.getElementById('position-id').value;
+  const p = _positionsData.find(x=>x.id===id);
+  if(!p) return;
+  deletePositionById(id);
+}
+
+function deletePositionById(id){
+  const p = _positionsData.find(x=>x.id===id);
+  if(!p) return;
+  if(p.is_core){ toast('لا يمكن حذف منصب أساسي','error'); return; }
+  confirm2(`حذف منصب "${p.title}"؟`, async ()=>{
     try {
-      await AdminSettings.savePositions(State.getWebsiteSettings().councilPositions);
-      closeModalSilent('modal-position'); toast('تم الحذف'); renderPositionsList(); log(`حذف منصب: ${p.role}`,'🗑️');
-    } catch(e) { toast('خطأ في الحفظ: ' + e.message, 'error'); }
+      await PositionsAPI.delete(id);
+      closeModalSilent('modal-position');
+      toast('تم حذف المنصب');
+      log(`حذف منصب: ${p.title}`,'🗑️');
+      await renderPositionsList();
+    } catch(e) { toast('خطأ: ' + e.message, 'error'); }
   });
 }
+
+async function movePosition(id, direction){
+  const idx = _positionsData.findIndex(x=>x.id===id);
+  if(idx < 0) return;
+  const targetIdx = idx + direction;
+  if(targetIdx < 0 || targetIdx >= _positionsData.length) return;
+
+  const current = _positionsData[idx];
+  const target = _positionsData[targetIdx];
+
+  try {
+    await PositionsAPI.update(current.id, {sort_order: target.sort_order});
+    await PositionsAPI.update(target.id, {sort_order: current.sort_order});
+    await renderPositionsList();
+  } catch(e) { toast('خطأ في الترتيب: ' + e.message, 'error'); }
+}
+
+// ── Position Modal: Member search/select ──
+async function loadPositionMembers(){
+  if(!_allMembersCache){
+    try {
+      const r = await MembersAPI.getAll();
+      _allMembersCache = r.data || [];
+    } catch(e) { _allMembersCache = []; }
+  }
+  return _allMembersCache;
+}
+
+function renderPositionMemberTags(){
+  const container = document.getElementById('position-members-tags');
+  if(!container) return;
+  container.innerHTML = _posSelectedMembers.map(m=>`
+    <span class="badge badge-green" style="display:inline-flex;align-items:center;gap:4px;padding:4px 10px;font-size:12px">
+      ${esc(m.name)} <span style="cursor:pointer;font-size:14px" onclick="removePositionMember('${m.member_id}')">✕</span>
+    </span>
+  `).join('');
+}
+
+function removePositionMember(mid){
+  _posSelectedMembers = _posSelectedMembers.filter(m=>m.member_id !== mid);
+  renderPositionMemberTags();
+}
+
+// Member search input handler
+(function(){
+  document.addEventListener('input', function(e){
+    if(e.target.id !== 'position-member-search') return;
+    const q = e.target.value.trim().toLowerCase();
+    const dd = document.getElementById('position-member-dropdown');
+    if(!q){ dd.style.display='none'; return; }
+    loadPositionMembers().then(members=>{
+      const selectedIds = _posSelectedMembers.map(m=>m.member_id);
+      const filtered = members.filter(m=>!selectedIds.includes(m.id) && (m.name||'').toLowerCase().includes(q)).slice(0,8);
+      if(!filtered.length){ dd.style.display='none'; return; }
+      dd.innerHTML = filtered.map(m=>`<div style="padding:8px 12px;cursor:pointer;font-size:13px;border-bottom:1px solid var(--border)" onmousedown="selectPositionMember('${m.id}','${esc(m.name)}')">${esc(m.name)}</div>`).join('');
+      dd.style.display='block';
+    });
+  });
+  document.addEventListener('focusout', function(e){
+    if(e.target.id !== 'position-member-search') return;
+    setTimeout(()=>{ document.getElementById('position-member-dropdown').style.display='none'; }, 200);
+  });
+})();
+
+function selectPositionMember(id, name){
+  if(_posSelectedMembers.some(m=>m.member_id===id)) return;
+  _posSelectedMembers.push({member_id:id, name:name});
+  renderPositionMemberTags();
+  document.getElementById('position-member-search').value = '';
+  document.getElementById('position-member-dropdown').style.display = 'none';
+}
+
+// ── Position Modal: Dynamic task fields ──
+function clearPositionTaskFields(){
+  document.getElementById('position-tasks-list').innerHTML = '';
+}
+
+function addPositionTaskField(value){
+  const list = document.getElementById('position-tasks-list');
+  const div = document.createElement('div');
+  div.style.cssText = 'display:flex;gap:6px;align-items:center';
+  div.innerHTML = `<input class="form-control" style="flex:1" placeholder="نص المهمة" value="${esc(value||'')}"><button class="btn btn-danger btn-xs" onclick="this.parentElement.remove()" type="button">✕</button>`;
+  list.appendChild(div);
+}
+
+function getPositionTaskValues(){
+  const inputs = document.querySelectorAll('#position-tasks-list input');
+  return Array.from(inputs).map(i=>i.value.trim()).filter(Boolean);
+}
+
+// ── Position Modal: Load committees dropdown ──
+async function loadPositionCommittees(){
+  const select = document.getElementById('position-committee');
+  if(!select) return;
+  select.innerHTML = '<option value="">— بدون —</option>';
+  try {
+    const r = await CommitteesAPI.getAll();
+    (r.data||[]).forEach(c=>{
+      select.innerHTML += `<option value="${c.id}">${esc(c.icon||'')} ${esc(c.name)}</option>`;
+    });
+  } catch(e) {}
+}
+
+// HTML escape helper for admin positions
+function esc(s){ if(!s) return ''; return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
 
 // Values
 function renderValuesList(){
@@ -555,24 +763,8 @@ function updateCountdown(){
 setInterval(updateCountdown,60000); // update every minute
 
 // =================== COUNCIL ===================
-function renderCouncil(){
-  const posColors={president:'border-color:var(--accent);background:linear-gradient(135deg,#fffbf0,#fff)',vp:'',treasurer:'',coordinator:'',secretary:'',advisory:'border-color:var(--primary);background:linear-gradient(135deg,#f0f5ff,#fff)'};
-  document.getElementById('positions-grid').innerHTML=COUNCIL_POSITIONS.map(p=>`
-    <div class="position-card ${p.type==='president'?'president':p.type==='advisory'?'advisory':''}" style="${posColors[p.type]||''}">
-      <div style="display:flex;align-items:center;gap:12px;margin-bottom:12px">
-        <div style="width:42px;height:42px;border-radius:12px;background:linear-gradient(135deg,var(--green-dark),var(--green));display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0">${p.icon}</div>
-        <div>
-          <div style="font-size:12px;color:var(--text-muted);font-weight:600">${p.role}</div>
-          <div style="font-size:13px;font-weight:700;color:var(--green-dark)">${p.name}</div>
-        </div>
-        ${p.type==='advisory'?'<span class="badge badge-purple" style="margin-right:auto">استشارية</span>':''}
-        ${p.type==='president'?'<span class="badge badge-gold" style="margin-right:auto">⭐ رئيس</span>':''}
-      </div>
-      <div style="font-size:12px;font-weight:700;color:var(--text-muted);margin-bottom:6px">المهام الرئيسية:</div>
-      <div style="display:flex;flex-direction:column;gap:4px">
-        ${p.tasks.map(t=>`<div style="display:flex;align-items:flex-start;gap:6px;font-size:12px"><span style="color:var(--green);flex-shrink:0">•</span><span>${t}</span></div>`).join('')}
-      </div>
-    </div>`).join('');
+async function renderCouncil(){
+  await renderPositionsList();
 }
 
 // =================== MEMBERS ===================

@@ -17,7 +17,7 @@ function openImportExcel(){
 
 function isValidName(n){
   if(!n||n.length<3) return false;
-  var bad=['المجموع','الإجمالي','Total','Sum','إجمالي','مجموع','العدد','المبلغ','الرصيد','ريال'];
+  var bad=['المجموع','الإجمالي','Total','Sum','إجمالي','مجموع','العدد','المبلغ','الرصيد','ريال','الاسم','Name','الجوال','Phone','النوع','الحالة','Status'];
   for(var i=0;i<bad.length;i++){ if(n.indexOf(bad[i])!==-1) return false; }
   if(/^\d+$/.test(n)) return false;
   if(/^05\d{8}$/.test(n)) return false;

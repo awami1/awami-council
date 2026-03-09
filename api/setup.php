@@ -570,6 +570,8 @@ if (!$sqlite) {
         "ALTER TABLE `committee_members` ADD COLUMN IF NOT EXISTS `role` VARCHAR(100) DEFAULT NULL COMMENT 'مثال: رئيس، نائب، أمين صندوق، عضو'",
         "ALTER TABLE `committee_members` ADD COLUMN IF NOT EXISTS `start_year` YEAR DEFAULT NULL",
         "ALTER TABLE `committee_members` ADD COLUMN IF NOT EXISTS `end_year` YEAR DEFAULT NULL COMMENT 'NULL = عضوية حالية'",
+        // تنظيف id_num فارغ → NULL (لتجنب انتهاك UNIQUE constraint)
+        "UPDATE `members` SET `id_num` = NULL WHERE `id_num` = ''",
     ];
     foreach ($migrations as $sql) {
         try { $pdo->exec($sql); } catch (PDOException $e) { /* ignore */ }

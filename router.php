@@ -62,7 +62,7 @@ require_once __DIR__ . '/includes/helpers.php';
 // خريطة التوجيه
 $routes = [
     '/'        => ['file' => 'pages/home.php',    'page' => 'home',    'title' => null,                   'scripts' => ['/public/js/countdown.js']],
-    '/council' => ['file' => 'pages/council.php',  'page' => 'council', 'title' => 'المجلس',              'scripts' => ['/public/js/countdown.js']],
+    '/council' => ['file' => 'pages/council.php',  'page' => 'council', 'title' => 'المجلس',              'scripts' => ['/public/js/countdown.js', '/public/js/positions.js']],
     '/tree'    => ['file' => 'pages/tree.php',     'page' => 'tree',    'title' => 'شجرة العائلة',        'scripts' => ['/public/js/tree.js']],
     '/news'    => ['file' => 'pages/news.php',     'page' => 'news',    'title' => 'الأخبار',             'scripts' => ['/public/js/news.js']],
     '/events'  => ['file' => 'pages/events.php',   'page' => 'events',  'title' => 'الفعاليات',            'scripts' => []],

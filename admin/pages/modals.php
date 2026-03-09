@@ -271,22 +271,40 @@
 
 <!-- POSITION MODAL -->
 <div class="modal-overlay" id="modal-position" role="dialog" aria-modal="true" aria-labelledby="position-modal-title">
-  <div class="modal">
+  <div class="modal" style="max-width:600px">
     <div class="modal-header"><div class="modal-title" id="position-modal-title">👑 إضافة منصب</div><button class="modal-close" onclick="closeModal('modal-position')" aria-label="إغلاق">✕</button></div>
     <div class="modal-body">
-      <input type="hidden" id="position-index">
+      <input type="hidden" id="position-id">
       <div class="form-grid">
-        <div class="form-group"><label class="form-label">المنصب *</label><input class="form-control" id="position-role" placeholder="مثال: الرئيس"></div>
-        <div class="form-group"><label class="form-label">الأيقونة</label><input class="form-control" id="position-icon" placeholder="👑"></div>
+        <div class="form-group"><label class="form-label">اسم المنصب *</label><input class="form-control" id="position-title" placeholder="مثال: الرئيس"></div>
+        <div class="form-group"><label class="form-label">الأيقونة</label><input class="form-control" id="position-icon" placeholder="👑" style="font-size:20px;text-align:center">
+          <div style="font-size:11px;color:var(--text-muted);margin-top:4px">أمثلة: 👑 🤝 💰 📋 📝 🛡️ 📢 🎓 ⭐</div>
+        </div>
       </div>
-      <div class="form-group"><label class="form-label">الاسم / الأسماء *</label><input class="form-control" id="position-name" placeholder="مثال: منصور علي"></div>
-      <div class="form-group"><label class="form-label">المهام (سطر لكل مهمة)</label><textarea class="form-control" id="position-tasks" rows="4" placeholder="الإشراف العام&#10;إدارة الاجتماعات"></textarea></div>
-      <div class="form-group"><label class="form-label">النوع</label><select class="form-control" id="position-type"><option value="">عادي</option><option value="president">رئيس</option><option value="advisory">استشاري</option></select></div>
+      <div class="form-group">
+        <label class="form-label">اللجنة المرتبطة (اختياري)</label>
+        <select class="form-control" id="position-committee"><option value="">— بدون —</option></select>
+      </div>
+      <!-- Members Section -->
+      <div class="form-group">
+        <label class="form-label">الأعضاء</label>
+        <div style="position:relative">
+          <input class="form-control" id="position-member-search" placeholder="🔍 ابحث في الأعضاء..." autocomplete="off">
+          <div id="position-member-dropdown" style="display:none;position:absolute;top:100%;right:0;left:0;background:var(--surface);border:1px solid var(--border);border-radius:8px;max-height:180px;overflow-y:auto;z-index:100;box-shadow:var(--shadow-lg)"></div>
+        </div>
+        <div id="position-members-tags" style="display:flex;flex-wrap:wrap;gap:6px;margin-top:8px"></div>
+      </div>
+      <!-- Tasks Section -->
+      <div class="form-group">
+        <label class="form-label">المهام</label>
+        <div id="position-tasks-list" style="display:flex;flex-direction:column;gap:6px"></div>
+        <button class="btn btn-outline btn-sm" onclick="addPositionTaskField()" style="margin-top:6px">+ إضافة مهمة</button>
+      </div>
     </div>
     <div class="modal-footer">
       <button class="btn btn-outline" onclick="closeModal('modal-position')">إلغاء</button>
       <button class="btn btn-danger" id="position-delete-btn" onclick="deletePosition()" style="display:none">🗑 حذف</button>
-      <button class="btn btn-primary" onclick="savePosition()">💾 حفظ</button>
+      <button class="btn btn-primary" id="btn-save-position" onclick="savePosition()">💾 حفظ</button>
     </div>
   </div>
 </div>

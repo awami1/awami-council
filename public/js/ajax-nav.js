@@ -5,7 +5,7 @@
   // الصفحات المعروفة والسكريبتات الخاصة بها
   var pageScripts = {
     '/':        ['/public/js/countdown.js'],
-    '/council': ['/public/js/countdown.js'],
+    '/council': ['/public/js/countdown.js', '/public/js/positions.js'],
     '/tree':    ['https://d3js.org/d3.v7.min.js', '/public/js/tree.js'],
     '/gallery': ['/public/js/media.js'],
     '/news':    ['/public/js/news.js'],

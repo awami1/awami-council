@@ -807,10 +807,35 @@ var CSRF_TOKEN = '<?php echo getCsrfToken(); ?>';
       <div class="tab-content" id="ws-positions">
         <div class="card">
           <div class="card-header">
-            <div class="card-title">👑 مناصب المجلس</div>
-            <button class="btn btn-primary btn-sm" onclick="openAddPosition()">+ إضافة منصب</button>
+            <div class="card-title">👑 مناصب المجلس — الهيئة الإدارية</div>
+            <div style="display:flex;gap:8px;align-items:center">
+              <button class="btn btn-outline btn-sm" id="pos-view-toggle" onclick="togglePositionsView()">🃏 عرض الكروت</button>
+              <button class="btn btn-primary btn-sm" onclick="openAddPosition()">+ إضافة منصب</button>
+            </div>
           </div>
-          <div class="card-body" id="positions-list"></div>
+          <div class="card-body">
+            <!-- Table View -->
+            <div id="positions-table-view">
+              <table class="table" id="positions-table">
+                <thead>
+                  <tr>
+                    <th style="width:40px">#</th>
+                    <th>المنصب</th>
+                    <th style="width:60px">الأيقونة</th>
+                    <th>الأعضاء</th>
+                    <th style="width:80px">المهام</th>
+                    <th style="width:60px">أساسي</th>
+                    <th style="width:200px">إجراءات</th>
+                  </tr>
+                </thead>
+                <tbody id="positions-table-body"></tbody>
+              </table>
+            </div>
+            <!-- Cards View (preview) -->
+            <div id="positions-cards-view" style="display:none">
+              <div id="positions-grid" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:16px"></div>
+            </div>
+          </div>
         </div>
       </div>
 

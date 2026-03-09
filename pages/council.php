@@ -43,65 +43,8 @@ $committees = getCommittees();
     <h2 class="section-title">إدارة المجلس</h2>
     <p class="section-subtitle">الهيئة الإدارية لمجلس عائلة العوامي</p>
   </div>
-  <div class="council-grid" id="council-grid">
-    <?php if (!empty($ws['councilPositions'])): ?>
-      <?php foreach ($ws['councilPositions'] as $pos): ?>
-        <?php
-          $cardClass = 'council-card animate-in';
-          if (($pos['type'] ?? '') === 'president') $cardClass .= ' president';
-          if (($pos['type'] ?? '') === 'advisory')  $cardClass .= ' advisory';
-        ?>
-        <div class="<?= $cardClass ?>">
-          <div class="council-icon"><?= esc($pos['icon'] ?? '&#128100;') ?></div>
-          <div class="council-role"><?= esc($pos['role']) ?></div>
-          <div class="council-name"><?= esc($pos['name']) ?></div>
-          <?php if (!empty($pos['tasks'])): ?>
-            <ul class="council-tasks">
-              <?php foreach ($pos['tasks'] as $task): ?>
-                <li><?= esc($task) ?></li>
-              <?php endforeach; ?>
-            </ul>
-          <?php endif; ?>
-        </div>
-      <?php endforeach; ?>
-    <?php else: ?>
-    <div class="council-card president animate-in">
-      <div class="council-icon">&#x1F451;</div>
-      <div class="council-role">الرئيس</div>
-      <div class="council-name">منصور علي</div>
-      <ul class="council-tasks"><li>الإشراف العام على أعمال المجلس</li><li>إدارة الاجتماعات وتمثيل المجلس</li></ul>
-    </div>
-    <div class="council-card animate-in">
-      <div class="council-icon">&#x1F91D;</div>
-      <div class="council-role">نائب الرئيس</div>
-      <div class="council-name">حسين عبدالحميد - عبدالله عماد</div>
-      <ul class="council-tasks"><li>مساندة الرئيس في جميع المهام</li><li>متابعة تنفيذ القرارات</li></ul>
-    </div>
-    <div class="council-card animate-in">
-      <div class="council-icon">&#x1F4B0;</div>
-      <div class="council-role">أمين الصندوق</div>
-      <div class="council-name">محمود حسن - عبدالله عماد - راضي ابراهيم</div>
-      <ul class="council-tasks"><li>إدارة الشؤون المالية</li><li>إعداد التقارير المالية</li></ul>
-    </div>
-    <div class="council-card animate-in">
-      <div class="council-icon">&#x1F4CB;</div>
-      <div class="council-role">المنسق العام</div>
-      <div class="council-name">راضي ابراهيم - عبدالله عماد - محمود حسن</div>
-      <ul class="council-tasks"><li>تنظيم الفعاليات والأنشطة</li><li>التواصل مع الأعضاء</li></ul>
-    </div>
-    <div class="council-card animate-in">
-      <div class="council-icon">&#x1F4DD;</div>
-      <div class="council-role">أمين السر</div>
-      <div class="council-name">منصور علي - حسين عبدالحميد</div>
-      <ul class="council-tasks"><li>تدوين محاضر الاجتماعات</li><li>أرشفة القرارات والمكاتبات</li></ul>
-    </div>
-    <div class="council-card advisory animate-in">
-      <div class="council-icon">&#x1F393;</div>
-      <div class="council-role">اللجنة الاستشارية</div>
-      <div class="council-name">علي العوامي (أبو حيدر) - فخري العوامي - حسين علي سلمان</div>
-      <ul class="council-tasks"><li>تقديم المشورة والتوجيه</li><li>وضع رؤية عامة للمجلس</li></ul>
-    </div>
-    <?php endif; ?>
+  <div class="council-grid" id="council-positions-grid">
+    <!-- يُملأ ديناميكيًا من API بواسطة positions.js -->
   </div>
 </section>
 

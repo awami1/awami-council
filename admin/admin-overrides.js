@@ -92,47 +92,7 @@ toast('تم حفظ "عن المجلس" ✅');
 }
 
 // –– المناصب ––
-async function savePosition() {
-const role  = document.getElementById('position-role').value.trim();
-const name  = document.getElementById('position-name').value.trim();
-if (!role || !name) { toast('المنصب والاسم مطلوبان', 'error'); return; }
-
-const tasksText = document.getElementById('position-tasks').value.trim();
-const data = {
-    role, name,
-    icon:  document.getElementById('position-icon').value.trim() || '👤',
-    type:  document.getElementById('position-type').value,
-    tasks: tasksText ? tasksText.split('\n').map(t => t.trim()).filter(Boolean) : [],
-};
-
-const positions = DB.settings.councilPositions ?? [];
-const idx = document.getElementById('position-index').value;
-
-if (idx !== '') positions[idx] = data;
-else positions.push(data);
-
-try {
-    await AdminSettings.savePositions(positions);
-    closeModalSilent('modal-position');
-    toast(idx !== '' ? 'تم التحديث' : 'تمت الإضافة');
-    renderPositionsList();
-} catch (e) { toast('فشل: ' + e.message, 'error'); }
-}
-
-async function deletePosition() {
-const idx = document.getElementById('position-index').value;
-const positions = DB.settings.councilPositions ?? [];
-const p = positions[idx];
-confirm2(`حذف منصب "${p?.role}"؟`, async () => {
-positions.splice(idx, 1);
-try {
-await AdminSettings.savePositions(positions);
-closeModalSilent('modal-position');
-toast('تم الحذف');
-renderPositionsList();
-} catch (e) { toast('فشل: ' + e.message, 'error'); }
-});
-}
+// savePosition() و deletePosition() معرفة في admin-app.js (DB-backed via PositionsAPI)
 
 // –– القيم ––
 async function saveValue() {

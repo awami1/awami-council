@@ -213,9 +213,9 @@ async function saveImport(){
 
     try{
       if(r.type==='new'){
-        await apiFetch('api/members.php',{ method:'POST', body:JSON.stringify(payload) });
+        await apiFetch('/api/members.php',{ method:'POST', body:JSON.stringify(payload) });
       } else {
-        await apiFetch('api/members.php?id='+encodeURIComponent(r.existingId),{ method:'PUT', body:JSON.stringify(payload) });
+        await apiFetch('/api/members.php?id='+encodeURIComponent(r.existingId),{ method:'PUT', body:JSON.stringify(payload) });
       }
       success++;
     }catch(e){

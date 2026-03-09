@@ -129,17 +129,22 @@ function handlePost(): void
         (:id, :name, :family, :phone, :id_num, :join_date, :status, :notes, :branch_id)"
     );
 
-    $stmt->execute([
-        ':id'        => $id,
-        ':name'      => $data['name'] ?? '',
-        ':family'    => $data['family'] ?? '',
-        ':phone'     => $data['phone'] ?? '',
-        ':id_num'    => !empty($data['id_num']) ? $data['id_num'] : null,
-        ':join_date' => $data['join_date'] ?? null,
-        ':status'    => $data['status'] ?? 'مشترك',
-        ':notes'     => $data['notes'] ?? '',
-        ':branch_id' => $data['branch_id'] ?? null,
-    ]);
+    try {
+        $stmt->execute([
+            ':id'        => $id,
+            ':name'      => $data['name'] ?? '',
+            ':family'    => $data['family'] ?? '',
+            ':phone'     => $data['phone'] ?? '',
+            ':id_num'    => !empty($data['id_num']) ? $data['id_num'] : null,
+            ':join_date' => !empty($data['join_date']) ? $data['join_date'] : null,
+            ':status'    => $data['status'] ?? 'مشترك',
+            ':notes'     => $data['notes'] ?? '',
+            ':branch_id' => $data['branch_id'] ?? null,
+        ]);
+    } catch (\PDOException $e) {
+        error_log('handlePost INSERT failed: ' . $e->getMessage());
+        respond(500, ['error' => 'فشل إضافة العضو: ' . $e->getMessage()]);
+    }
 
     logAudit('إضافة', 'عضو', $id, $data['name'] ?? '');
     handleGetOne($id);

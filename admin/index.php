@@ -4,6 +4,11 @@ if (!isAuthenticated()) {
     header('Location: /admin/login.php');
     exit;
 }
+function adminAsset(string $path): string {
+    $file = __DIR__ . '/' . ltrim($path, '/');
+    $v = is_file($file) ? filemtime($file) : time();
+    return htmlspecialchars($path, ENT_QUOTES, 'UTF-8') . '?v=' . $v;
+}
 ?>
 <!DOCTYPE html>
 <html lang="ar" dir="rtl">
@@ -12,7 +17,7 @@ if (!isAuthenticated()) {
 <meta name="viewport" content="width=device-width,initial-scale=1.0">
 <title>مجلس عائلة العوامي - نظام الإدارة</title>
 <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@300;400;500;700;800;900&family=Cairo:wght@300;400;600;700;900&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="css/admin.css">
+<link rel="stylesheet" href="<?= adminAsset('css/admin.css') ?>">
 <script><?php readfile(dirname(__DIR__) . '/public/js/api.js'); ?></script>
 <script>
 // ── CSRF Token ──
@@ -59,7 +64,7 @@ var CSRF_TOKEN = '<?php echo getCsrfToken(); ?>';
     };
 })();
 </script>
-<script src="admin.db.js"></script>
+<script src="<?= adminAsset('admin.db.js') ?>"></script>
 </head>
 <body>
 
@@ -1328,12 +1333,12 @@ var CSRF_TOKEN = '<?php echo getCsrfToken(); ?>';
   if(saved === 'dark') document.documentElement.setAttribute('data-theme','dark');
 })();
 </script>
-<script src="js/admin-core.js"></script>
-<script src="js/admin-app.js"></script>
-<script src="js/admin-members-auth.js"></script>
-<script src="js/admin-riwaq.js"></script>
+<script src="<?= adminAsset('js/admin-core.js') ?>"></script>
+<script src="<?= adminAsset('js/admin-app.js') ?>"></script>
+<script src="<?= adminAsset('js/admin-members-auth.js') ?>"></script>
+<script src="<?= adminAsset('js/admin-riwaq.js') ?>"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
-<script src="js/admin-import.js"></script>
-<script src="admin-overrides.js"></script>
+<script src="<?= adminAsset('js/admin-import.js') ?>"></script>
+<script src="<?= adminAsset('admin-overrides.js') ?>"></script>
 </body>
 </html>

@@ -291,7 +291,7 @@ if ($sqlite) {
   `phone` VARCHAR(20) DEFAULT NULL,
   `id_num` VARCHAR(20) DEFAULT NULL,
   `join_date` DATE DEFAULT NULL,
-  `status` ENUM('مشترك','منقطع','غير مشترك') NOT NULL DEFAULT 'مشترك',
+  `status` VARCHAR(20) NOT NULL DEFAULT 'مشترك',
   `status_override` TINYINT(1) NOT NULL DEFAULT 0 COMMENT '1 = حالة يدوية، 0 = تلقائية',
   `status_override_note` VARCHAR(300) DEFAULT NULL,
   `notes` TEXT,
@@ -564,7 +564,8 @@ if (!$sqlite) {
     $migrations = [
         "ALTER TABLE `family_branches` ADD COLUMN IF NOT EXISTS `members` JSON DEFAULT NULL",
         // المرحلة الأولى — نظام هوية الأعضاء
-        "ALTER TABLE `members` MODIFY COLUMN `status` ENUM('مشترك','منقطع','غير مشترك') NOT NULL DEFAULT 'مشترك'",
+        // تحويل status من ENUM إلى VARCHAR (ENUM مع نصوص عربية يسبب مشاكل ترميز)
+        "ALTER TABLE `members` MODIFY COLUMN `status` VARCHAR(20) NOT NULL DEFAULT 'مشترك'",
         "ALTER TABLE `members` ADD COLUMN IF NOT EXISTS `status_override` TINYINT(1) NOT NULL DEFAULT 0 COMMENT '1 = حالة يدوية، 0 = تلقائية'",
         "ALTER TABLE `members` ADD COLUMN IF NOT EXISTS `status_override_note` VARCHAR(300) DEFAULT NULL",
         "ALTER TABLE `committee_members` ADD COLUMN IF NOT EXISTS `role` VARCHAR(100) DEFAULT NULL COMMENT 'مثال: رئيس، نائب، أمين صندوق، عضو'",

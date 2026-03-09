@@ -44,7 +44,7 @@ if (isset($_GET['setup'])) {
                 `phone` VARCHAR(20) DEFAULT NULL,
                 `id_num` VARCHAR(20) DEFAULT NULL,
                 `join_date` DATE DEFAULT NULL,
-                `status` ENUM('مشترك','منقطع','غير مشترك') NOT NULL DEFAULT 'مشترك',
+                `status` VARCHAR(20) NOT NULL DEFAULT 'مشترك',
                 `notes` TEXT,
                 `branch_id` VARCHAR(36) DEFAULT NULL,
                 `created_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -115,6 +115,12 @@ function handleGetOne(string $id): void
     respond(200, ['data' => $member]);
 }
 
+function validateStatus(string $status): string
+{
+    $allowed = ['مشترك', 'منقطع', 'غير مشترك'];
+    return in_array($status, $allowed, true) ? $status : 'مشترك';
+}
+
 function handlePost(): void
 {
     $pdo  = getPDO();
@@ -137,7 +143,7 @@ function handlePost(): void
             ':phone'     => $data['phone'] ?? '',
             ':id_num'    => !empty($data['id_num']) ? $data['id_num'] : null,
             ':join_date' => !empty($data['join_date']) ? $data['join_date'] : null,
-            ':status'    => $data['status'] ?? 'مشترك',
+            ':status'    => validateStatus($data['status'] ?? 'مشترك'),
             ':notes'     => $data['notes'] ?? '',
             ':branch_id' => $data['branch_id'] ?? null,
         ]);

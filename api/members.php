@@ -134,7 +134,7 @@ function handlePost(): void
         ':name'      => $data['name'] ?? '',
         ':family'    => $data['family'] ?? '',
         ':phone'     => $data['phone'] ?? '',
-        ':id_num'    => $data['id_num'] ?? '',
+        ':id_num'    => !empty($data['id_num']) ? $data['id_num'] : null,
         ':join_date' => $data['join_date'] ?? null,
         ':status'    => $data['status'] ?? 'مشترك',
         ':notes'     => $data['notes'] ?? '',

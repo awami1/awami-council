@@ -237,7 +237,7 @@ function renderPositionsCards(){
     const isFirst = p.sort_order === 1;
     const isLast = _positionsData.indexOf(p) === _positionsData.length - 1;
     const memberNames = (p.members||[]).map(m=>m.name).join(' - ') || '';
-    return `<div class="position-card ${isFirst?'president':isLast?'advisory':''}" style="border:2px solid var(--border);border-radius:14px;padding:18px;${isFirst?'border-color:var(--accent);background:linear-gradient(135deg,#fffbf0,#fff)':isLast?'border-color:var(--primary);background:linear-gradient(135deg,#f0f5ff,#fff)':''}">
+    return `<div class="position-card ${isFirst?'president':isLast?'advisory':''}" style="border:2px solid var(--border);border-radius:14px;padding:18px;${isFirst?'border-color:var(--card-president-border);background:var(--card-president-bg)':isLast?'border-color:var(--card-advisory-border);background:var(--card-advisory-bg)':''}">
       <div style="display:flex;align-items:center;gap:12px;margin-bottom:12px">
         <div style="width:42px;height:42px;border-radius:12px;background:linear-gradient(135deg,var(--green-dark),var(--green));display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0">${esc(p.icon)}</div>
         <div>
@@ -1063,7 +1063,7 @@ function renderOrgChart(){
   const regular=State.getCommittees().filter(c=>!c.advisory);
   document.getElementById('org-body').innerHTML=`
     <div style="text-align:center">
-      ${advisory?`<div style="margin-bottom:16px;display:flex;justify-content:center"><div style="border:2px dashed var(--accent);border-radius:12px;padding:10px 20px;background:#fffbf0;display:inline-flex;align-items:center;gap:10px"><span style="font-size:20px">${advisory.icon}</span><div><div style="font-weight:700;font-size:13px;color:var(--primary)">${advisory.name}</div><div style="font-size:10px;color:var(--text-muted)">جهة استشارية</div></div></div></div>`:''}
+      ${advisory?`<div style="margin-bottom:16px;display:flex;justify-content:center"><div style="border:2px dashed var(--card-advisory-border);border-radius:12px;padding:10px 20px;background:var(--card-advisory-bg);display:inline-flex;align-items:center;gap:10px"><span style="font-size:20px">${advisory.icon}</span><div><div style="font-weight:700;font-size:13px;color:var(--primary)">${advisory.name}</div><div style="font-size:10px;color:var(--text-muted)">جهة استشارية</div></div></div></div>`:''}
       <div style="display:flex;justify-content:center;margin-bottom:6px">
         <div style="background:linear-gradient(135deg,var(--green-dark),var(--primary));color:#fff;border-radius:14px;padding:14px 28px;display:inline-flex;align-items:center;gap:12px">
           <span style="font-size:22px">🏛️</span>

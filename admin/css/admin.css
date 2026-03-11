@@ -10,6 +10,8 @@
   --radius:16px;--radius-sm:10px;
   --bg-hover:#f8fbf8;--bg-table-header:#f0f5f1;--bg-table-row-border:#f0f5f1;
   --modal-header-bg:linear-gradient(135deg,#f8fbf8,#fff);
+  --card-president-bg:linear-gradient(135deg,#fffbf0,#fff);--card-president-border:var(--accent);
+  --card-advisory-bg:linear-gradient(135deg,#f0f5ff,#fff);--card-advisory-border:var(--primary);
 }
 [data-theme="dark"]{
   --primary:#4a8cc7;--primary-light:#6baae0;--green:#5aad72;--green-light:#72c98a;--green-dark:#4a9965;
@@ -18,6 +20,8 @@
   --shadow:0 4px 24px rgba(0,0,0,.25);--shadow-lg:0 8px 40px rgba(0,0,0,.35);
   --bg-hover:#242830;--bg-table-header:#1e222a;--bg-table-row-border:#252930;
   --modal-header-bg:linear-gradient(135deg,#1e222a,#1c1f26);
+  --card-president-bg:linear-gradient(135deg,#2a2210,var(--bg-card));--card-president-border:var(--accent);
+  --card-advisory-bg:linear-gradient(135deg,#0f1a2e,var(--bg-card));--card-advisory-border:var(--primary);
 }
 *{margin:0;padding:0;box-sizing:border-box;}
 body{font-family:'Cairo',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;overflow-x:hidden;}
@@ -217,8 +221,6 @@ tr:hover td{background:var(--bg-hover);}
 [data-theme="dark"] .modal-close:hover{background:#2e323b;}
 [data-theme="dark"] .search-input{background-color:var(--bg);color:var(--text);}
 [data-theme="dark"] .search-input:focus{background-color:var(--bg-card);}
-[data-theme="dark"] .position-card.president{background:linear-gradient(135deg,#2a2520,var(--bg-card));}
-[data-theme="dark"] .position-card.advisory{background:linear-gradient(135deg,#1e2230,var(--bg-card));}
 [data-theme="dark"] .council-hero{background:linear-gradient(135deg,#1a2d20,#111827);}
 [data-theme="dark"] .btn-danger{background:#3b1c1c;border-color:#7f1d1d;}
 [data-theme="dark"] .btn-success{background:#14532d;color:#86efac;border-color:#166534;}

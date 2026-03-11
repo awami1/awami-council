@@ -419,7 +419,7 @@ function removePositionMember(mid){
       const selectedIds = _posSelectedMembers.map(m=>m.member_id);
       const filtered = members.filter(m=>!selectedIds.includes(m.id) && (m.name||'').toLowerCase().includes(q)).slice(0,8);
       if(!filtered.length){ dd.style.display='none'; return; }
-      dd.innerHTML = filtered.map(m=>`<div style="padding:8px 12px;cursor:pointer;font-size:13px;border-bottom:1px solid var(--border)" onmousedown="selectPositionMember('${m.id}','${esc(m.name)}')">${esc(m.name)}</div>`).join('');
+      dd.innerHTML = filtered.map(m=>`<div style="background:var(--surface);padding:10px 14px;cursor:pointer;font-size:13px;border-bottom:1px solid var(--border)" onmouseover="this.style.background='var(--bg-hover)'" onmouseout="this.style.background='var(--surface)'" onmousedown="selectPositionMember('${m.id}','${esc(m.name)}')">${esc(m.name)}</div>`).join('');
       dd.style.display='block';
     });
   });

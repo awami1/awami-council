@@ -115,6 +115,11 @@
             window.initAnimations();
           }
 
+          // إعادة تحميل المناصب عند العودة لصفحة المجلس
+          if (typeof window.initPositions === 'function') {
+            window.initPositions();
+          }
+
           // شبكة أمان: تهيئة الشجرة بعد تحميل كل السكريبتات والبيانات
           if (typeof window.initFamilyTree === 'function' && window.__TREE_DATA__) {
             window.initFamilyTree();

@@ -52,6 +52,9 @@
       });
   }
 
+  // كشف الدالة للـ AJAX re-navigation
+  window.initPositions = init;
+
   // Run on page load or immediately if DOM is ready
   if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', init);

@@ -62,7 +62,6 @@ const State = (function () {
         description: 'منذ عام ١٩٩٢م - ١٤١٣هـ، نعمل على تعزيز الترابط الأسري وخدمة أفراد العائلة من خلال الأنشطة والفعاليات المتنوعة التي تُنظّم بروح الأُلفة والتعاون والMسؤولية'
       },
       stats: { years: 32, committees: 11, members: '100+' },
-      councilPositions: [],
       about: {
         mission: 'تعزيز الترابط الأسري والتواصل بين أفراد عائلة العوامي من خلال تنظيم الأنشطة والفعاليات الدينية والاجتماعية والترفيهية التي تحقق المصلحة العامة وتُرسّخ القيم الأصيلة.',
         vision:  'أن نكون مجلساً عائلياً نموذجياً يُحتذى به في التنظيم والتطوير والخدمة، ونسعى لبناء جيل واعٍ ومتماسك يفخر بانتمائه لعائلة العوامي.'
@@ -107,16 +106,11 @@ const State = (function () {
         header:           { title: 'مجلس عائلة العوامي', subtitle: 'AL AWAMI • ١٤١٣ - ١٩٩٢' },
         hero:             { title: 'مرحباً بكم في مجلس عائلة العوامي', description: 'منذ عام ١٩٩٢م - ١٤١٣هـ، نعمل على تعزيز الترابط الأسري وخدمة أفراد العائلة من خلال الأنشطة والفعاليات المتنوعة التي تُنظّم بروح الأُلفة والتعاون والمسؤولية' },
         stats:            { years: 32, committees: 11, members: '100+' },
-        councilPositions: COUNCIL_POSITIONS,
         about:            { mission: '', vision: '' },
         values:           []
       };
     }
 
-    // Ensure councilPositions synced from constant if empty/missing
-    if (!DB.websiteSettings.councilPositions || DB.websiteSettings.councilPositions.length === 0) {
-      DB.websiteSettings.councilPositions = COUNCIL_POSITIONS;
-    }
   }
 
   /**
@@ -245,33 +239,6 @@ const State = (function () {
       members:     data.members
     };
     log('تحديث الإحصائيات', '📊');
-  }
-
-  /**
-   * savePosition(idx, data)
-   * Exact logic from savePosition() — DOM reads, closeModal, toast, render stripped.
-   * idx: string index (edit) or '' (add new).
-   * data: { role, name, icon, type, tasks[] }
-   */
-  function savePosition(idx, data) {
-    if (idx !== '') {
-      DB.websiteSettings.councilPositions[idx] = data;
-      log('تعديل منصب: ' + data.role, '✏️');
-    } else {
-      if (!DB.websiteSettings.councilPositions) DB.websiteSettings.councilPositions = [];
-      DB.websiteSettings.councilPositions.push(data);
-      log('إضافة منصب: ' + data.role, '👑');
-    }
-  }
-
-  /**
-   * deletePosition(idx)
-   * Exact mutation from deletePosition() — DOM reads, confirm2, closeModal, toast, render stripped.
-   */
-  function deletePosition(idx) {
-    var p = DB.websiteSettings.councilPositions[idx];
-    DB.websiteSettings.councilPositions.splice(idx, 1);
-    log('حذف منصب: ' + (p ? p.role : ''), '🗑️');
   }
 
   /**
@@ -947,8 +914,6 @@ const State = (function () {
     setHeaderSettings: setHeaderSettings,
     setHeroSettings:   setHeroSettings,
     setStatsSettings:  setStatsSettings,
-    savePosition:      savePosition,
-    deletePosition:    deletePosition,
     saveValue:         saveValue,
     deleteValue:       deleteValue,
 

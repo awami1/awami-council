@@ -192,7 +192,7 @@ var CSRF_TOKEN = '<?php echo getCsrfToken(); ?>';
         </div>
         <div style="font-size:13px;opacity:.75;line-height:1.7;font-style:italic">"أتقدم إليكم بجزيل الشكر وعظيم التقدير على تقدمكم لخدمة عائلتكم، مثالاً للحرص والمسؤولية لتحقيق المصلحة العامة لعائلتنا المترابطة"<br><span style="font-size:12px;opacity:.8">— الوالد أبو حسين علي سلمان</span></div>
       </div>
-      <div id="positions-grid" style="display:grid;grid-template-columns:repeat(2,1fr);gap:14px"></div>
+      <div id="dashboard-positions-grid" style="display:grid;grid-template-columns:repeat(2,1fr);gap:14px"></div>
     </div>
 
     <!-- MEMBERS -->

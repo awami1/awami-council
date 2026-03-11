@@ -61,20 +61,6 @@ if (ws.values && ws.values.length) {
   }
 }
 
-// Council positions
-if (ws.councilPositions && ws.councilPositions.length) {
-  const pg = document.getElementById('positions-grid') || document.getElementById('council-grid');
-  if (pg) {
-    pg.innerHTML = ws.councilPositions.map(p =>
-      `<div class="position-card animate-in">
-        <div class="pos-icon">${p.icon || '👤'}</div>
-        <div class="pos-role">${p.role}</div>
-        <div class="pos-name">${p.name}</div>
-       </div>`
-    ).join('');
-    pg.querySelectorAll('.animate-in').forEach(el => obs.observe(el));
-  }
-}
 
 } catch (e) { console.warn('initSettings error:', e); }
 }

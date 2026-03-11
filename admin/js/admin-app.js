@@ -208,7 +208,7 @@ function renderPositionsTable(){
   const tbody = document.getElementById('positions-table-body');
   if(!tbody) return;
   tbody.innerHTML = _positionsData.length ? _positionsData.map((p,i)=>{
-    const memberNames = (p.members||[]).map(m=>m.name).join('، ') || '<span style="color:var(--text-muted)">—</span>';
+    const memberNames = (p.members||[]).map(m=>esc(m.name)).join('، ') || '<span style="color:var(--text-muted)">—</span>';
     const taskCount = (p.tasks||[]).length;
     const isCore = p.is_core;
     return `<tr>
@@ -469,7 +469,7 @@ async function loadPositionCommittees(){
 }
 
 // HTML escape helper for admin positions
-function esc(s){ if(!s) return ''; return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+function esc(s){ if(!s) return ''; return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;'); }
 
 // Values
 function renderValuesList(){
@@ -1992,6 +1992,19 @@ function renderDashboard(){
         '<div style="font-size:11px;color:var(--text-muted)">' + n.category + ' · ' + (n.created_at || '').substring(0, 10) + '</div></div>' +
         '<span class="badge ' + (n.status === 'published' ? 'badge-success' : 'badge-warning') + '">' + (n.status === 'published' ? 'منشور' : 'مسودة') + '</span></div>';
     }).join('') : '<div class="empty-state"><div class="empty-icon">📰</div><p>لا أخبار</p></div>';
+  }
+
+  // مناصب لوحة القيادة
+  var dashPosGrid = document.getElementById('dashboard-positions-grid');
+  if (dashPosGrid && typeof _positionsData !== 'undefined' && _positionsData.length) {
+    dashPosGrid.innerHTML = _positionsData.map(function(p) {
+      var memberNames = (p.members||[]).map(function(m){ return esc(m.name); }).join(' - ') || '';
+      return '<div style="border:2px solid var(--border);border-radius:14px;padding:14px">' +
+        '<div style="display:flex;align-items:center;gap:10px">' +
+        '<div style="width:36px;height:36px;border-radius:10px;background:linear-gradient(135deg,var(--green-dark),var(--green));display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0">' + esc(p.icon) + '</div>' +
+        '<div><div style="font-size:12px;color:var(--text-muted);font-weight:600">' + esc(p.title) + '</div>' +
+        '<div style="font-size:13px;font-weight:700;color:var(--green-dark)">' + memberNames + '</div></div></div></div>';
+    }).join('');
   }
 
   updateMessageBadge();

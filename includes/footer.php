@@ -31,7 +31,6 @@
   </div>
 </footer>
 
-<button class="scroll-top" id="scrollTop" aria-label="العودة للأعلى">&#8593;</button>
 
 <!-- Lightbox -->
 <div class="lightbox-overlay" id="lightbox" role="dialog" aria-modal="true" aria-label="معاينة الصورة">

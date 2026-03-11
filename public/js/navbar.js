@@ -1,12 +1,11 @@
 /**
- * navbar.js — القائمة المتجاوبة وزر العودة للأعلى + Smart Navbar
+ * navbar.js — القائمة المتجاوبة + Smart Navbar
  */
 (function() {
   document.addEventListener('DOMContentLoaded', function() {
     var header = document.querySelector('header');
     var nav = document.getElementById('mainNav');
     var menuBtn = document.getElementById('menuBtn');
-    var scrollBtn = document.getElementById('scrollTop');
 
     // Mobile menu toggle
     if (menuBtn && nav) {
@@ -56,15 +55,6 @@
       });
     }
 
-    // Scroll top button
-    if (scrollBtn) {
-      scrollBtn.addEventListener('click', function() {
-        window.scrollTo({ top: 0, behavior: 'smooth' });
-      });
-      window.addEventListener('scroll', function() {
-        scrollBtn.classList.toggle('show', window.pageYOffset > 400);
-      });
-    }
 
     // Smooth scroll for anchor links
     document.querySelectorAll('a[href^="#"]').forEach(function(a) {

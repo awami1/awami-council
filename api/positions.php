@@ -334,22 +334,28 @@ function handleUpdateMembers(string $id): void
         }
     }
 
-    // Delete existing members for this position
-    $pdo->prepare('DELETE FROM position_members WHERE position_id = :pid')->execute([':pid' => $id]);
+    // Delete existing members and insert new ones atomically
+    $pdo->beginTransaction();
+    try {
+        $pdo->prepare('DELETE FROM position_members WHERE position_id = :pid')->execute([':pid' => $id]);
 
-    // Insert new members
-    if (!empty($memberIds)) {
-        $insertStmt = $pdo->prepare(
-            'INSERT INTO position_members (position_id, member_id, sort_order)
-             VALUES (:pid, :mid, :sort)'
-        );
-        foreach ($memberIds as $i => $mid) {
-            $insertStmt->execute([
-                ':pid'  => $id,
-                ':mid'  => $mid,
-                ':sort' => $i + 1,
-            ]);
+        if (!empty($memberIds)) {
+            $insertStmt = $pdo->prepare(
+                'INSERT INTO position_members (position_id, member_id, sort_order)
+                 VALUES (:pid, :mid, :sort)'
+            );
+            foreach ($memberIds as $i => $mid) {
+                $insertStmt->execute([
+                    ':pid'  => $id,
+                    ':mid'  => $mid,
+                    ':sort' => $i + 1,
+                ]);
+            }
         }
+        $pdo->commit();
+    } catch (PDOException $e) {
+        $pdo->rollBack();
+        respond(500, ['error' => 'فشل تحديث أعضاء المنصب']);
     }
 
     logAudit('تعديل أعضاء', 'منصب', $id, $pos['title'] ?? '', ['member_ids' => $memberIds]);
@@ -385,22 +391,28 @@ function handleUpdateTasks(string $id): void
         }
     }
 
-    // Delete existing tasks for this position
-    $pdo->prepare('DELETE FROM position_tasks WHERE position_id = :pid')->execute([':pid' => $id]);
+    // Delete existing tasks and insert new ones atomically
+    $pdo->beginTransaction();
+    try {
+        $pdo->prepare('DELETE FROM position_tasks WHERE position_id = :pid')->execute([':pid' => $id]);
 
-    // Insert new tasks
-    if (!empty($tasks)) {
-        $insertStmt = $pdo->prepare(
-            'INSERT INTO position_tasks (position_id, task_text, sort_order)
-             VALUES (:pid, :txt, :sort)'
-        );
-        foreach ($tasks as $i => $task) {
-            $insertStmt->execute([
-                ':pid'  => $id,
-                ':txt'  => trim($task),
-                ':sort' => $i + 1,
-            ]);
+        if (!empty($tasks)) {
+            $insertStmt = $pdo->prepare(
+                'INSERT INTO position_tasks (position_id, task_text, sort_order)
+                 VALUES (:pid, :txt, :sort)'
+            );
+            foreach ($tasks as $i => $task) {
+                $insertStmt->execute([
+                    ':pid'  => $id,
+                    ':txt'  => trim($task),
+                    ':sort' => $i + 1,
+                ]);
+            }
         }
+        $pdo->commit();
+    } catch (PDOException $e) {
+        $pdo->rollBack();
+        respond(500, ['error' => 'فشل تحديث مهام المنصب']);
     }
 
     logAudit('تعديل مهام', 'منصب', $id, $pos['title'] ?? '', ['tasks_count' => count($tasks)]);

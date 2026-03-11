@@ -47,15 +47,6 @@ section { max-width: 1200px; margin: 0 auto; padding: 70px 24px; }
 }
 .skip-link:focus { top: 0; }
 
-/* Scroll Top Button */
-.scroll-top {
-  position: fixed; bottom: 24px; left: 24px; width: 48px; height: 48px;
-  background: var(--green); color: #fff; border: none; border-radius: 14px;
-  font-size: 20px; cursor: pointer; opacity: 0; transform: translateY(20px);
-  transition: all .3s; z-index: 999; box-shadow: 0 4px 16px rgba(45,107,64,.3);
-}
-.scroll-top.show { opacity: 1; transform: translateY(0); }
-.scroll-top:hover { background: var(--green-dark); transform: translateY(-2px) !important; }
 
 /* CTA Buttons */
 .hero-cta { display: flex; gap: 16px; justify-content: center; flex-wrap: wrap; margin-top: 24px; animation: fadeInUp .8s ease-out .45s both; }

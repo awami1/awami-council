@@ -492,7 +492,7 @@ function handleImageUpload(): void
     // إنشاء مجلد الرفع
     $uploadDir = __DIR__ . '/../uploads/stories/';
     if (!is_dir($uploadDir)) {
-        mkdir($uploadDir, 0755, true);
+        mkdir($uploadDir, 0750, true);
     }
 
     // تسمية فريدة

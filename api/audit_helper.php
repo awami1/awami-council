@@ -34,11 +34,8 @@ function logAudit(
             $user = $_SESSION['awami_user'];
         }
 
-        $ip = $_SERVER['REMOTE_ADDR'] ?? '127.0.0.1';
-        if (!empty($_SERVER['HTTP_X_FORWARDED_FOR'])) {
-            $ip = explode(',', $_SERVER['HTTP_X_FORWARDED_FOR'])[0];
-        }
-        $ip = trim($ip);
+        // استخدام REMOTE_ADDR فقط — X-Forwarded-For قابل للتزوير من العميل
+        $ip = trim($_SERVER['REMOTE_ADDR'] ?? '127.0.0.1');
 
         $pdo->prepare(
             'INSERT INTO audit_log (id, user, action, entity_type, entity_id, entity_name, details, ip_address)

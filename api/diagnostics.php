@@ -1,27 +1,13 @@
 <?php
 // diagnostics.php — صفحة تشخيصية لفحص بيئة PHP وربط قاعدة البيانات
+// محمية — تتطلب تسجيل دخول المشرف
 declare(strict_types=1);
 
-header('Content-Type: application/json; charset=utf-8');
+require_once __DIR__ . '/config.php';
+require_once __DIR__ . '/auth_guard.php';
+requireAuth();
 
-// ---- تحميل .env (نفس منطق config.php) ----
-(function () {
-    $envFile = __DIR__ . '/../.env';
-    if (!is_file($envFile)) return;
-    foreach (file($envFile, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES) as $line) {
-        $line = trim($line);
-        if ($line === '' || $line[0] === '#') continue;
-        if (str_contains($line, '=')) {
-            [$key, $val] = explode('=', $line, 2);
-            $key = trim($key);
-            $val = trim($val);
-            if (!getenv($key)) {
-                putenv("{$key}={$val}");
-                $_ENV[$key] = $val;
-            }
-        }
-    }
-})();
+header('Content-Type: application/json; charset=utf-8');
 
 // ---- قراءة متغيرات البيئة ----
 $dbHost = getenv('DB_HOST') ?: ($_ENV['DB_HOST'] ?? '');

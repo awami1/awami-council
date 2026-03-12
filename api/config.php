@@ -84,10 +84,13 @@ function getPDO(): PDO
 
             // DigitalOcean Managed MySQL requires SSL
             if (strtolower($sslmode) === 'required') {
-                $options[PDO::MYSQL_ATTR_SSL_VERIFY_SERVER_CERT] = false;
                 $sslCa = getenv('DB_SSL_CA') ?: ($_ENV['DB_SSL_CA'] ?? '');
                 if ($sslCa && is_file($sslCa)) {
                     $options[PDO::MYSQL_ATTR_SSL_CA] = $sslCa;
+                    $options[PDO::MYSQL_ATTR_SSL_VERIFY_SERVER_CERT] = true;
+                } else {
+                    // لا يوجد CA — تعطيل التحقق كحل أخير (غير مستحسن في الإنتاج)
+                    $options[PDO::MYSQL_ATTR_SSL_VERIFY_SERVER_CERT] = false;
                 }
             }
 
@@ -171,11 +174,11 @@ function uid(): string
 {
     return sprintf(
         '%04x%04x-%04x-%04x-%04x-%04x%04x%04x',
-        mt_rand(0, 0xffff), mt_rand(0, 0xffff),
-        mt_rand(0, 0xffff),
-        mt_rand(0, 0x0fff) | 0x4000,
-        mt_rand(0, 0x3fff) | 0x8000,
-        mt_rand(0, 0xffff), mt_rand(0, 0xffff), mt_rand(0, 0xffff)
+        random_int(0, 0xffff), random_int(0, 0xffff),
+        random_int(0, 0xffff),
+        random_int(0, 0x0fff) | 0x4000,
+        random_int(0, 0x3fff) | 0x8000,
+        random_int(0, 0xffff), random_int(0, 0xffff), random_int(0, 0xffff)
     );
 }
 

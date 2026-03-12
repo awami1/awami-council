@@ -149,7 +149,7 @@ function handlePost(): void
         ]);
     } catch (\PDOException $e) {
         error_log('handlePost INSERT failed: ' . $e->getMessage());
-        respond(500, ['error' => 'فشل إضافة العضو: ' . $e->getMessage()]);
+        respond(500, ['error' => 'فشل إضافة العضو.']);
     }
 
     logAudit('إضافة', 'عضو', $id, $data['name'] ?? '');
@@ -302,8 +302,8 @@ function handleActivateAccount(): void
     }
     $awmId = 'AWM-' . str_pad((string) $nextNum, 4, '0', STR_PAD_LEFT);
 
-    // توليد رمز مؤقت (8 أحرف hex)
-    $tempToken   = strtoupper(bin2hex(random_bytes(4)));
+    // توليد رمز مؤقت (32 حرف hex — 16 bytes)
+    $tempToken   = strtoupper(bin2hex(random_bytes(16)));
     $tokenExpiry = date('Y-m-d H:i:s', time() + 172800); // 48 ساعة
     $now         = date('Y-m-d H:i:s');
 

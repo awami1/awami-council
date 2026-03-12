@@ -32,8 +32,10 @@ if (php_sapi_name() === 'cli-server') {
     if (str_starts_with($uri, '/member')) {
         $memberPath = $uri === '/member' || $uri === '/member/' ? '/member/index.php' : $uri;
         $memberFile = __DIR__ . $memberPath;
-        if (is_file($memberFile)) {
-            include $memberFile;
+        // حماية من directory traversal
+        $realMember = realpath($memberFile);
+        if ($realMember && str_starts_with($realMember, __DIR__ . DIRECTORY_SEPARATOR . 'member') && is_file($realMember)) {
+            include $realMember;
             return;
         }
     }
@@ -41,9 +43,11 @@ if (php_sapi_name() === 'cli-server') {
     if (str_starts_with($uri, '/admin')) {
         $adminPath = $uri === '/admin' || $uri === '/admin/' ? '/admin/index.php' : $uri;
         $adminFile = __DIR__ . $adminPath;
-        if (is_file($adminFile)) {
-            if (str_ends_with($adminFile, '.php')) {
-                include $adminFile;
+        // حماية من directory traversal
+        $realAdmin = realpath($adminFile);
+        if ($realAdmin && str_starts_with($realAdmin, __DIR__ . DIRECTORY_SEPARATOR . 'admin') && is_file($realAdmin)) {
+            if (str_ends_with($realAdmin, '.php')) {
+                include $realAdmin;
             } else {
                 return false;
             }

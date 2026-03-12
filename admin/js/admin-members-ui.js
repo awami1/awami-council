@@ -211,7 +211,7 @@ function bulkDelete() {
   var namesList = document.getElementById('bulk-delete-names');
   if (warning) warning.textContent = 'سيتم حذف ' + _selectedMembers.size + ' عضو نهائياً. هذا الإجراء لا يمكن التراجع عنه.';
   if (namesList) {
-    var display = names.slice(0, 10).map(function(n) { return '• ' + n; }).join('<br>');
+    var display = names.slice(0, 10).map(function(n) { return '• ' + esc(n); }).join('<br>');
     if (names.length > 10) display += '<br><strong>... و ' + (names.length - 10) + ' آخرين</strong>';
     namesList.innerHTML = display;
   }
@@ -300,9 +300,9 @@ function toggleAccordion(row, memberId) {
   tr.innerHTML = '<td colspan="8" style="padding:14px 20px;background:var(--bg)">' +
     '<div class="accordion-details">' +
     '<div><dt>تاريخ الانضمام</dt><dd>' + (m.joinDate || '—') + '</dd></div>' +
-    '<div><dt>الملاحظات</dt><dd>' + (m.notes || '—') + '</dd></div>' +
+    '<div><dt>الملاحظات</dt><dd>' + esc(m.notes || '—') + '</dd></div>' +
     '<div><dt>اللجان</dt><dd>' + comms + '</dd></div>' +
-    '<div><dt>العائلة</dt><dd>' + (m.family || '—') + '</dd></div>' +
+    '<div><dt>العائلة</dt><dd>' + esc(m.family || '—') + '</dd></div>' +
     '</div>' +
     '<div class="accordion-actions">' +
     '<button class="btn btn-outline btn-sm" onclick="editMember(\'' + m.id + '\')">✏️ تعديل</button>' +
@@ -350,9 +350,9 @@ function renderCompactTable(list, pg, startIdx) {
 
     return '<tr class="' + dupClass + '" style="cursor:pointer">' +
       '<td class="th-check" onclick="event.stopPropagation()"><input type="checkbox" class="member-check" data-id="' + m.id + '" ' + checked + ' onchange="toggleMemberSelect(\'' + m.id + '\', this)"></td>' +
-      '<td onclick="toggleAccordion(this.parentNode, \'' + m.id + '\')"><div style="display:flex;align-items:center;gap:8px"><span style="color:var(--text-muted);font-size:11px;min-width:20px">' + (startIdx + i + 1) + '</span><div class="avatar" style="background:' + avColor(m.name) + '">' + avInit(m.name) + '</div><div><div style="font-weight:600;font-size:13px">' + m.name + '</div><div style="font-size:11px;color:var(--text-muted)">' + (m.family || '') + '</div></div></div></td>' +
+      '<td onclick="toggleAccordion(this.parentNode, \'' + m.id + '\')"><div style="display:flex;align-items:center;gap:8px"><span style="color:var(--text-muted);font-size:11px;min-width:20px">' + (startIdx + i + 1) + '</span><div class="avatar" style="background:' + avColor(m.name) + '">' + avInit(m.name) + '</div><div><div style="font-weight:600;font-size:13px">' + esc(m.name) + '</div><div style="font-size:11px;color:var(--text-muted)">' + esc(m.family || '') + '</div></div></div></td>' +
       '<td style="font-size:12px;font-weight:600;color:var(--green-dark);font-family:monospace">' + awmId + '</td>' +
-      '<td>' + (m.phone || '—') + '</td>' +
+      '<td>' + esc(m.phone || '—') + '</td>' +
       '<td style="font-size:11px">' + commsCount + '</td>' +
       '<td>' + sb + '</td>' +
       '<td>' + pb + '</td>' +
@@ -362,8 +362,6 @@ function renderCompactTable(list, pg, startIdx) {
 }
 
 // =================== ENHANCED renderMembers ===================
-// Store original renderMembers reference then override
-var _originalRenderMembers = typeof renderMembers === 'function' ? renderMembers : null;
 
 function renderMembers(page) {
   var s = document.getElementById('m-search').value;
@@ -406,8 +404,8 @@ function renderMembers(page) {
     list = list.filter(function(m) { return dupIds[m.id]; });
   }
 
-  // Update stats
-  updateMembersStats(list);
+  // Update stats (always from all members, not filtered list)
+  updateMembersStats(State.getMembers());
 
   // Apply sorting
   applySortToList(list);
@@ -495,9 +493,9 @@ function renderCardsView(list, pg, startIdx, p) {
 
     return '<tr><td data-label="" style="width:30px"><input type="checkbox" class="member-check" data-id="' + m.id + '" ' + checked + ' onchange="toggleMemberSelect(\'' + m.id + '\', this)"></td>' +
     '<td data-label="#" style="color:var(--text-muted);font-size:11px">' + (startIdx + i + 1) + '</td>' +
-    '<td data-label="العضو"><div style="display:flex;align-items:center;gap:8px"><div class="avatar" style="background:' + avColor(m.name) + '">' + avInit(m.name) + '</div><div><div style="font-weight:600">' + m.name + dupBadge + '</div><div style="font-size:11px;color:var(--text-muted)">' + (m.family || '') + '</div></div></div></td>' +
+    '<td data-label="العضو"><div style="display:flex;align-items:center;gap:8px"><div class="avatar" style="background:' + avColor(m.name) + '">' + avInit(m.name) + '</div><div><div style="font-weight:600">' + esc(m.name) + dupBadge + '</div><div style="font-size:11px;color:var(--text-muted)">' + esc(m.family || '') + '</div></div></div></td>' +
     '<td data-label="AWM-ID" style="font-size:12px;font-weight:600;color:var(--green-dark);font-family:monospace">' + awmId + '</td>' +
-    '<td data-label="الجوال">' + (m.phone || '—') + '</td>' +
+    '<td data-label="الجوال">' + esc(m.phone || '—') + '</td>' +
     '<td data-label="اللجان" class="committee-cell" title="' + comms.replace(/<[^>]*>/g, '') + '">' + comms + '</td>' +
     '<td data-label="الانضمام" style="font-size:11px">' + (m.joinDate || '—') + '</td><td data-label="الحالة">' + sb + '</td><td data-label="الحساب">' + accBadge + '</td><td data-label="الدفع">' + pb + '</td>' +
     '<td data-label="إجراءات"><div class="actions-cell">' +

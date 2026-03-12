@@ -660,7 +660,9 @@ function handleBulkDelete(): void
         respond(500, ['error' => 'خطأ في قاعدة البيانات أثناء الحذف الجماعي.']);
     }
 
-    logAudit('حذف جماعي', 'عضو', '', '', ['count' => $deleted, 'names' => $names]);
+    if ($deleted > 0) {
+        logAudit('حذف جماعي', 'عضو', '', '', ['count' => $deleted, 'names' => $names]);
+    }
 
     respond(200, ['deleted' => $deleted, 'failed' => $failed, 'errors' => $errors]);
 }
@@ -724,7 +726,9 @@ function handleBulkStatus(): void
         respond(500, ['error' => 'خطأ في قاعدة البيانات أثناء التعديل الجماعي.']);
     }
 
-    logAudit('تعديل حالة جماعي', 'عضو', '', '', ['count' => $updated, 'new_status' => $status]);
+    if ($updated > 0) {
+        logAudit('تعديل حالة جماعي', 'عضو', '', '', ['count' => $updated, 'new_status' => $status]);
+    }
 
     respond(200, ['updated' => $updated, 'failed' => $failed, 'errors' => $errors]);
 }

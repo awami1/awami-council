@@ -61,7 +61,8 @@ if ($method === 'GET') {
         $settings = array_replace_recursive(defaultSettings(), $settings);
         respond(200, ['settings' => $settings]);
     } catch (Exception $e) {
-        respond(500, ['error' => 'خطأ في القراءة: ' . $e->getMessage()]);
+        error_log('Settings read error: ' . $e->getMessage());
+        respond(500, ['error' => 'خطأ في القراءة.']);
     }
 }
 
@@ -88,7 +89,8 @@ if ($method === 'POST') {
 
         respond(200, ['ok' => true, 'settings' => $current]);
     } catch (Exception $e) {
-        respond(500, ['error' => 'خطأ في الحفظ: ' . $e->getMessage()]);
+        error_log('Settings save error: ' . $e->getMessage());
+        respond(500, ['error' => 'خطأ في الحفظ.']);
     }
 }
 

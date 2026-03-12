@@ -309,6 +309,7 @@ function handleDeleteByMemberPeriod(): void
         'DELETE FROM payments WHERE member_id = :mid AND period_id = :pid'
     )->execute([':mid' => $mid, ':pid' => $pid]);
 
+    logAudit('حذف', 'دفعات', "{$mid}/{$pid}", '');
     respond(200, ['message' => 'Payments deleted.']);
 }
 

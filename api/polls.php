@@ -362,5 +362,6 @@ try {
         default                                       => respond(405, ['error' => 'Method not allowed.']),
     };
 } catch (PDOException $e) {
-    respond(500, ['error' => 'Database error.', 'detail' => $e->getMessage()]);
+    error_log('PDOException in polls: ' . $e->getMessage());
+    respond(500, ['error' => 'خطأ في قاعدة البيانات.']);
 }

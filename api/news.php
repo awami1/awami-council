@@ -98,6 +98,9 @@ function validateNewsPayload(array $data, bool $requireAll = true): array
 
     if ($requireAll || array_key_exists('category', $data)) {
         $v = sanitizeString($data['category'] ?? 'عام', 'category');
+        if (!in_array($v, NEWS_CATEGORIES, true)) {
+            respond(422, ['error' => '"category" يجب أن يكون أحد: ' . implode('، ', NEWS_CATEGORIES)]);
+        }
         $fields['category'] = $v;
     }
 

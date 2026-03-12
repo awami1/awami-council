@@ -351,7 +351,7 @@ function handleLogin(e) {
       .then(function(r) { return r.json().then(function(d) { return { status: r.status, data: d }; }); })
       .then(function(actRes) {
         if (actRes.data.error) {
-          showAlert(alert, res.data.error, 'error');
+          showAlert(alert, actRes.data.error, 'error');
           btn.disabled = false;
           btn.textContent = 'تسجيل الدخول';
           return;

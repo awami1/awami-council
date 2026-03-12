@@ -602,6 +602,135 @@ function handleApplyStatuses(): void
 
 /*
 |--------------------------------------------------------------------------
+| BULK OPERATIONS
+|--------------------------------------------------------------------------
+*/
+
+/**
+ * حذف جماعي للأعضاء
+ * DELETE /api/members.php?action=bulk_delete
+ * Body: { "ids": ["uuid1", "uuid2", ...] }
+ */
+function handleBulkDelete(): void
+{
+    $pdo  = getPDO();
+    $data = bodyJson();
+
+    $ids = $data['ids'] ?? [];
+    if (!is_array($ids) || empty($ids)) {
+        respond(422, ['error' => 'مصفوفة "ids" مطلوبة وغير فارغة.']);
+    }
+    if (count($ids) > 50) {
+        respond(422, ['error' => 'الحد الأقصى 50 عضو بالطلب الواحد.']);
+    }
+
+    // التحقق من صحة كل id
+    foreach ($ids as $rid) {
+        if (!is_string($rid) || !preg_match('/^[a-zA-Z0-9_-]{1,64}$/', $rid)) {
+            respond(422, ['error' => 'معرّف غير صالح: ' . (is_string($rid) ? $rid : '')]);
+        }
+    }
+
+    $deleted = 0;
+    $failed  = 0;
+    $errors  = [];
+    $names   = [];
+
+    $pdo->beginTransaction();
+    try {
+        foreach ($ids as $rid) {
+            $stmt = $pdo->prepare('SELECT name FROM members WHERE id = :id LIMIT 1');
+            $stmt->execute([':id' => $rid]);
+            $row = $stmt->fetch();
+
+            if (!$row) {
+                $failed++;
+                $errors[] = "العضو {$rid} غير موجود.";
+                continue;
+            }
+
+            $names[] = $row['name'];
+            $pdo->prepare('DELETE FROM members WHERE id = :id')->execute([':id' => $rid]);
+            $deleted++;
+        }
+        $pdo->commit();
+    } catch (PDOException $e) {
+        $pdo->rollBack();
+        error_log('Bulk delete error: ' . $e->getMessage());
+        respond(500, ['error' => 'خطأ في قاعدة البيانات أثناء الحذف الجماعي.']);
+    }
+
+    logAudit('حذف جماعي', 'عضو', '', '', ['count' => $deleted, 'names' => $names]);
+
+    respond(200, ['deleted' => $deleted, 'failed' => $failed, 'errors' => $errors]);
+}
+
+/**
+ * تعديل جماعي لحالة الأعضاء
+ * PUT /api/members.php?action=bulk_status
+ * Body: { "ids": ["uuid1", ...], "status": "منقطع" }
+ */
+function handleBulkStatus(): void
+{
+    $pdo  = getPDO();
+    $data = bodyJson();
+
+    $ids    = $data['ids'] ?? [];
+    $status = $data['status'] ?? '';
+
+    if (!is_array($ids) || empty($ids)) {
+        respond(422, ['error' => 'مصفوفة "ids" مطلوبة وغير فارغة.']);
+    }
+    if (count($ids) > 50) {
+        respond(422, ['error' => 'الحد الأقصى 50 عضو بالطلب الواحد.']);
+    }
+
+    $allowedStatuses = ['مشترك', 'منقطع', 'غير مشترك'];
+    if (!in_array($status, $allowedStatuses, true)) {
+        respond(422, ['error' => 'الحالة غير صالحة. القيم المسموحة: ' . implode('، ', $allowedStatuses)]);
+    }
+
+    // التحقق من صحة كل id
+    foreach ($ids as $rid) {
+        if (!is_string($rid) || !preg_match('/^[a-zA-Z0-9_-]{1,64}$/', $rid)) {
+            respond(422, ['error' => 'معرّف غير صالح: ' . (is_string($rid) ? $rid : '')]);
+        }
+    }
+
+    $updated = 0;
+    $failed  = 0;
+    $errors  = [];
+    $now     = date('Y-m-d H:i:s');
+
+    $pdo->beginTransaction();
+    try {
+        foreach ($ids as $rid) {
+            $stmt = $pdo->prepare('SELECT id FROM members WHERE id = :id LIMIT 1');
+            $stmt->execute([':id' => $rid]);
+            if (!$stmt->fetch()) {
+                $failed++;
+                $errors[] = "العضو {$rid} غير موجود.";
+                continue;
+            }
+
+            $pdo->prepare('UPDATE members SET status = :status, updated_at = :updated WHERE id = :id')
+                ->execute([':status' => $status, ':updated' => $now, ':id' => $rid]);
+            $updated++;
+        }
+        $pdo->commit();
+    } catch (PDOException $e) {
+        $pdo->rollBack();
+        error_log('Bulk status error: ' . $e->getMessage());
+        respond(500, ['error' => 'خطأ في قاعدة البيانات أثناء التعديل الجماعي.']);
+    }
+
+    logAudit('تعديل حالة جماعي', 'عضو', '', '', ['count' => $updated, 'new_status' => $status]);
+
+    respond(200, ['updated' => $updated, 'failed' => $failed, 'errors' => $errors]);
+}
+
+/*
+|--------------------------------------------------------------------------
 | ROUTER
 |--------------------------------------------------------------------------
 */
@@ -612,6 +741,8 @@ $action = $_GET['action'] ?? '';
 
 match (true) {
 
+    $method === 'DELETE' && $action === 'bulk_delete'       => handleBulkDelete(),
+    $method === 'PUT'    && $action === 'bulk_status'       => handleBulkStatus(),
     $method === 'POST' && $action === 'activate_account'  => handleActivateAccount(),
     $method === 'POST' && $action === 'reset_password'     => handleResetPassword(),
     $method === 'POST' && $action === 'apply_statuses'     => handleApplyStatuses(),

@@ -198,6 +198,11 @@ function updateBulkBar() {
   }
 }
 
+function _setBulkBarVisible(visible) {
+  var bar = document.getElementById('bulk-action-bar');
+  if (bar) bar.style.display = visible ? 'flex' : 'none';
+}
+
 function bulkDelete() {
   if (_selectedMembers.size === 0) return;
   var members = State.getMembers();
@@ -215,7 +220,13 @@ function bulkDelete() {
     if (names.length > 10) display += '<br><strong>... و ' + (names.length - 10) + ' آخرين</strong>';
     namesList.innerHTML = display;
   }
+  _setBulkBarVisible(false);
   openModal('modal-bulk-delete');
+}
+
+function cancelBulkDelete() {
+  closeModal('modal-bulk-delete');
+  _setBulkBarVisible(true);
 }
 
 async function confirmBulkDelete() {
@@ -240,6 +251,7 @@ async function confirmBulkDelete() {
     updateSidebar();
   } catch (e) {
     toast(e.message || 'خطأ في الحذف', 'error');
+    _setBulkBarVisible(true);
   }
 }
 
@@ -247,7 +259,13 @@ function openBulkStatusModal() {
   if (_selectedMembers.size === 0) return;
   var el = document.getElementById('bulk-status-count');
   if (el) el.textContent = _selectedMembers.size;
+  _setBulkBarVisible(false);
   openModal('modal-bulk-status');
+}
+
+function cancelBulkStatus() {
+  closeModal('modal-bulk-status');
+  _setBulkBarVisible(true);
 }
 
 async function confirmBulkStatus() {
@@ -271,6 +289,7 @@ async function confirmBulkStatus() {
     renderMembers();
   } catch (e) {
     toast(e.message || 'خطأ في التحديث', 'error');
+    _setBulkBarVisible(true);
   }
 }
 

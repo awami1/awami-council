@@ -1422,7 +1422,7 @@ var CSRF_TOKEN = '<?php echo getCsrfToken(); ?>';
   <div class="modal" style="max-width:400px">
     <div class="modal-header">
       <div class="modal-title">📝 تغيير حالة <span id="bulk-status-count">0</span> عضو</div>
-      <button class="modal-close" onclick="closeModal('modal-bulk-status')">✕</button>
+      <button class="modal-close" onclick="cancelBulkStatus()">✕</button>
     </div>
     <div class="modal-body">
       <div class="form-group">
@@ -1436,7 +1436,7 @@ var CSRF_TOKEN = '<?php echo getCsrfToken(); ?>';
     </div>
     <div class="modal-footer">
       <button class="btn btn-primary" onclick="confirmBulkStatus()">تأكيد التغيير</button>
-      <button class="btn btn-outline" onclick="closeModal('modal-bulk-status')">إلغاء</button>
+      <button class="btn btn-outline" onclick="cancelBulkStatus()">إلغاء</button>
     </div>
   </div>
 </div>
@@ -1446,7 +1446,7 @@ var CSRF_TOKEN = '<?php echo getCsrfToken(); ?>';
   <div class="modal" style="max-width:480px">
     <div class="modal-header">
       <div class="modal-title">⚠ تأكيد الحذف الجماعي</div>
-      <button class="modal-close" onclick="closeModal('modal-bulk-delete')">✕</button>
+      <button class="modal-close" onclick="cancelBulkDelete()">✕</button>
     </div>
     <div class="modal-body">
       <p style="color:var(--danger);font-weight:600;margin-bottom:12px" id="bulk-delete-warning"></p>
@@ -1454,7 +1454,7 @@ var CSRF_TOKEN = '<?php echo getCsrfToken(); ?>';
     </div>
     <div class="modal-footer">
       <button class="btn btn-danger" onclick="confirmBulkDelete()">تأكيد الحذف</button>
-      <button class="btn btn-outline" onclick="closeModal('modal-bulk-delete')">إلغاء</button>
+      <button class="btn btn-outline" onclick="cancelBulkDelete()">إلغاء</button>
     </div>
   </div>
 </div>

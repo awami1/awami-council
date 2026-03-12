@@ -197,17 +197,68 @@ var CSRF_TOKEN = '<?php echo getCsrfToken(); ?>';
 
     <!-- MEMBERS -->
     <div class="page" id="page-members">
+      <!-- شريط الإحصائيات -->
+      <div id="members-stats" class="members-stats-bar">
+        <div class="m-stat-card m-stat-total" onclick="quickFilter('')">
+          <div class="m-stat-number" id="stat-total">0</div>
+          <div class="m-stat-label">الإجمالي</div>
+        </div>
+        <div class="m-stat-card m-stat-active" onclick="quickFilter('مشترك')">
+          <div class="m-stat-number" id="stat-active">0</div>
+          <div class="m-stat-label">مشترك</div>
+        </div>
+        <div class="m-stat-card m-stat-lapsed" onclick="quickFilter('منقطع')">
+          <div class="m-stat-number" id="stat-lapsed">0</div>
+          <div class="m-stat-label">منقطع</div>
+        </div>
+        <div class="m-stat-card m-stat-inactive" onclick="quickFilter('غير مشترك')">
+          <div class="m-stat-number" id="stat-inactive">0</div>
+          <div class="m-stat-label">غير مشترك</div>
+        </div>
+      </div>
+
       <div class="card">
-        <div class="search-bar">
+        <div class="search-bar members-filters">
           <button class="btn btn-primary btn-sm" onclick="openAddMember()">+ إضافة عضو</button>
           <button class="btn btn-accent btn-sm" onclick="openImportExcel()">📥 استيراد Excel</button>
           <input class="search-input" id="m-search" placeholder="بحث بالاسم أو الجوال..." oninput="debouncedRenderMembers()">
-          <select class="filter-select" style="width:130px" id="m-flt-status" onchange="_pageState.members=1;renderMembers()"><option value="">كل الحالات</option><option>مشترك</option><option>منقطع</option><option>غير مشترك</option></select>
-          <select class="filter-select" style="width:140px" id="m-flt-account" onchange="_pageState.members=1;renderMembers()"><option value="">كل الحسابات</option><option value="active">مُفعَّل</option><option value="inactive">غير مُفعَّل</option><option value="none">بدون حساب</option></select>
+          <select class="filter-select" id="m-flt-status" onchange="_pageState.members=1;renderMembers()"><option value="">كل الحالات</option><option>مشترك</option><option>منقطع</option><option>غير مشترك</option></select>
+          <select class="filter-select" id="m-flt-account" onchange="_pageState.members=1;renderMembers()"><option value="">كل الحسابات</option><option value="active">مُفعَّل</option><option value="inactive">غير مُفعَّل</option><option value="none">بدون حساب</option></select>
+          <button id="btn-duplicates" class="btn btn-outline btn-sm" onclick="toggleDuplicatesFilter()">🔍 المكررين (<span id="dup-count">0</span>)</button>
           <button class="btn btn-outline btn-sm" onclick="resetMembersFilters()" title="إعادة ضبط الفلاتر">↺ ضبط</button>
           <button class="btn btn-outline btn-sm" onclick="exportMembersExcel()">📊 Excel</button>
         </div>
-        <div class="table-wrap mobile-cards"><table><thead><tr><th>#</th><th>العضو</th><th>AWM-ID</th><th>الجوال</th><th>اللجان</th><th>الانضمام</th><th>الحالة</th><th>الحساب</th><th>الدفع</th><th>إجراءات</th></tr></thead><tbody id="members-tbody"></tbody></table></div>
+
+        <!-- زر التبديل بين العرضين -->
+        <div class="view-toggle">
+          <button id="view-cards" class="toggle-btn active" onclick="setMembersView('cards')">☰ بطاقات</button>
+          <button id="view-table" class="toggle-btn" onclick="setMembersView('table')">⊞ جدول</button>
+        </div>
+
+        <!-- عرض البطاقات (الحالي) -->
+        <div id="members-cards-view">
+          <div class="table-wrap mobile-cards"><table><thead><tr><th class="th-check"><input type="checkbox" id="select-all-cards" onchange="toggleSelectAll(this)"></th><th>#</th><th class="sortable" onclick="sortMembers('name')">العضو <span class="sort-arrow" id="sort-arrow-name-cards"></span></th><th>AWM-ID</th><th>الجوال</th><th>اللجان</th><th class="sortable" onclick="sortMembers('joinDate')">الانضمام <span class="sort-arrow" id="sort-arrow-joinDate-cards"></span></th><th class="sortable" onclick="sortMembers('status')">الحالة <span class="sort-arrow" id="sort-arrow-status-cards"></span></th><th>الحساب</th><th>الدفع</th><th>إجراءات</th></tr></thead><tbody id="members-tbody"></tbody></table></div>
+        </div>
+
+        <!-- عرض الجدول المضغوط -->
+        <div id="members-compact" style="display:none">
+          <table class="compact-table">
+            <thead>
+              <tr>
+                <th class="th-check"><input type="checkbox" id="select-all-members" onchange="toggleSelectAll(this)"></th>
+                <th class="sortable" onclick="sortMembers('name')"># العضو <span class="sort-arrow" id="sort-arrow-name"></span></th>
+                <th>AWM-ID</th>
+                <th>الجوال</th>
+                <th>اللجان</th>
+                <th class="sortable" onclick="sortMembers('status')">الحالة <span class="sort-arrow" id="sort-arrow-status"></span></th>
+                <th>الدفع</th>
+                <th>الحساب</th>
+              </tr>
+            </thead>
+            <tbody id="compact-tbody"></tbody>
+          </table>
+        </div>
+
         <div id="members-pagination"></div>
         <div style="padding:12px 18px;border-top:1px solid var(--border);display:flex;justify-content:space-between;align-items:center">
           <span style="font-size:12px;color:var(--text-muted)" id="members-count">0 عضو</span>
@@ -1358,8 +1409,59 @@ var CSRF_TOKEN = '<?php echo getCsrfToken(); ?>';
   if(saved === 'dark') document.documentElement.setAttribute('data-theme','dark');
 })();
 </script>
+<!-- شريط الإجراءات العائم -->
+<div id="bulk-action-bar" class="bulk-bar" style="display:none">
+  <span id="bulk-count">تم تحديد 0 عضو</span>
+  <button class="btn btn-danger" onclick="bulkDelete()">🗑️ حذف المحددين</button>
+  <button class="btn btn-primary" onclick="openBulkStatusModal()">📝 تغيير الحالة</button>
+  <button class="btn btn-outline" onclick="clearSelection()">✕ إلغاء</button>
+</div>
+
+<!-- modal تغيير الحالة الجماعي -->
+<div class="modal-overlay" id="modal-bulk-status">
+  <div class="modal" style="max-width:400px">
+    <div class="modal-header">
+      <div class="modal-title">📝 تغيير حالة <span id="bulk-status-count">0</span> عضو</div>
+      <button class="modal-close" onclick="closeModal('modal-bulk-status')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-group">
+        <label class="form-label">الحالة الجديدة:</label>
+        <select id="bulk-new-status" class="form-control">
+          <option value="مشترك">مشترك</option>
+          <option value="منقطع">منقطع</option>
+          <option value="غير مشترك">غير مشترك</option>
+        </select>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-primary" onclick="confirmBulkStatus()">تأكيد التغيير</button>
+      <button class="btn btn-outline" onclick="closeModal('modal-bulk-status')">إلغاء</button>
+    </div>
+  </div>
+</div>
+
+<!-- modal تأكيد الحذف الجماعي -->
+<div class="modal-overlay" id="modal-bulk-delete">
+  <div class="modal" style="max-width:480px">
+    <div class="modal-header">
+      <div class="modal-title">⚠ تأكيد الحذف الجماعي</div>
+      <button class="modal-close" onclick="closeModal('modal-bulk-delete')">✕</button>
+    </div>
+    <div class="modal-body">
+      <p style="color:var(--danger);font-weight:600;margin-bottom:12px" id="bulk-delete-warning"></p>
+      <div id="bulk-delete-names" style="font-size:13px;color:var(--text-muted);max-height:200px;overflow-y:auto"></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-danger" onclick="confirmBulkDelete()">تأكيد الحذف</button>
+      <button class="btn btn-outline" onclick="closeModal('modal-bulk-delete')">إلغاء</button>
+    </div>
+  </div>
+</div>
+
 <script src="<?= adminAsset('js/admin-core.js') ?>"></script>
 <script src="<?= adminAsset('js/admin-app.js') ?>"></script>
+<script src="<?= adminAsset('js/admin-members-ui.js') ?>"></script>
 <script src="<?= adminAsset('js/admin-members-auth.js') ?>"></script>
 <script src="<?= adminAsset('js/admin-riwaq.js') ?>"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>

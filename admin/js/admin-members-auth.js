@@ -105,7 +105,8 @@ function showWhatsAppModal(data) {
     var old = document.getElementById('modal-wa-message');
     if (old) old.remove();
 
-    var phoneClean = data.phone ? data.phone.replace(/\D/g, '').replace(/^0/, '966') : '';
+    var phoneClean = data.phone ? data.phone.replace(/\D/g, '').replace(/^0+/, '') : '';
+    if (phoneClean && !/^966/.test(phoneClean)) phoneClean = '966' + phoneClean;
     var waLink = 'https://wa.me/' + phoneClean;
     var waLinkWithText = waLink + '?text=' + encodeURIComponent(data.wa_message);
 

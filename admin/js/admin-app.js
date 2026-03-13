@@ -1661,7 +1661,8 @@ async function renderReminders() {
       document.getElementById('rem-list').innerHTML = '<div class="empty-state"><div class="empty-icon">🎉</div><p>جميع الأعضاء دفعوا!</p></div>';
     } else {
       document.getElementById('rem-list').innerHTML = unpaid.map(m => {
-        const phone = m.phone ? m.phone.replace(/^0/, '966') : '';
+        var phoneDigits = m.phone ? m.phone.replace(/\D/g, '').replace(/^0+/, '') : '';
+        const phone = phoneDigits && !/^966/.test(phoneDigits) ? '966' + phoneDigits : phoneDigits;
         const msg = encodeURIComponent(`السلام عليكم ${m.name} 👋\n\nنذكركم بسداد رسوم مجلس عائلة العوامي للدورة "${p.name}"\nالمبلغ المطلوب: ${fmt(m.required)} ريال\n\nشكراً لكم 🙏`);
         const lastRem = m.last_reminder ? new Date(m.last_reminder).toLocaleDateString('ar-SA', {month:'short',day:'numeric'}) : null;
         return `<div style="display:flex;align-items:center;gap:10px;padding:10px;border-bottom:1px solid #f0ebe0">
@@ -1823,7 +1824,7 @@ function sendWhatsappReminders(){
   const unpaid=State.getPayments().filter(x=>x.periodId===p.id&&x.status==='لم يدفع');
   if(!unpaid.length){toast('جميع الأعضاء دفعوا! 🎉');return;}
   const list=unpaid.map(pay=>State.getMembers().find(x=>x.id===pay.memberId)).filter(Boolean);
-  document.getElementById('whatsapp-list').innerHTML=list.map(m=>{ const phone=m.phone?m.phone.replace(/^0/,'966'):''; const msg=encodeURIComponent(`السلام عليكم ${m.name} 👋\n\nنذكركم بسداد رسوم مجلس عائلة العوامي للدورة "${p.name}"\nالمبلغ المطلوب: ${fmt(p.feeAmount)} ريال\n\nشكراً لكم 🙏`); return `<div style="display:flex;align-items:center;gap:10px;padding:10px;border-bottom:1px solid #f0ebe0"><div class="avatar" style="background:${avColor(m.name)}">${avInit(m.name)}</div><div style="flex:1"><div style="font-weight:600">${m.name}</div><div style="font-size:11px;color:var(--text-muted)">${m.phone||'لا يوجد رقم'}</div></div>${phone?`<a href="https://wa.me/${phone}?text=${msg}" target="_blank" class="btn btn-whatsapp btn-sm">📱 إرسال</a>`:'<span class="badge badge-gray">بدون رقم</span>'}</div>`; }).join('');
+  document.getElementById('whatsapp-list').innerHTML=list.map(m=>{ var pd=m.phone?m.phone.replace(/\D/g,'').replace(/^0+/,''):''; const phone=pd&&!/^966/.test(pd)?'966'+pd:pd; const msg=encodeURIComponent(`السلام عليكم ${m.name} 👋\n\nنذكركم بسداد رسوم مجلس عائلة العوامي للدورة "${p.name}"\nالمبلغ المطلوب: ${fmt(p.feeAmount)} ريال\n\nشكراً لكم 🙏`); return `<div style="display:flex;align-items:center;gap:10px;padding:10px;border-bottom:1px solid #f0ebe0"><div class="avatar" style="background:${avColor(m.name)}">${avInit(m.name)}</div><div style="flex:1"><div style="font-weight:600">${m.name}</div><div style="font-size:11px;color:var(--text-muted)">${m.phone||'لا يوجد رقم'}</div></div>${phone?`<a href="https://wa.me/${phone}?text=${msg}" target="_blank" class="btn btn-whatsapp btn-sm">📱 إرسال</a>`:'<span class="badge badge-gray">بدون رقم</span>'}</div>`; }).join('');
   openModal('modal-whatsapp');
 }
 

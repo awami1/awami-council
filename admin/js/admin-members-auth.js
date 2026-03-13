@@ -105,7 +105,8 @@ function showWhatsAppModal(data) {
     var old = document.getElementById('modal-wa-message');
     if (old) old.remove();
 
-    var waLink = 'https://wa.me/' + (data.phone ? data.phone.replace(/\D/g, '') : '');
+    var phoneClean = data.phone ? data.phone.replace(/\D/g, '').replace(/^0/, '966') : '';
+    var waLink = 'https://wa.me/' + phoneClean;
     var waLinkWithText = waLink + '?text=' + encodeURIComponent(data.wa_message);
 
     var html = '<div class="modal-overlay" id="modal-wa-message" onclick="if(event.target===this)closeWaModal()">'
@@ -123,7 +124,7 @@ function showWhatsAppModal(data) {
         + '<textarea id="wa-msg-text" readonly style="width:100%;min-height:180px;padding:12px;border:2px solid var(--border);border-radius:8px;font-family:inherit;font-size:13px;line-height:1.7;background:var(--bg);color:var(--text);resize:vertical;direction:rtl">' + escHtml(data.wa_message) + '</textarea>'
         + '<div style="display:flex;gap:8px;margin-top:14px;flex-wrap:wrap">'
         + '<button class="btn btn-primary" onclick="copyWaMessage()" style="flex:1;min-width:140px">📋 نسخ الرسالة</button>'
-        + (data.phone ? '<a href="' + waLinkWithText + '" target="_blank" rel="noopener" class="btn btn-accent" style="flex:1;min-width:140px;text-align:center;text-decoration:none;background:#25D366;color:#fff">📱 إرسال واتساب</a>' : '')
+        + (data.phone ? '<a href="' + waLinkWithText + '" rel="noopener" class="btn btn-accent" style="flex:1;min-width:140px;text-align:center;text-decoration:none;background:#25D366;color:#fff">📱 إرسال واتساب</a>' : '')
         + '</div>'
         + '</div>'
         + '</div>'

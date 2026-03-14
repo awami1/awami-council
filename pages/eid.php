@@ -30,7 +30,7 @@
         <div>
           <label class="eid-label">&#x1F4CF; حجم الخط: <span id="eid-font-size-label">70</span>px</label>
           <input type="range" id="eid-font-size" class="eid-range" min="40" max="120" value="70" oninput="updateFontSize()">
-          <div class="eid-range-labels"><span>صغير</span><span>متوسط</span><span>كبير</span></div>
+          <div class="eid-range-labels"><span>كبير</span><span>متوسط</span><span>صغير</span></div>
         </div>
       </div>
 

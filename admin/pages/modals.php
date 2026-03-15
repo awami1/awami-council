@@ -237,12 +237,16 @@
     <div class="modal-body">
       <input type="hidden" id="media-edit-id">
       <div class="form-group"><label class="form-label">العنوان *</label><input class="form-control" id="media-title" required></div>
+      <div class="form-group"><label class="form-label">الألبوم</label>
+        <select class="form-control" id="media-album-id">
+          <option value="">-- بدون ألبوم --</option>
+        </select>
+      </div>
       <div class="form-group"><label class="form-label">النوع *</label>
         <select class="form-control" id="media-type">
           <option value="images">📷 صورة</option>
           <option value="videos">🎥 فيديو</option>
           <option value="youtube">▶️ يوتيوب</option>
-          <option value="events">🎉 فعالية</option>
         </select>
       </div>
       <div class="form-group">
@@ -256,7 +260,56 @@
       <div class="form-group"><label class="form-label">التاريخ</label><input class="form-control" id="media-date" type="date"></div>
       <div class="form-group"><label class="form-label">الوسوم (افصل بفاصلة)</label><input class="form-control" id="media-tags" placeholder="مثال: فعالية، رحلة، اجتماع"></div>
     </div>
-    <div class="modal-footer"><button class="btn btn-outline" onclick="closeModal('modal-add-media')">إلغاء</button><button class="btn btn-primary" onclick="saveMedia()">💾 حفظ</button></div>
+    <div class="modal-footer">
+      <button class="btn btn-outline" onclick="closeModal('modal-add-media')">إلغاء</button>
+      <button class="btn btn-secondary" onclick="saveMedia(true)">💾 حفظ وإضافة جديد</button>
+      <button class="btn btn-primary" onclick="saveMedia()">💾 حفظ</button>
+    </div>
+  </div>
+</div>
+
+<!-- ADD / EDIT ALBUM MODAL -->
+<div class="modal-overlay" id="modal-add-album" role="dialog" aria-modal="true" aria-labelledby="modal-album-title">
+  <div class="modal">
+    <div class="modal-header"><div class="modal-title" id="modal-album-title">📁 إضافة ألبوم</div><button class="modal-close" onclick="closeModal('modal-add-album')" aria-label="إغلاق">✕</button></div>
+    <div class="modal-body">
+      <input type="hidden" id="album-edit-id">
+      <div class="form-group"><label class="form-label">عنوان الألبوم *</label><input class="form-control" id="album-title" required></div>
+      <div class="form-group"><label class="form-label">وصف</label><textarea class="form-control" id="album-description" rows="3"></textarea></div>
+      <div class="form-group">
+        <label class="form-label">رابط صورة الغلاف</label>
+        <input class="form-control" id="album-cover-url" placeholder="https://...">
+        <div id="album-cover-preview" style="display:none;margin-top:8px">
+          <img id="album-cover-preview-img" src="" alt="" style="width:100%;height:160px;object-fit:cover;border-radius:8px">
+        </div>
+      </div>
+      <div class="form-group"><label class="form-label">التاريخ</label><input class="form-control" id="album-date" type="date"></div>
+      <div class="form-group"><label class="form-label">الترتيب</label><input class="form-control" id="album-sort-order" type="number" value="0" min="0"></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-outline" onclick="closeModal('modal-add-album')">إلغاء</button>
+      <button class="btn btn-danger" id="btn-delete-album" onclick="deleteAlbumFromModal()" style="display:none">🗑 حذف</button>
+      <button class="btn btn-primary" onclick="saveAlbum()">💾 حفظ</button>
+    </div>
+  </div>
+</div>
+
+<!-- BULK ADD MEDIA MODAL -->
+<div class="modal-overlay" id="modal-bulk-media" role="dialog" aria-modal="true" aria-labelledby="modal-bulk-title">
+  <div class="modal" style="max-width:700px">
+    <div class="modal-header"><div class="modal-title" id="modal-bulk-title">📷 إضافة ميديا متعددة</div><button class="modal-close" onclick="closeModal('modal-bulk-media')" aria-label="إغلاق">✕</button></div>
+    <div class="modal-body">
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-bottom:16px">
+        <div class="form-group" style="margin:0"><label class="form-label">الألبوم</label>
+          <select class="form-control" id="bulk-album-id"><option value="">-- بدون ألبوم --</option></select>
+        </div>
+        <div class="form-group" style="margin:0"><label class="form-label">التاريخ</label><input class="form-control" id="bulk-date" type="date"></div>
+        <div class="form-group" style="margin:0"><label class="form-label">الوسوم</label><input class="form-control" id="bulk-tags" placeholder="فعالية، رحلة"></div>
+      </div>
+      <div id="bulk-rows"></div>
+      <button class="btn btn-outline btn-sm" onclick="addBulkRow()" style="margin-top:8px">+ إضافة حقل آخر</button>
+    </div>
+    <div class="modal-footer"><button class="btn btn-outline" onclick="closeModal('modal-bulk-media')">إلغاء</button><button class="btn btn-primary" onclick="saveBulkMedia()">💾 حفظ الكل</button></div>
   </div>
 </div>
 

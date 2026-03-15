@@ -930,10 +930,22 @@ var CSRF_TOKEN = '<?php echo getCsrfToken(); ?>';
 
       <!-- MEDIA -->
       <div class="tab-content" id="ws-media">
+        <div class="card" style="margin-bottom:20px">
+          <div class="card-header">
+            <div class="card-title">📁 إدارة الألبومات</div>
+            <button class="btn btn-primary btn-sm" onclick="openAddAlbum()">+ إضافة ألبوم</button>
+          </div>
+          <div class="card-body">
+            <div id="albums-list-admin"></div>
+          </div>
+        </div>
         <div class="card">
           <div class="card-header">
             <div class="card-title">📷 إدارة الميديا</div>
-            <button class="btn btn-primary btn-sm" onclick="openAddMedia()">+ إضافة ميديا</button>
+            <div style="display:flex;gap:8px">
+              <button class="btn btn-primary btn-sm" onclick="openAddMedia()">+ إضافة ميديا</button>
+              <button class="btn btn-secondary btn-sm" onclick="openBulkMedia()">+ إضافة مجموعة</button>
+            </div>
           </div>
           <div class="card-body">
             <div id="media-list-admin"></div>

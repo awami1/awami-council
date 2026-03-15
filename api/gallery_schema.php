@@ -78,7 +78,16 @@ function ensureMediaTable(): void
     }
 
     // فهرس على album_id — MySQL ينشئه تلقائياً لـ FK، SQLite لا
-    $pdo->exec("CREATE INDEX IF NOT EXISTS idx_media_album_id ON media(album_id)");
+    // MySQL < 8.0 لا يدعم CREATE INDEX IF NOT EXISTS — نستخدم try/catch
+    try {
+        if (isSQLite()) {
+            $pdo->exec("CREATE INDEX IF NOT EXISTS idx_media_album_id ON media(album_id)");
+        } else {
+            $pdo->exec("CREATE INDEX idx_media_album_id ON media(album_id)");
+        }
+    } catch (\Throwable $e) {
+        // الفهرس موجود مسبقاً أو أُنشئ تلقائياً مع FK — آمن للتجاهل
+    }
 
     $done = true;
 }

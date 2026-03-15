@@ -602,6 +602,7 @@ $indexes = $sqlite ? [
     "CREATE INDEX idx_messages_created ON messages(created_at)",
     "CREATE INDEX idx_stories_status ON stories(status)",
     "CREATE INDEX idx_stories_published ON stories(published_at)",
+    "CREATE INDEX idx_media_album_id ON media(album_id)",
 ];
 foreach ($indexes as $sql) {
     try { $pdo->exec($sql); } catch (PDOException $e) { /* index may already exist */ }

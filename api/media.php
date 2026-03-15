@@ -88,6 +88,11 @@ function ensureMediaTable(): void
 
 ensureMediaTable();
 
+// إنشاء index على album_id للأداء (SQLite لا ينشئه تلقائياً مع FK)
+try {
+    getPDO()->exec("CREATE INDEX IF NOT EXISTS idx_media_album_id ON media(album_id)");
+} catch (PDOException $e) { /* index may already exist */ }
+
 // ──────────────────────────────────────────────────────────────
 // HELPERS
 // ──────────────────────────────────────────────────────────────
@@ -292,38 +297,45 @@ function handleMediaBulkPost(): void
     $created = [];
     $now = date('Y-m-d H:i:s');
 
-    foreach ($items as $item) {
-        if (!is_array($item)) continue;
+    $pdo->beginTransaction();
+    try {
+        foreach ($items as $item) {
+            if (!is_array($item)) continue;
 
-        // دمج القيم المشتركة مع قيم العنصر
-        if (!isset($item['album_id']) && $sharedAlbumId) $item['album_id'] = $sharedAlbumId;
-        if (!isset($item['date'])     && $sharedDate)    $item['date']     = $sharedDate;
-        if (!isset($item['tags'])     && $sharedTags)    $item['tags']     = $sharedTags;
+            // دمج القيم المشتركة مع قيم العنصر
+            if (!isset($item['album_id']) && $sharedAlbumId) $item['album_id'] = $sharedAlbumId;
+            if (!isset($item['date'])     && $sharedDate)    $item['date']     = $sharedDate;
+            if (!isset($item['tags'])     && $sharedTags)    $item['tags']     = $sharedTags;
 
-        $fields = validateMediaPayload($item, requireAll: true);
-        $id = uid();
+            $fields = validateMediaPayload($item, requireAll: true);
+            $id = uid();
 
-        $pdo->prepare(
-            'INSERT INTO media (id, album_id, title, type, url, date, tags, sort_order, created_at, updated_at)
-             VALUES (:id, :album_id, :title, :type, :url, :date, :tags, :sort_order, :created_at, :updated_at)'
-        )->execute([
-            ':id'         => $id,
-            ':album_id'   => $fields['album_id'] ?? null,
-            ':title'      => $fields['title'],
-            ':type'       => $fields['type']       ?? 'images',
-            ':url'        => $fields['url'],
-            ':date'       => $fields['date']       ?? null,
-            ':tags'       => $fields['tags']       ?? '[]',
-            ':sort_order' => $fields['sort_order'] ?? 0,
-            ':created_at' => $now,
-            ':updated_at' => $now,
-        ]);
+            $pdo->prepare(
+                'INSERT INTO media (id, album_id, title, type, url, date, tags, sort_order, created_at, updated_at)
+                 VALUES (:id, :album_id, :title, :type, :url, :date, :tags, :sort_order, :created_at, :updated_at)'
+            )->execute([
+                ':id'         => $id,
+                ':album_id'   => $fields['album_id'] ?? null,
+                ':title'      => $fields['title'],
+                ':type'       => $fields['type']       ?? 'images',
+                ':url'        => $fields['url'],
+                ':date'       => $fields['date']       ?? null,
+                ':tags'       => $fields['tags']       ?? '[]',
+                ':sort_order' => $fields['sort_order'] ?? 0,
+                ':created_at' => $now,
+                ':updated_at' => $now,
+            ]);
 
-        logAudit('إضافة', 'ميديا', $id, $fields['title']);
+            logAudit('إضافة', 'ميديا', $id, $fields['title']);
 
-        $stmt = $pdo->prepare('SELECT * FROM media WHERE id = :id LIMIT 1');
-        $stmt->execute([':id' => $id]);
-        $created[] = mediaToShape($stmt->fetch());
+            $stmt = $pdo->prepare('SELECT * FROM media WHERE id = :id LIMIT 1');
+            $stmt->execute([':id' => $id]);
+            $created[] = mediaToShape($stmt->fetch());
+        }
+        $pdo->commit();
+    } catch (\Throwable $e) {
+        $pdo->rollBack();
+        throw $e;
     }
 
     respond(201, ['data' => $created, 'total' => count($created)]);

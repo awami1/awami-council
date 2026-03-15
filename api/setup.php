@@ -640,6 +640,7 @@ $indexes = $sqlite ? [
     "CREATE INDEX IF NOT EXISTS idx_messages_created ON messages(created_at)",
     "CREATE INDEX IF NOT EXISTS idx_stories_status ON stories(status)",
     "CREATE INDEX IF NOT EXISTS idx_stories_published ON stories(published_at)",
+    "CREATE INDEX IF NOT EXISTS idx_media_album_id ON media(album_id)",
 ] : [
     // MySQL: CREATE INDEX IF NOT EXISTS not supported pre-8.0, so use try/catch
     "CREATE INDEX idx_payments_member ON payments(member_id)",
@@ -648,6 +649,7 @@ $indexes = $sqlite ? [
     "CREATE INDEX idx_messages_created ON messages(created_at)",
     "CREATE INDEX idx_stories_status ON stories(status)",
     "CREATE INDEX idx_stories_published ON stories(published_at)",
+    "CREATE INDEX idx_media_album_id ON media(album_id)",
 ];
 foreach ($indexes as $sql) {
     try { $pdo->exec($sql); } catch (PDOException $e) { /* index may already exist */ }

@@ -206,7 +206,7 @@ function _renderMediaItem(item) {
   return html;
 }
 
-function _escAttr(s) { return (s || '').replace(/&/g, '&amp;').replace(/'/g, "\\'").replace(/"/g, '&quot;').replace(/</g, '&lt;'); }
+function _escAttr(s) { return (s || '').replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/'/g, '&#39;').replace(/</g, '&lt;').replace(/>/g, '&gt;'); }
 function _escHtml(s) { var d = document.createElement('div'); d.textContent = s; return d.innerHTML; }
 
 // ── تنسيق التواريخ ──

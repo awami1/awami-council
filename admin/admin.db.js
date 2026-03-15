@@ -94,7 +94,7 @@ FamilyTreeAPI.getAll(),
     DB.polls = DB.polls.map(normalizePoll);
 
     // عرض تحذير للبيانات التي فشل تحميلها
-    var apiNames = ['Settings','Members','Periods','Payments','Transactions','Events','Polls','Branches','Meeting','Media','Committees','News','Messages','FamilyTree'];
+    var apiNames = ['Settings','Members','Periods','Payments','Transactions','Events','Polls','Branches','Meeting','Media','Albums','Committees','News','Messages','FamilyTree'];
     var failedNames = [];
     results.forEach(function(r, i){
         if (r.status === 'rejected') {

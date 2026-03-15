@@ -11,6 +11,11 @@ verifyCsrf();
 ensureAlbumsTable();
 ensureMediaTable();
 
+// إنشاء index على album_id للأداء (SQLite لا ينشئه تلقائياً مع FK)
+try {
+    getPDO()->exec("CREATE INDEX IF NOT EXISTS idx_media_album_id ON media(album_id)");
+} catch (PDOException $e) { /* index may already exist */ }
+
 // ──────────────────────────────────────────────────────────────
 // HELPERS
 // ──────────────────────────────────────────────────────────────

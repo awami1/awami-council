@@ -10,6 +10,49 @@ verifyCsrf();
 
 ensureAlbumsTable();
 
+// إنشاء جدول media إذا لم يكن موجوداً (مطلوب لأن subquery تعتمد عليه)
+if (!function_exists('ensureMediaTable')) {
+    function ensureMediaTable(): void
+    {
+        static $done = false;
+        if ($done) return;
+        $pdo = getPDO();
+        if (isSQLite()) {
+            $pdo->exec("CREATE TABLE IF NOT EXISTS media (
+                id TEXT PRIMARY KEY,
+                album_id TEXT DEFAULT NULL,
+                title TEXT NOT NULL,
+                type TEXT NOT NULL DEFAULT 'images',
+                url TEXT NOT NULL,
+                date TEXT DEFAULT NULL,
+                tags TEXT NOT NULL DEFAULT '[]',
+                sort_order INTEGER NOT NULL DEFAULT 0,
+                created_at TEXT NOT NULL DEFAULT (datetime('now')),
+                updated_at TEXT NOT NULL DEFAULT (datetime('now')),
+                FOREIGN KEY (album_id) REFERENCES albums(id) ON DELETE SET NULL
+            )");
+        } else {
+            $pdo->exec("CREATE TABLE IF NOT EXISTS `media` (
+                `id` VARCHAR(64) NOT NULL,
+                `album_id` VARCHAR(64) DEFAULT NULL,
+                `title` VARCHAR(500) NOT NULL,
+                `type` ENUM('images','videos','youtube') NOT NULL DEFAULT 'images',
+                `url` VARCHAR(500) NOT NULL,
+                `date` DATE DEFAULT NULL,
+                `tags` JSON DEFAULT NULL,
+                `sort_order` INT NOT NULL DEFAULT 0,
+                `created_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                `updated_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+                PRIMARY KEY (`id`),
+                FOREIGN KEY (`album_id`) REFERENCES `albums`(`id`) ON DELETE SET NULL
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci");
+        }
+        $done = true;
+    }
+}
+
+ensureMediaTable();
+
 // ──────────────────────────────────────────────────────────────
 // HELPERS
 // ──────────────────────────────────────────────────────────────

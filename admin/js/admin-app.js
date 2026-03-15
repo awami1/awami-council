@@ -49,6 +49,7 @@ function renderWebsiteSettings(){
   renderCommitteesList();
   renderValuesList();
   renderLogoPreview();
+  renderAlbumsList();
   renderMediaList();
 }
 
@@ -541,102 +542,331 @@ function deleteValue(){
   });
 }
 
-// =================== MEDIA MANAGEMENT ===================
-function openAddMedia(){
-  document.getElementById('media-edit-id').value='';
-  document.getElementById('modal-media-title').textContent='📷 إضافة ميديا';
-  document.getElementById('media-title').value='';
-  document.getElementById('media-type').value='images';
-  document.getElementById('media-url').value='';
-  document.getElementById('media-date').value=today();
-  document.getElementById('media-tags').value='';
-  document.getElementById('media-url-preview').style.display='none';
-  openModal('modal-add-media');
+// =================== ALBUMS MANAGEMENT ===================
+
+function _populateAlbumDropdown(selectId, selectedId) {
+  var sel = document.getElementById(selectId);
+  if (!sel) return;
+  var albums = State.getAlbums() || [];
+  sel.innerHTML = '<option value="">-- بدون ألبوم --</option>';
+  albums.forEach(function(a) {
+    sel.innerHTML += '<option value="' + a.id + '"' + (a.id === selectedId ? ' selected' : '') + '>' + a.title + '</option>';
+  });
 }
 
-async function saveMedia(){
-  var title=document.getElementById('media-title').value.trim();
-  var type=document.getElementById('media-type').value;
-  var url=document.getElementById('media-url').value.trim();
+function renderAlbumsList() {
+  var container = document.getElementById('albums-list-admin');
+  if (!container) return;
+  var albums = State.getAlbums() || [];
 
-  if(!title||!url){toast('الرجاء ملء العنوان والرابط','error');return;}
-
-  var tags=document.getElementById('media-tags').value.split(',').map(function(t){return t.trim();}).filter(function(t){return t;});
-
-  var mediaItem={
-    title:title,
-    type:type,
-    url:url,
-    date:document.getElementById('media-date').value||today(),
-    tags:tags,
-  };
-
-  try {
-    await AdminMedia.create(mediaItem);
-    log('إضافة ميديا: '+title,'📷');
-    toast('تم إضافة الميديا ✅');
-    closeModalSilent('modal-add-media');
-    renderMediaList();
-  } catch(e) { toast('خطأ في الحفظ: ' + e.message, 'error'); }
-}
-
-function renderMediaList(){
-  var container=document.getElementById('media-list-admin');
-  var media=State.getMedia()||[];
-
-  if(!media.length){
-    container.innerHTML='<div class="empty-state"><div class="empty-icon">📷</div><p>لا توجد وسائط</p></div>';
+  if (!albums.length) {
+    container.innerHTML = '<div class="empty-state"><div class="empty-icon">📁</div><p>لا توجد ألبومات</p></div>';
     return;
   }
 
-  var html='<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:16px">';
-  media.forEach(function(item){
-    var icon=item.type==='images'?'📷':item.type==='videos'?'🎥':item.type==='youtube'?'▶️':'🎉';
-    html+='<div style="border:2px solid var(--border);border-radius:10px;overflow:hidden">';
-    if(item.type==='images'){
-      html+='<img src="'+item.url+'" style="width:100%;height:150px;object-fit:cover" loading="lazy">';
-    }else if(item.type==='videos'){
-      html+='<video src="'+item.url+'" style="width:100%;height:150px;object-fit:cover" preload="metadata"></video>';
-    }else if(item.type==='youtube'){
-      // صورة مصغرة من يوتيوب بدلاً من iframe بطيء
-      var ytId='';var ytMatch=item.url.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/)([a-zA-Z0-9_-]{11})/);
-      if(ytMatch)ytId=ytMatch[1];
-      if(ytId){
-        html+='<div style="position:relative;width:100%;height:150px;background:#000;overflow:hidden">';
-        html+='<img src="https://img.youtube.com/vi/'+ytId+'/mqdefault.jpg" style="width:100%;height:100%;object-fit:cover;opacity:.8">';
-        html+='<div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center"><div style="width:44px;height:44px;background:rgba(255,0,0,.85);border-radius:50%;display:flex;align-items:center;justify-content:center;color:#fff;font-size:20px">▶</div></div>';
-        html+='</div>';
-      }else{
-        html+='<div style="width:100%;height:150px;background:#111;display:flex;align-items:center;justify-content:center;font-size:48px">▶️</div>';
-      }
-    }else{
-      html+='<div style="width:100%;height:150px;background:var(--green);display:flex;align-items:center;justify-content:center;font-size:48px">'+icon+'</div>';
+  var html = '<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:16px">';
+  albums.forEach(function(album) {
+    html += '<div style="border:2px solid var(--border);border-radius:10px;overflow:hidden;cursor:pointer" onclick="filterMediaByAlbum(\'' + album.id + '\')">';
+    if (album.cover_url) {
+      html += '<img src="' + album.cover_url + '" style="width:100%;height:140px;object-fit:cover" loading="lazy">';
+    } else {
+      html += '<div style="width:100%;height:140px;background:var(--bg-alt);display:flex;align-items:center;justify-content:center;font-size:48px;color:var(--text-muted)">📁</div>';
     }
-    html+='<div style="padding:12px">';
-    html+='<div style="font-weight:700;margin-bottom:6px">'+icon+' '+item.title+'</div>';
-    html+='<div style="font-size:12px;color:var(--text-muted);margin-bottom:8px">'+new Date(item.date).toLocaleDateString('ar-SA')+'</div>';
-    if(item.tags&&item.tags.length){
-      item.tags.forEach(function(tag){
-        html+='<span class="badge badge-gray" style="margin:2px">'+tag+'</span>';
-      });
-    }
-    html+='<div style="display:flex;gap:6px;margin-top:10px">';
-    html+='<button class="btn btn-outline btn-xs" onclick="openEditMedia(\''+item.id+'\')">✏️ تعديل</button>';
-    html+='<button class="btn btn-danger btn-xs" onclick="deleteMedia(\''+item.id+'\')">🗑️ حذف</button>';
-    html+='</div>';
-    html+='</div></div>';
+    html += '<div style="padding:12px">';
+    html += '<div style="font-weight:700;margin-bottom:4px">' + album.title + '</div>';
+    html += '<div style="font-size:12px;color:var(--text-muted);margin-bottom:4px">' + (album.media_count || 0) + ' عنصر';
+    if (album.date) html += ' &middot; ' + album.date;
+    html += '</div>';
+    if (album.description) html += '<div style="font-size:12px;color:var(--text-muted);margin-bottom:8px">' + album.description.substring(0, 80) + '</div>';
+    html += '<div style="display:flex;gap:6px" onclick="event.stopPropagation()">';
+    html += '<button class="btn btn-outline btn-xs" onclick="openEditAlbum(\'' + album.id + '\')">✏️ تعديل</button>';
+    html += '<button class="btn btn-danger btn-xs" onclick="deleteAlbum(\'' + album.id + '\')">🗑️ حذف</button>';
+    html += '</div>';
+    html += '</div></div>';
   });
-  html+='</div>';
-  container.innerHTML=html;
+  html += '</div>';
+  container.innerHTML = html;
 }
 
-async function deleteMedia(id){
-  if(!confirm('حذف هذه الميديا؟'))return;
+function openAddAlbum() {
+  document.getElementById('album-edit-id').value = '';
+  document.getElementById('modal-album-title').textContent = '📁 إضافة ألبوم';
+  document.getElementById('album-title').value = '';
+  document.getElementById('album-description').value = '';
+  document.getElementById('album-cover-url').value = '';
+  document.getElementById('album-date').value = today();
+  document.getElementById('album-sort-order').value = '0';
+  document.getElementById('album-cover-preview').style.display = 'none';
+  document.getElementById('btn-delete-album').style.display = 'none';
+  openModal('modal-add-album');
+}
+
+function openEditAlbum(id) {
+  var album = (State.getAlbums() || []).find(function(a) { return a.id === id; });
+  if (!album) return;
+  document.getElementById('album-edit-id').value = id;
+  document.getElementById('modal-album-title').textContent = '✏️ تعديل ألبوم';
+  document.getElementById('album-title').value = album.title || '';
+  document.getElementById('album-description').value = album.description || '';
+  document.getElementById('album-cover-url').value = album.cover_url || '';
+  document.getElementById('album-date').value = album.date || '';
+  document.getElementById('album-sort-order').value = album.sort_order || 0;
+  var preview = document.getElementById('album-cover-preview');
+  if (album.cover_url) {
+    document.getElementById('album-cover-preview-img').src = album.cover_url;
+    preview.style.display = 'block';
+  } else {
+    preview.style.display = 'none';
+  }
+  document.getElementById('btn-delete-album').style.display = 'inline-flex';
+  openModal('modal-add-album');
+}
+
+async function saveAlbum() {
+  var title = document.getElementById('album-title').value.trim();
+  if (!title) { toast('عنوان الألبوم مطلوب', 'error'); return; }
+
+  var editId = document.getElementById('album-edit-id').value;
+  var data = {
+    title: title,
+    description: document.getElementById('album-description').value.trim(),
+    cover_url: document.getElementById('album-cover-url').value.trim(),
+    date: document.getElementById('album-date').value || null,
+    sort_order: parseInt(document.getElementById('album-sort-order').value) || 0,
+  };
+
   try {
-    await AdminMedia.delete(id);
-    toast('تم الحذف');
+    if (editId) {
+      await AdminAlbums.update(editId, data);
+      toast('تم تعديل الألبوم');
+    } else {
+      await AdminAlbums.create(data);
+      toast('تم إضافة الألبوم');
+    }
+    closeModalSilent('modal-add-album');
+    renderAlbumsList();
     renderMediaList();
-  } catch(e) { toast('خطأ في الحذف: ' + e.message, 'error'); }
+  } catch (e) { toast('خطأ: ' + e.message, 'error'); }
+}
+
+async function deleteAlbum(id) {
+  confirm2('حذف هذا الألبوم؟ الميديا داخله ستبقى بدون ألبوم.', async function() {
+    try {
+      await AdminAlbums.delete(id);
+      toast('تم حذف الألبوم');
+      renderAlbumsList();
+      renderMediaList();
+    } catch (e) { toast('خطأ: ' + e.message, 'error'); }
+  });
+}
+
+function deleteAlbumFromModal() {
+  var id = document.getElementById('album-edit-id').value;
+  if (!id) return;
+  confirm2('حذف هذا الألبوم؟', async function() {
+    try {
+      await AdminAlbums.delete(id);
+      toast('تم حذف الألبوم');
+      closeModalSilent('modal-add-album');
+      renderAlbumsList();
+      renderMediaList();
+    } catch (e) { toast('خطأ: ' + e.message, 'error'); }
+  });
+}
+
+function filterMediaByAlbum(albumId) {
+  renderMediaList(albumId);
+  var container = document.getElementById('media-list-admin');
+  if (container) container.scrollIntoView({ behavior: 'smooth' });
+}
+
+// =================== MEDIA MANAGEMENT ===================
+
+function openAddMedia(albumId) {
+  document.getElementById('media-edit-id').value = '';
+  document.getElementById('modal-media-title').textContent = '📷 إضافة ميديا';
+  document.getElementById('media-title').value = '';
+  document.getElementById('media-type').value = 'images';
+  document.getElementById('media-url').value = '';
+  document.getElementById('media-date').value = today();
+  document.getElementById('media-tags').value = '';
+  document.getElementById('media-url-preview').style.display = 'none';
+  _populateAlbumDropdown('media-album-id', albumId || '');
+  openModal('modal-add-media');
+}
+
+async function saveMedia(addAnother) {
+  var title = document.getElementById('media-title').value.trim();
+  var url   = document.getElementById('media-url').value.trim();
+  var editId = document.getElementById('media-edit-id').value;
+
+  if (!title || !url) { toast('الرجاء ملء العنوان والرابط', 'error'); return; }
+
+  var tags = document.getElementById('media-tags').value
+    .split(',').map(function(t) { return t.trim(); }).filter(Boolean);
+  var data = {
+    title: title,
+    type: document.getElementById('media-type').value,
+    url: url,
+    date: document.getElementById('media-date').value || today(),
+    tags: tags,
+    album_id: document.getElementById('media-album-id').value || null,
+  };
+
+  try {
+    if (editId) {
+      await AdminMedia.update(editId, data);
+      toast('تم التعديل');
+    } else {
+      await AdminMedia.create(data);
+      toast('تم إضافة الميديا');
+    }
+
+    if (addAnother && !editId) {
+      // حفظ وإضافة جديد: فرّغ العنوان والرابط فقط
+      document.getElementById('media-edit-id').value = '';
+      document.getElementById('media-title').value = '';
+      document.getElementById('media-url').value = '';
+      document.getElementById('media-url-preview').style.display = 'none';
+      document.getElementById('modal-media-title').textContent = '📷 إضافة ميديا';
+    } else {
+      closeModalSilent('modal-add-media');
+    }
+    renderAlbumsList();
+    renderMediaList();
+  } catch (e) { toast('خطأ: ' + e.message, 'error'); }
+}
+
+function _renderMediaThumbnail(item) {
+  var icon = item.type === 'images' ? '📷' : item.type === 'videos' ? '🎥' : '▶️';
+  var html = '';
+  if (item.type === 'images') {
+    html += '<img src="' + item.url + '" style="width:100%;height:150px;object-fit:cover" loading="lazy">';
+  } else if (item.type === 'videos') {
+    html += '<video src="' + item.url + '" style="width:100%;height:150px;object-fit:cover" preload="metadata"></video>';
+  } else if (item.type === 'youtube') {
+    var ytId = ''; var ytMatch = item.url.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/)([a-zA-Z0-9_-]{11})/);
+    if (ytMatch) ytId = ytMatch[1];
+    if (ytId) {
+      html += '<div style="position:relative;width:100%;height:150px;background:#000;overflow:hidden">';
+      html += '<img src="https://img.youtube.com/vi/' + ytId + '/mqdefault.jpg" style="width:100%;height:100%;object-fit:cover;opacity:.8">';
+      html += '<div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center"><div style="width:44px;height:44px;background:rgba(255,0,0,.85);border-radius:50%;display:flex;align-items:center;justify-content:center;color:#fff;font-size:20px">▶</div></div>';
+      html += '</div>';
+    } else {
+      html += '<div style="width:100%;height:150px;background:#111;display:flex;align-items:center;justify-content:center;font-size:48px">▶️</div>';
+    }
+  }
+  return { html: html, icon: icon };
+}
+
+function renderMediaList(filterAlbumId) {
+  var container = document.getElementById('media-list-admin');
+  if (!container) return;
+  var media = State.getMedia() || [];
+  var albums = State.getAlbums() || [];
+
+  // فلترة حسب الألبوم
+  if (filterAlbumId) {
+    media = media.filter(function(m) { return m.album_id === filterAlbumId; });
+    var albumName = (albums.find(function(a) { return a.id === filterAlbumId; }) || {}).title || '';
+    container.innerHTML = '<div style="margin-bottom:12px"><button class="btn btn-outline btn-sm" onclick="renderMediaList()">← كل الميديا</button> <strong>' + albumName + '</strong></div>';
+  } else {
+    container.innerHTML = '';
+  }
+
+  if (!media.length) {
+    container.innerHTML += '<div class="empty-state"><div class="empty-icon">📷</div><p>لا توجد وسائط</p></div>';
+    return;
+  }
+
+  var html = '<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:16px">';
+  media.forEach(function(item) {
+    var thumb = _renderMediaThumbnail(item);
+    var albumLabel = '';
+    if (!filterAlbumId && item.album_id) {
+      var alb = albums.find(function(a) { return a.id === item.album_id; });
+      if (alb) albumLabel = '<span class="badge badge-green" style="margin:2px">📁 ' + alb.title + '</span>';
+    }
+
+    html += '<div style="border:2px solid var(--border);border-radius:10px;overflow:hidden">';
+    html += thumb.html;
+    html += '<div style="padding:12px">';
+    html += '<div style="font-weight:700;margin-bottom:6px">' + thumb.icon + ' ' + item.title + '</div>';
+    if (item.date) html += '<div style="font-size:12px;color:var(--text-muted);margin-bottom:8px">' + new Date(item.date).toLocaleDateString('ar-SA') + '</div>';
+    html += albumLabel;
+    if (item.tags && item.tags.length) {
+      item.tags.forEach(function(tag) {
+        html += '<span class="badge badge-gray" style="margin:2px">' + tag + '</span>';
+      });
+    }
+    html += '<div style="display:flex;gap:6px;margin-top:10px">';
+    html += '<button class="btn btn-outline btn-xs" onclick="openEditMedia(\'' + item.id + '\')">✏️ تعديل</button>';
+    html += '<button class="btn btn-danger btn-xs" onclick="deleteMedia(\'' + item.id + '\')">🗑️ حذف</button>';
+    html += '</div>';
+    html += '</div></div>';
+  });
+  html += '</div>';
+  container.innerHTML += html;
+}
+
+async function deleteMedia(id) {
+  confirm2('حذف هذه الميديا؟', async function() {
+    try {
+      await AdminMedia.delete(id);
+      toast('تم الحذف');
+      renderAlbumsList();
+      renderMediaList();
+    } catch (e) { toast('خطأ: ' + e.message, 'error'); }
+  });
+}
+
+// =================== BULK MEDIA ===================
+
+function openBulkMedia(albumId) {
+  _populateAlbumDropdown('bulk-album-id', albumId || '');
+  document.getElementById('bulk-date').value = today();
+  document.getElementById('bulk-tags').value = '';
+  document.getElementById('bulk-rows').innerHTML = '';
+  addBulkRow(); addBulkRow(); addBulkRow();
+  openModal('modal-bulk-media');
+}
+
+function addBulkRow() {
+  var container = document.getElementById('bulk-rows');
+  var row = document.createElement('div');
+  row.style.cssText = 'display:grid;grid-template-columns:1fr auto 1fr auto;gap:8px;margin-bottom:8px;align-items:end';
+  row.innerHTML = '<div class="form-group" style="margin:0"><label class="form-label" style="font-size:11px">العنوان</label><input class="form-control bulk-title" placeholder="عنوان"></div>'
+    + '<div class="form-group" style="margin:0"><label class="form-label" style="font-size:11px">النوع</label><select class="form-control bulk-type"><option value="images">📷</option><option value="videos">🎥</option><option value="youtube">▶️</option></select></div>'
+    + '<div class="form-group" style="margin:0"><label class="form-label" style="font-size:11px">الرابط</label><input class="form-control bulk-url" placeholder="https://..."></div>'
+    + '<button class="btn btn-danger btn-xs" onclick="this.parentElement.remove()" style="height:36px">✕</button>';
+  container.appendChild(row);
+}
+
+async function saveBulkMedia() {
+  var rows = document.querySelectorAll('#bulk-rows > div');
+  var albumId = document.getElementById('bulk-album-id').value || null;
+  var date = document.getElementById('bulk-date').value || today();
+  var tags = document.getElementById('bulk-tags').value.split(',').map(function(t) { return t.trim(); }).filter(Boolean);
+
+  var items = [];
+  rows.forEach(function(row) {
+    var title = row.querySelector('.bulk-title').value.trim();
+    var type  = row.querySelector('.bulk-type').value;
+    var url   = row.querySelector('.bulk-url').value.trim();
+    if (title && url) {
+      items.push({ title: title, type: type, url: url });
+    }
+  });
+
+  if (!items.length) { toast('أدخل عنصر واحد على الأقل', 'error'); return; }
+
+  try {
+    await AdminMedia.createBulk({ items: items, album_id: albumId, date: date, tags: tags });
+    toast('تم إضافة ' + items.length + ' عنصر');
+    closeModalSilent('modal-bulk-media');
+    renderAlbumsList();
+    renderMediaList();
+  } catch (e) { toast('خطأ: ' + e.message, 'error'); }
 }
 
 // =================== SETTINGS ===================

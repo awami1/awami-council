@@ -32,11 +32,17 @@
 </footer>
 
 
-<!-- Lightbox -->
-<div class="lightbox-overlay" id="lightbox" role="dialog" aria-modal="true" aria-label="معاينة الصورة">
+<!-- Lightbox (صور + فيديو + يوتيوب) -->
+<div class="lightbox-overlay" id="lightbox" role="dialog" aria-modal="true" aria-label="معاينة الوسائط">
   <button class="lightbox-close" onclick="closeLightbox()" aria-label="إغلاق">&#10005;</button>
   <button class="lightbox-nav lightbox-prev" onclick="lightboxNav(-1)" aria-label="السابق">&#8250;</button>
-  <img class="lightbox-img" id="lightbox-img" src="" alt="">
+  <div class="lightbox-content" id="lightbox-content">
+    <img class="lightbox-img" id="lightbox-img" src="" alt="" style="display:none">
+    <video class="lightbox-video" id="lightbox-video" controls style="display:none"></video>
+    <div class="lightbox-iframe-wrap" id="lightbox-iframe-wrap" style="display:none">
+      <iframe id="lightbox-iframe" src="" allowfullscreen title="فيديو يوتيوب"></iframe>
+    </div>
+  </div>
   <button class="lightbox-nav lightbox-next" onclick="lightboxNav(1)" aria-label="التالي">&#8249;</button>
   <div class="lightbox-caption" id="lightbox-caption"></div>
 </div>

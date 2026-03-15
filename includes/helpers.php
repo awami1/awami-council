@@ -158,6 +158,39 @@ function getActiveGalleryStories(): array {
 }
 
 /**
+ * جلب الألبومات مع عدد الميديا
+ */
+function getAlbumsWithCount(): array {
+    try {
+        $pdo = getPDO();
+        $rows = $pdo->query("SELECT a.*, (SELECT COUNT(*) FROM media m WHERE m.album_id = a.id) AS media_count FROM albums a ORDER BY a.sort_order ASC, a.created_at DESC")->fetchAll();
+        return $rows ?: [];
+    } catch (Throwable $e) { error_log('getAlbumsWithCount() failed: ' . $e->getMessage()); return []; }
+}
+
+/**
+ * جلب ميديا ألبوم محدد
+ */
+function getAlbumMedia(string $albumId): array {
+    try {
+        $pdo = getPDO();
+        $stmt = $pdo->prepare("SELECT * FROM media WHERE album_id = :album_id ORDER BY sort_order ASC, created_at DESC");
+        $stmt->execute([':album_id' => $albumId]);
+        return $stmt->fetchAll() ?: [];
+    } catch (Throwable $e) { error_log('getAlbumMedia() failed: ' . $e->getMessage()); return []; }
+}
+
+/**
+ * جلب الميديا بدون ألبوم
+ */
+function getUnassignedMedia(): array {
+    try {
+        $pdo = getPDO();
+        return $pdo->query("SELECT * FROM media WHERE album_id IS NULL ORDER BY sort_order ASC, created_at DESC")->fetchAll() ?: [];
+    } catch (Throwable $e) { error_log('getUnassignedMedia() failed: ' . $e->getMessage()); return []; }
+}
+
+/**
  * حساب عدد الأعضاء النشطين
  */
 function getActiveMembersCount(): int {

@@ -14,6 +14,7 @@ events:      [],
 polls:       [],
 branches:    [],
 media:       [],
+albums:      [],
 committees:  [],
 committeeMembersMap: {}, // { committeeId: [memberId, ...] }
 nextMeeting: null,
@@ -40,6 +41,7 @@ PollsAPI.getAll(),
 BranchesAPI.getAll(),
 MeetingAPI.get(),
 MediaAPI.getAll(),
+AlbumsAPI.getAll(),
 CommitteesAPI.getAll(),
 NewsAPI.getAll(),
 MessagesAPI.getAll(),
@@ -57,11 +59,12 @@ FamilyTreeAPI.getAll(),
     var pollsRes        = safeVal(results[6], {data:[]});
     var branchesRes     = safeVal(results[7], {branches:[]});
     var meetingRes      = safeVal(results[8]);
-    var mediaRes        = safeVal(results[9], {media:[]});
-    var committeesRes   = safeVal(results[10], {data:[]});
-    var newsRes         = safeVal(results[11], {data:[]});
-    var messagesRes     = safeVal(results[12], {data:[], unread:0});
-    var ftRes           = safeVal(results[13], {members:[]});
+    var mediaRes        = safeVal(results[9], {data:[]});
+    var albumsRes       = safeVal(results[10], {data:[]});
+    var committeesRes   = safeVal(results[11], {data:[]});
+    var newsRes         = safeVal(results[12], {data:[]});
+    var messagesRes     = safeVal(results[13], {data:[], unread:0});
+    var ftRes           = safeVal(results[14], {members:[]});
 
     DB.settings     = settingsRes.settings  ?? {};
     DB.members      = membersRes.data        ?? [];
@@ -72,7 +75,8 @@ FamilyTreeAPI.getAll(),
     DB.polls        = pollsRes.data          ?? [];
     DB.branches     = branchesRes.branches   ?? [];
     DB.nextMeeting  = meetingRes.nextMeeting ?? null;
-    DB.media        = mediaRes.media         ?? [];
+    DB.media        = mediaRes.data           ?? [];
+    DB.albums       = albumsRes.data          ?? [];
     DB.committees   = (committeesRes.data    ?? []).map(normalizeCommittee);
     DB.news         = newsRes.data           ?? [];
     DB.messages     = messagesRes.data       ?? [];
@@ -563,17 +567,47 @@ const AdminMedia = {
 async create(data) {
 const r = await MediaAPI.create(data);
 if (!DB.media) DB.media = [];
-DB.media.push(r.media);
-return r.media;
+DB.media.push(r.data);
+return r.data;
+},
+async createBulk(items) {
+const r = await MediaAPI.createBulk(items);
+if (!DB.media) DB.media = [];
+(r.data ?? []).forEach(m => DB.media.push(m));
+return r.data ?? [];
 },
 async update(id, data) {
-await MediaAPI.update(id, data);
+const r = await MediaAPI.update(id, data);
 const idx = (DB.media ?? []).findIndex(m => m.id === id);
-if (idx !== -1) DB.media[idx] = { ...DB.media[idx], ...data };
+if (idx !== -1) DB.media[idx] = r.data ?? { ...DB.media[idx], ...data };
+return r.data;
 },
 async delete(id) {
 await MediaAPI.delete(id);
 DB.media = (DB.media ?? []).filter(m => m.id !== id);
+},
+};
+
+// ============================================================
+// ALBUMS
+// ============================================================
+const AdminAlbums = {
+async create(data) {
+const r = await AlbumsAPI.create(data);
+DB.albums.push(r.data);
+return r.data;
+},
+async update(id, data) {
+const r = await AlbumsAPI.update(id, data);
+const idx = DB.albums.findIndex(a => a.id === id);
+if (idx >= 0) DB.albums[idx] = r.data;
+return r.data;
+},
+async delete(id) {
+await AlbumsAPI.delete(id);
+DB.albums = DB.albums.filter(a => a.id !== id);
+// الميديا المرتبطة تبقى بدون ألبوم
+(DB.media ?? []).forEach(m => { if (m.album_id === id) m.album_id = null; });
 },
 };
 
@@ -610,6 +644,7 @@ function getEvents()       { return DB.events; }
 function getPolls()        { return DB.polls; }
 function getBranches()     { return DB.branches; }
 function getMedia()        { return DB.media ?? []; }
+function getAlbums()       { return DB.albums ?? []; }
 function getSettings()     { return DB.settings; }
 function getNextMeeting()  { return DB.nextMeeting; }
 function getCommitteeMembersMap() { return DB.committeeMembersMap; }
@@ -654,6 +689,7 @@ getEvents:          getEvents,
 getPolls:           getPolls,
 getFamilyBranches:  getBranches,
 getMedia:           getMedia,
+getAlbums:          getAlbums,
 getWebsiteSettings: getSettings,
 getNextMeeting:     getNextMeeting,
 getCommitteeMembers:getCommitteeMembersMap,

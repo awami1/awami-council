@@ -104,12 +104,22 @@ update: (id, data)  => api.put('family-tree.php', data, id),
 delete: (id)        => api.del('family-tree.php', id),
 };
 
+// –– Albums ––
+const AlbumsAPI = {
+getAll: (params = {}) => { const qs = new URLSearchParams(params).toString(); return api.get('albums.php' + (qs ? '?' + qs : '')); },
+get:    (id)          => apiFetch(`${API_BASE}/albums.php?id=${id}`),
+create: (data)        => api.post('albums.php', data),
+update: (id, data)    => api.put('albums.php', data, id),
+delete: (id)          => api.del('albums.php', id),
+};
+
 // –– Media ––
 const MediaAPI = {
-getAll: ()          => api.get('media.php'),
-create: (data)      => api.post('media.php', data),
-update: (id, data)  => api.put('media.php', data, id),
-delete: (id)        => api.del('media.php', id),
+getAll: (params = {}) => { const qs = new URLSearchParams(params).toString(); return api.get('media.php' + (qs ? '?' + qs : '')); },
+create: (data)        => api.post('media.php', data),
+createBulk: (data)    => apiFetch(`${API_BASE}/media.php?bulk=1`, { method: 'POST', body: JSON.stringify(data) }),
+update: (id, data)    => api.put('media.php', data, id),
+delete: (id)          => api.del('media.php', id),
 };
 
 // –– Positions (المناصب الإدارية) ––
@@ -217,7 +227,8 @@ delete: (id)           => api.del('gallery-stories.php', id),
 async function loadSettings()  { const r = await SettingsAPI.get();     return r.settings; }
 async function loadEvents()    { return await EventsAPI.getAll(); }
 async function loadBranches()  { const r = await BranchesAPI.getAll();  return r.branches; }
-async function loadMedia()     { const r = await MediaAPI.getAll();      return r.media; }
+async function loadMedia(albumId) { const params = albumId ? { album_id: albumId } : {}; const r = await MediaAPI.getAll(params); return r.data ?? []; }
+async function loadAlbums()    { const r = await AlbumsAPI.getAll();     return r.data ?? []; }
 async function loadMeeting()   { const r = await MeetingAPI.get();       return r.nextMeeting; }
 async function loadMembers()   { const r = await MembersAPI.getAll();    return r.data ?? []; }
 async function loadNews()      { const r = await NewsAPI.getAll();       return r.data ?? []; }

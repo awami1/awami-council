@@ -163,7 +163,7 @@ const img     = document.getElementById('media-url-preview-img');
 const yt      = document.getElementById('media-url-preview-yt');
 if (!preview) return;
 if (!url) { preview.style.display = 'none'; return; }
-if (type === 'images' || type === 'events') {
+if (type === 'images') {
     img.src = url; img.style.display = 'block'; yt.style.display = 'none';
     preview.style.display = 'block';
 } else if (type === 'youtube') {
@@ -184,47 +184,9 @@ document.getElementById('media-type').value  = item.type  || 'images';
 document.getElementById('media-url').value   = item.url   || '';
 document.getElementById('media-date').value  = item.date  || today();
 document.getElementById('media-tags').value  = (item.tags || []).join(', ');
+_populateAlbumDropdown('media-album-id', item.album_id || '');
 _updateUrlPreview(item.url, item.type);
 openModal('modal-add-media');
-}
-
-async function saveMedia() {
-const title  = document.getElementById('media-title').value.trim();
-const url    = document.getElementById('media-url').value.trim();
-const editId = document.getElementById('media-edit-id').value;
-if (!title || !url) { toast('الرجاء ملء العنوان والرابط', 'error'); return; }
-
-const tags = document.getElementById('media-tags').value
-    .split(',').map(t => t.trim()).filter(Boolean);
-const data = {
-    title,
-    type: document.getElementById('media-type').value,
-    url,
-    date: document.getElementById('media-date').value || today(),
-    tags,
-};
-
-try {
-    if (editId) {
-        await AdminMedia.update(editId, data);
-        toast('تم التعديل ✅');
-    } else {
-        await AdminMedia.create(data);
-        toast('تم إضافة الميديا ✅');
-    }
-    closeModalSilent('modal-add-media');
-    renderMediaList();
-} catch (e) { toast('فشل: ' + e.message, 'error'); }
-}
-
-async function deleteMedia(id) {
-confirm2('حذف هذه الميديا؟', async () => {
-try {
-    await AdminMedia.delete(id);
-    toast('تم الحذف');
-    renderMediaList();
-} catch (e) { toast('فشل: ' + e.message, 'error'); }
-});
 }
 
 // تسجيل event listeners لـ URL preview و auto-detect يوتيوب (مرة واحدة)
@@ -243,6 +205,21 @@ urlInput.addEventListener('blur', () => {
 typeInput.addEventListener('change', () => {
     _updateUrlPreview(urlInput.value.trim(), typeInput.value);
 });
+
+// معاينة غلاف الألبوم
+const albumCoverInput = document.getElementById('album-cover-url');
+if (albumCoverInput) {
+    albumCoverInput.addEventListener('blur', () => {
+        const url = albumCoverInput.value.trim();
+        const preview = document.getElementById('album-cover-preview');
+        if (url) {
+            document.getElementById('album-cover-preview-img').src = url;
+            preview.style.display = 'block';
+        } else {
+            preview.style.display = 'none';
+        }
+    });
+}
 });
 
 // –– شجرة العائلة (أعضاء الشجرة الهرمية) ––

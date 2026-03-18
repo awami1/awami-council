@@ -1284,19 +1284,24 @@ function removeMemberFromCommittee(cid, mid) {
 function renderOrgChart(){
   const advisory=State.getCommittees().find(c=>c.advisory);
   const regular=State.getCommittees().filter(c=>!c.advisory);
+  const positions=(_positionsData||[]).filter(p=>p.title!=='اللجنة الاستشارية');
   document.getElementById('org-body').innerHTML=`
     <div style="text-align:center">
       ${advisory?`<div style="margin-bottom:16px;display:flex;justify-content:center"><div style="border:2px dashed var(--card-advisory-border);border-radius:12px;padding:10px 20px;background:var(--card-advisory-bg);display:inline-flex;align-items:center;gap:10px"><span style="font-size:20px">${advisory.icon}</span><div><div style="font-weight:700;font-size:13px;color:var(--primary)">${advisory.name}</div><div style="font-size:10px;color:var(--text-muted)">جهة استشارية</div></div></div></div>`:''}
       <div style="display:flex;justify-content:center;margin-bottom:6px">
         <div style="background:linear-gradient(135deg,var(--green-dark),var(--primary));color:#fff;border-radius:14px;padding:14px 28px;display:inline-flex;align-items:center;gap:12px">
           <span style="font-size:22px">🏛️</span>
-          <div style="text-align:right"><div style="font-size:14px;font-weight:700">إدارة مجلس صندوق عائلة العوامي</div><div style="font-size:10px;opacity:.7">الرئيس: منصور علي</div></div>
+          <div style="text-align:right"><div style="font-size:14px;font-weight:700">إدارة مجلس صندوق عائلة العوامي</div></div>
         </div>
       </div>
+      ${positions.length?`<div style="display:flex;justify-content:center;margin:2px 0"><div style="width:2px;height:20px;background:var(--border)"></div></div>
+      <div style="display:flex;justify-content:center;gap:8px;flex-wrap:wrap;margin-bottom:6px">
+        ${positions.map(p=>`<div style="border:1px solid var(--border);border-radius:8px;padding:6px 12px;background:var(--bg-card);display:inline-flex;align-items:center;gap:6px"><span style="font-size:14px">${p.icon}</span><span style="font-size:11px;font-weight:600;color:var(--text)">${p.title}</span></div>`).join('')}
+      </div>`:''}
       <div style="display:flex;justify-content:center;margin:2px 0"><div style="width:2px;height:20px;background:var(--border)"></div></div>
       <div style="width:80%;height:2px;background:var(--border);margin:0 auto"></div>
       <div style="display:flex;justify-content:center;gap:8px;flex-wrap:wrap;padding-top:0">
-        ${regular.map(c=>{ const mems = c.member_count || (State.getCommitteeMembers()[c.id] || []).length || 0; return `<div style="display:flex;flex-direction:column;align-items:center"><div style="width:2px;height:20px;background:var(--border)"></div><div style="border:2px solid var(--border);border-radius:10px;padding:10px 12px;min-width:120px;background:var(--bg-card);cursor:pointer;transition:all .2s" onmouseover="this.style.borderColor='var(--green)'" onmouseout="this.style.borderColor='var(--border)'" onclick="showPage('committees',document.querySelector('[onclick*=committees]'));setTimeout(()=>showCommitteeDetail('${c.id}'),300)"><div style="font-size:20px;margin-bottom:3px">${c.icon}</div><div style="font-size:11px;font-weight:700;color:var(--green-dark)">${c.name}</div><div style="font-size:10px;color:var(--text-muted);margin-top:2px">👥 ${mems} عضو</div></div></div>`; }).join('')}
+        ${regular.map(c=>{ const mems = c.member_count || (State.getCommitteeMembers()[c.id] || []).length || 0; return `<div style="display:flex;flex-direction:column;align-items:center"><div style="width:2px;height:20px;background:var(--border)"></div><div style="border:2px solid var(--border);border-radius:10px;padding:10px 12px;min-width:120px;background:var(--bg-card);cursor:pointer;transition:all .2s" onmouseover="this.style.borderColor='var(--green)'" onmouseout="this.style.borderColor='var(--border)'" onclick="showCommitteeDetail('${c.id}')"><div style="font-size:20px;margin-bottom:3px">${c.icon}</div><div style="font-size:11px;font-weight:700;color:var(--green-dark)">${c.name}</div><div style="font-size:10px;color:var(--text-muted);margin-top:2px">👥 ${mems} عضو</div></div></div>`; }).join('')}
       </div>
     </div>`;
 }

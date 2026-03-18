@@ -190,21 +190,19 @@ desc:          c.description ?? c.desc ?? '',
 advisory:      Boolean(c.advisory),
 members_count: parseInt(c.members_count ?? 0),
 sortOrder:     parseInt(c.sort_order ?? c.sortOrder ?? 0),
-memberCount:   parseInt(c.member_count ?? 0),
+member_count:  parseInt(c.member_count ?? 0),
 eventCount:    parseInt(c.event_count ?? 0),
-members:       c.members     ?? [],
+member_ids:    c.member_ids  ?? [],
 };
 }
 
-// بناء خريطة اللجان من بيانات الأعضاء
+// بناء خريطة اللجان من بيانات اللجان (member_ids من الـ API)
 function buildCommitteeMembersMap() {
 DB.committeeMembersMap = {};
-// تُبنى من حقل committees في كل عضو (إن وُجد)
-DB.members.forEach(m => {
-(m.committees ?? []).forEach(cid => {
-if (!DB.committeeMembersMap[cid]) DB.committeeMembersMap[cid] = [];
-DB.committeeMembersMap[cid].push(m.id);
-});
+DB.committees.forEach(c => {
+if (c.member_ids && c.member_ids.length) {
+  DB.committeeMembersMap[c.id] = [...c.member_ids];
+}
 });
 }
 
@@ -815,8 +813,29 @@ delete: async (id) => { confirm2('هل تريد حذف هذه الرسالة؟',
 const MemberService = {
 saveMember: (id, data) => AdminMember.save(id, data).then(() => { closeModalSilent('modal-member'); toast('تم الحفظ ✅'); renderMembers(); updateSidebar(); }),
 deleteMember: (id) => { confirm2('هل تريد حذف هذا العضو؟', async () => { await AdminMember.delete(id); toast('تم الحذف'); renderMembers(); updateSidebar(); }); },
-addMemberToCommittee: (cid, mid) => AdminMember.addToCommittee(cid, mid).then(() => { toast('تمت الإضافة ✅'); showCommitteeDetail(cid); }),
-removeMemberFromCommittee: (cid, mid) => AdminMember.removeFromCommittee(cid, mid).then(() => { toast('تم الإزالة'); showCommitteeDetail(cid); }),
+addMemberToCommittee: async (cid, mid) => {
+  if (!mid) return;
+  try {
+    await AdminMember.addToCommittee(cid, mid);
+    toast('تم ربط العضو ✅');
+    showCommitteeDetail(cid);
+    renderCommittees();
+  } catch (e) {
+    console.error('addMemberToCommittee failed:', e.message);
+    toast('فشل ربط العضو: ' + e.message, 'error');
+  }
+},
+removeMemberFromCommittee: async (cid, mid) => {
+  try {
+    await AdminMember.removeFromCommittee(cid, mid);
+    toast('تم إزالة العضو ✅');
+    showCommitteeDetail(cid);
+    renderCommittees();
+  } catch (e) {
+    console.error('removeMemberFromCommittee failed:', e.message);
+    toast('فشل الإزالة: ' + e.message, 'error');
+  }
+},
 syncMembersFromAPI: async () => { /* already loaded in loadAllData */ },
 };
 

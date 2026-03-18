@@ -1239,8 +1239,7 @@ var debouncedRenderFees = debounce(function(){ _pageState.fees=1; renderFees(); 
 // =================== COMMITTEES ===================
 function renderCommittees(){
   document.getElementById('committees-grid').innerHTML=State.getCommittees().map(c=>{
-    const linkedMems=(State.getCommitteeMembers()[c.id]||c.members||[]).length;
-    const mems=Math.max(c.members_count||0, linkedMems);
+    const mems = c.member_count || (State.getCommitteeMembers()[c.id] || []).length || 0;
     const evs=State.getEvents().filter(e=>e.committeeId===c.id).length;
     return `<div class="committee-card" onclick="showCommitteeDetail('${c.id}')">
       <div class="committee-banner" style="background:${c.color}">${c.icon}
@@ -1256,36 +1255,30 @@ function renderCommittees(){
 function showCommitteeDetail(cid){
   const c=State.getCommittees().find(x=>x.id===cid); if(!c) return;
   document.getElementById('cdetail-title').innerHTML=`${c.icon} ${c.name}`;
-  const defaultMembers=(c.members||[]);
+
   const customIds=State.getCommitteeMembers()[cid]||[];
   const allMembers=State.getMembers().filter(m=>customIds.includes(m.id));
   const notIn=State.getMembers().filter(m=>!customIds.includes(m.id));
-  const events=State.getEvents().filter(e=>e.committeeId===cid);
-  const txs=State.getTransactions().filter(t=>t.committee===cid);
-  const spent=txs.filter(t=>t.type==='مصروف').reduce((s,t)=>s+t.amount,0);
+
   document.getElementById('cdetail-body').innerHTML=`
-    <div style="padding:12px;background:#f8fbf8;border-radius:10px;margin-bottom:14px">
-      <div style="font-size:13px;color:var(--text-muted)">${c.desc||''}</div>
-      ${c.advisory?'<div style="margin-top:6px"><span class="badge badge-purple">🎓 لجنة استشارية - تقدم المشورة للإدارة</span></div>':''}
+    <div style="padding:12px;background:var(--bg);border:1px solid var(--border);border-radius:10px;margin-bottom:14px">
+      <div style="font-size:13px;color:var(--text-muted)">${c.desc||'لا يوجد وصف'}</div>
+      ${c.advisory?'<div style="margin-top:6px"><span class="badge badge-purple">🎓 لجنة استشارية</span></div>':''}
     </div>
-    <div class="grid-3" style="margin-bottom:14px;text-align:center">
-      <div style="background:#dcfce7;padding:10px;border-radius:10px"><div style="font-size:18px;font-weight:900;color:#166534">${Math.max(c.members_count||0, defaultMembers.length, allMembers.length)}</div><div style="font-size:11px;color:#166534">عضو</div></div>
-      <div style="background:#dbeafe;padding:10px;border-radius:10px"><div style="font-size:18px;font-weight:900;color:#1e40af">${events.length}</div><div style="font-size:11px;color:#1e40af">فعالية</div></div>
-      <div style="background:#fef9c3;padding:10px;border-radius:10px"><div style="font-size:18px;font-weight:900;color:#854d0e">${fmt(spent)}</div><div style="font-size:11px;color:#854d0e">ريال مصاريف</div></div>
-    </div>
-    <div style="font-size:13px;font-weight:700;margin-bottom:8px">👥 أعضاء اللجنة (من الـ PDF)</div>
-    <div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:14px">
-      ${defaultMembers.map(name=>`<span style="background:linear-gradient(135deg,${c.color.split(',')[0].replace('linear-gradient(135deg,','')},transparent);color:var(--green-dark);border:1px solid rgba(71,145,92,.2);padding:4px 12px;border-radius:20px;font-size:12px;font-weight:600">${name}</span>`).join('')}
-    </div>
-    ${allMembers.length?`<div style="font-size:13px;font-weight:700;margin-bottom:8px">🔗 أعضاء مرتبطون من قاعدة البيانات</div><div style="margin-bottom:12px">${allMembers.map(m=>`<div style="display:flex;align-items:center;gap:10px;padding:7px 0;border-bottom:1px solid #f0ebe0"><div class="avatar" style="background:${avColor(m.name)}">${avInit(m.name)}</div><div style="flex:1"><div style="font-weight:600;font-size:13px">${m.name}</div></div><button class="btn btn-danger btn-xs" onclick="removeMemberFromCommittee('${cid}','${m.id}')">✕</button></div>`).join('')}</div>`:''}
-    ${notIn.length&&State.getMembers().length?`<div style="display:flex;gap:8px"><select class="form-control" id="add-to-c-select" style="flex:1">${notIn.map(m=>`<option value="${m.id}">${m.name}</option>`).join('')}</select><button class="btn btn-primary btn-sm" onclick="addMemberToCommittee('${cid}')">+ ربط عضو</button></div>`:''}
-    ${events.length?`<div style="margin-top:14px;font-size:13px;font-weight:700;margin-bottom:8px">🗓️ فعاليات اللجنة</div><div>${events.map(e=>`<div style="display:flex;align-items:center;gap:10px;padding:6px 0;border-bottom:1px solid #f0f0f0"><span>${e.icon||'🎉'}</span><div style="flex:1"><div style="font-size:13px;font-weight:600">${e.name}</div><div style="font-size:11px;color:var(--text-muted)">${e.date||'—'}</div></div><span class="badge ${sBadge(e.status)}">${e.status}</span></div>`).join('')}</div>`:''}
+    <div style="font-size:13px;font-weight:700;margin-bottom:8px">👥 أعضاء اللجنة (${allMembers.length})</div>
+    ${allMembers.length?`<div style="margin-bottom:12px">${allMembers.map(m=>`<div style="display:flex;align-items:center;gap:10px;padding:7px 0;border-bottom:1px solid var(--border)"><div class="avatar" style="background:${avColor(m.name)}">${avInit(m.name)}</div><div style="flex:1"><div style="font-weight:600;font-size:13px">${m.name}</div></div><button class="btn btn-danger btn-xs" onclick="removeMemberFromCommittee('${cid}','${m.id}')">✕</button></div>`).join('')}</div>`:'<div style="text-align:center;padding:20px;color:var(--text-muted);font-size:13px">لا يوجد أعضاء مرتبطون بعد</div>'}
+    ${notIn.length&&State.getMembers().length?`<div style="display:flex;gap:8px;margin-top:8px"><select class="form-control" id="add-to-c-select" style="flex:1">${notIn.map(m=>`<option value="${m.id}">${m.name}</option>`).join('')}</select><button class="btn btn-primary btn-sm" onclick="addMemberToCommittee('${cid}')">+ ربط عضو</button></div>`:''}
   `;
   openModal('modal-committee-detail');
 }
 
 function addMemberToCommittee(cid){ const mid=document.getElementById('add-to-c-select')?.value; MemberService.addMemberToCommittee(cid, mid); }
-function removeMemberFromCommittee(cid,mid){ MemberService.removeMemberFromCommittee(cid, mid); }
+function removeMemberFromCommittee(cid, mid) {
+  const m = State.getMembers().find(x => x.id === mid);
+  confirm2('إزالة "' + (m ? m.name : '') + '" من اللجنة؟', function() {
+    MemberService.removeMemberFromCommittee(cid, mid);
+  });
+}
 
 // =================== ORG CHART ===================
 function renderOrgChart(){
@@ -1303,7 +1296,7 @@ function renderOrgChart(){
       <div style="display:flex;justify-content:center;margin:2px 0"><div style="width:2px;height:20px;background:var(--border)"></div></div>
       <div style="width:80%;height:2px;background:var(--border);margin:0 auto"></div>
       <div style="display:flex;justify-content:center;gap:8px;flex-wrap:wrap;padding-top:0">
-        ${regular.map(c=>{ const linkedMems=(State.getCommitteeMembers()[c.id]||c.members||[]).length; const mems=Math.max(c.members_count||0, linkedMems); return `<div style="display:flex;flex-direction:column;align-items:center"><div style="width:2px;height:20px;background:var(--border)"></div><div style="border:2px solid var(--border);border-radius:10px;padding:10px 12px;min-width:120px;background:var(--bg-card);cursor:pointer;transition:all .2s" onmouseover="this.style.borderColor='var(--green)'" onmouseout="this.style.borderColor='var(--border)'" onclick="showPage('committees',document.querySelector('[onclick*=committees]'));setTimeout(()=>showCommitteeDetail('${c.id}'),300)"><div style="font-size:20px;margin-bottom:3px">${c.icon}</div><div style="font-size:11px;font-weight:700;color:var(--green-dark)">${c.name}</div><div style="font-size:10px;color:var(--text-muted);margin-top:2px">👥 ${mems} عضو</div></div></div>`; }).join('')}
+        ${regular.map(c=>{ const mems = c.member_count || (State.getCommitteeMembers()[c.id] || []).length || 0; return `<div style="display:flex;flex-direction:column;align-items:center"><div style="width:2px;height:20px;background:var(--border)"></div><div style="border:2px solid var(--border);border-radius:10px;padding:10px 12px;min-width:120px;background:var(--bg-card);cursor:pointer;transition:all .2s" onmouseover="this.style.borderColor='var(--green)'" onmouseout="this.style.borderColor='var(--border)'" onclick="showPage('committees',document.querySelector('[onclick*=committees]'));setTimeout(()=>showCommitteeDetail('${c.id}'),300)"><div style="font-size:20px;margin-bottom:3px">${c.icon}</div><div style="font-size:11px;font-weight:700;color:var(--green-dark)">${c.name}</div><div style="font-size:10px;color:var(--text-muted);margin-top:2px">👥 ${mems} عضو</div></div></div>`; }).join('')}
       </div>
     </div>`;
 }
@@ -3541,7 +3534,7 @@ function renderReports(){
   const ptot={}; State.getPayments().filter(p=>p.status==='مدفوع').forEach(p=>{ ptot[p.memberId]=(ptot[p.memberId]||0)+p.amount; });
   const top=Object.entries(ptot).sort((a,b)=>b[1]-a[1]).slice(0,5);
   document.getElementById('report-top-payers').innerHTML=top.length?top.map(([id,tot],i)=>{ const m=State.getMembers().find(x=>x.id===id); if(!m) return ''; return `<div style="display:flex;align-items:center;gap:10px;padding:10px 18px;border-bottom:1px solid #f0ebe0"><div style="font-size:15px;color:var(--accent);width:20px;font-weight:900">${i+1}</div><div class="avatar" style="background:${avColor(m.name)}">${avInit(m.name)}</div><div style="flex:1"><div style="font-weight:600;font-size:13px">${m.name}</div><div style="font-size:11px;color:var(--text-muted)">${m.family}</div></div><div style="font-weight:700;color:var(--green)">${fmt(tot)} ريال</div></div>`; }).join(''):'<div class="empty-state"><div class="empty-icon">🏆</div><p>لا بيانات</p></div>';
-  document.getElementById('report-committees-tbody').innerHTML=State.getCommittees().map(c=>{ const mems=(State.getCommitteeMembers()[c.id]||c.members||[]).length; const evs=State.getEvents().filter(e=>e.committeeId===c.id).length; const spent=State.getTransactions().filter(t=>t.committee===c.id&&t.type==='مصروف').reduce((s,t)=>s+t.amount,0); return `<tr><td>${c.icon} ${c.name} ${c.advisory?'<span class="badge badge-purple">استشارية</span>':''}</td><td>${mems}</td><td>${evs}</td><td style="font-weight:700;color:var(--danger)">${fmt(spent)} ريال</td></tr>`; }).join('');
+  document.getElementById('report-committees-tbody').innerHTML=State.getCommittees().map(c=>{ const mems = c.member_count || (State.getCommitteeMembers()[c.id] || []).length || 0; const evs=State.getEvents().filter(e=>e.committeeId===c.id).length; const spent=State.getTransactions().filter(t=>t.committee===c.id&&t.type==='مصروف').reduce((s,t)=>s+t.amount,0); return `<tr><td>${c.icon} ${c.name} ${c.advisory?'<span class="badge badge-purple">استشارية</span>':''}</td><td>${mems}</td><td>${evs}</td><td style="font-weight:700;color:var(--danger)">${fmt(spent)} ريال</td></tr>`; }).join('');
 }
 
 function switchTab(id,el){ document.querySelectorAll('.tab-content').forEach(t=>t.classList.remove('active')); document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active')); document.getElementById(id).classList.add('active'); el.classList.add('active'); renderReports(); }

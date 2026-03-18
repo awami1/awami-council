@@ -51,11 +51,16 @@ if ($method === 'GET') {
     $stmt = $pdo->query('SELECT * FROM committees ORDER BY sort_order ASC, created_at ASC');
     $committees = $stmt->fetchAll();
 
-    // Attach member counts
+    // Attach member counts and member_ids
     $counts = [];
+    $memberIds = [];
     try {
-        $rows = $pdo->query('SELECT committee_id, COUNT(*) as cnt FROM committee_members GROUP BY committee_id')->fetchAll();
-        foreach ($rows as $r) $counts[$r['committee_id']] = (int) $r['cnt'];
+        $rows = $pdo->query('SELECT committee_id, member_id FROM committee_members')->fetchAll();
+        foreach ($rows as $r) {
+            $cid = $r['committee_id'];
+            $counts[$cid] = ($counts[$cid] ?? 0) + 1;
+            $memberIds[$cid][] = $r['member_id'];
+        }
     } catch (PDOException $e) {}
 
     // Attach event counts
@@ -70,6 +75,7 @@ if ($method === 'GET') {
         $manualCount = (int) ($c['members_count'] ?? 0);
         $c['member_count']  = max($linkedCount, $manualCount);
         $c['members_count'] = $manualCount;
+        $c['member_ids']    = $memberIds[$c['id']] ?? [];
         $c['event_count']   = $eventCounts[$c['id']] ?? 0;
         $c['advisory']      = (bool) ($c['advisory'] ?? false);
     }

@@ -11,6 +11,7 @@
     </div>
     <p class="footer-name"><?= esc($ws['header']['title']) ?></p>
     <p class="footer-year">تأسس عام ١٩٩٢م - ١٤١٣هـ</p>
+    <?php if (empty($comingSoon)): ?>
     <nav class="footer-links" aria-label="روابط سريعة">
       <a href="/">الرئيسية</a>
       <a href="/council">المجلس</a>
@@ -20,6 +21,7 @@
       <a href="/gallery">المعرض</a>
       <a href="/contact">تواصل معنا</a>
     </nav>
+    <?php endif; ?>
     <?php if (!empty($ws['contact']['whatsapp'])): ?>
     <div class="footer-whatsapp">
       <a href="https://wa.me/<?= esc(preg_replace('/\D/', '', $ws['contact']['whatsapp'])) ?>" target="_blank" rel="noopener">
@@ -65,6 +67,7 @@ if ('serviceWorker' in navigator) {
 }
 </script>
 
+<?php if (empty($comingSoon)): ?>
 <!-- Bottom Navigation (mobile) -->
 <nav class="bottom-nav" aria-label="تنقل سريع">
   <a href="/" class="bottom-nav-item<?= (isset($currentPage) && $currentPage === 'home') ? ' active' : '' ?>">
@@ -88,3 +91,4 @@ if ('serviceWorker' in navigator) {
     <span class="bottom-nav-label">المجلس</span>
   </a>
 </nav>
+<?php endif; ?>

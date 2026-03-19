@@ -74,6 +74,13 @@ if ($comingSoon) {
         }
     }
     if (!$isExempt) {
+        $isAjaxReq = (!empty($_SERVER['HTTP_X_REQUESTED_WITH'])
+                && strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) === 'xmlhttprequest')
+               || !empty($_GET['_ajax']);
+        if ($isAjaxReq) {
+            echo '<script>window.location.replace(window.location.pathname);</script>';
+            exit;
+        }
         include __DIR__ . '/pages/coming-soon.php';
         exit;
     }

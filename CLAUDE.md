@@ -21,11 +21,11 @@
 │   ├── config.php            # DB connection, respond(), bodyJson(), uid()
 │   ├── auth_guard.php        # requireAuth(), verifyCsrf()
 │   ├── validation.php        # parseId(), sanitizeString()
-│   └── ...                   # ~20 resource endpoints
+│   └── ...                   # ~24 resource endpoints
 ├── admin/                    # Admin panel (SPA, monolithic)
 ├── pages/                    # Public page templates
 ├── includes/                 # Shared layout (header, footer, helpers)
-├── public/css/               # variables → base → layout → components → animations
+├── public/css/               # variables → base → layout → components → animations + page-specific
 ├── public/js/                # api.js, ajax-nav.js, page-specific scripts
 └── docs/                     # Architecture docs & runbooks
 ```

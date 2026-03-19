@@ -135,7 +135,7 @@ h1 {
   <h1>مجلس عائلة العوامي</h1>
   <p class="message">الموقع تحت الإنشاء — نعمل على تجهيزه لكم قريباً إن شاء الله</p>
   <div class="divider">✦ ✦ ✦</div>
-  <a href="/eid" class="eid-btn">🌙 اصنع بطاقة تهنئة العيد</a>
+  <a href="/eid" class="eid-btn">🌙 انشئ بطاقة تهنئة العيد</a>
 </div>
 <script>
 (function(){

@@ -204,7 +204,7 @@ function initEid() {
         navigator.share({
           files: [file],
           title: 'تهنئة العيد',
-          text:  'كل عام وأنتم بخير - مجلس عائلة العوامي',
+          text:  'كل عام وأنتم بخير - أيامكم سعيدة يا رب',
         }).catch(() => _fallbackShare(c, name));
       } else {
         _fallbackShare(c, name);

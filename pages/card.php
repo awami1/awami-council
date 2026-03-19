@@ -405,31 +405,6 @@
   color: rgba(255,255,255,0.9);
 }
 
-/* ── Theme Toggle ── */
-.card-theme-toggle {
-  position: fixed;
-  bottom: 20px;
-  left: 20px;
-  width: 42px;
-  height: 42px;
-  border-radius: 50%;
-  background: rgba(255,255,255,0.12);
-  border: 1.5px solid rgba(255,255,255,0.2);
-  color: #fff;
-  font-size: 18px;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  backdrop-filter: blur(10px);
-  -webkit-backdrop-filter: blur(10px);
-  transition: all 0.25s ease;
-  z-index: 100;
-}
-.card-theme-toggle:hover {
-  background: rgba(255,255,255,0.2);
-}
-
 /* ── Responsive ── */
 @media (max-width: 480px) {
   .card-welcome-title { font-size: 32px; }
@@ -523,9 +498,6 @@
     </div>
 
   </div>
-
-  <!-- Theme Toggle -->
-  <button class="card-theme-toggle" id="card-theme-toggle" title="تبديل المظهر">&#9790;</button>
 </section>
 
 <script>

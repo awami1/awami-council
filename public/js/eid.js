@@ -5,14 +5,15 @@ let _templateImg   = null;
 let _loadingPromise = null;
 let _rafPending    = false;
 
-const _TEMPLATE_SRCS = ['/assets/eid-template.jpg', '/assets/eid-template.png'];
+const _TEMPLATE_SRCS = ['/assets/eid-template-new.png'];
 const _FULL_W = 1003;
 const _FULL_H = 1144;
-const _NAME_Y_OFFSET = 200;
+const _NAME_Y_OFFSET = 180;
 
-async function ensureSaudiFont() {
+async function ensureEidFonts() {
   try {
     await Promise.all([
+      document.fonts.load('normal 70px Jarood'),
       document.fonts.load('normal 70px Saudi'),
       document.fonts.load('bold 70px Saudi'),
     ]);
@@ -57,22 +58,22 @@ function _drawCard(ctx, canvas, img, name, weight, fontSize) {
   const scale = canvas.width / _FULL_W;
   let scaledSize = fontSize * scale;
 
-  ctx.font         = `${weight} ${scaledSize}px Saudi, 'Readex Pro', Cairo, sans-serif`;
+  ctx.font         = `${weight} ${scaledSize}px Jarood, Saudi, Cairo, sans-serif`;
   ctx.textAlign    = 'center';
   ctx.textBaseline = 'alphabetic';
 
   let measured = ctx.measureText(name).width;
   while (measured > canvas.width * 0.88 && scaledSize > 28 * scale) {
     scaledSize -= 4 * scale;
-    ctx.font = `${weight} ${scaledSize}px Saudi, 'Readex Pro', Cairo, sans-serif`;
+    ctx.font = `${weight} ${scaledSize}px Jarood, Saudi, Cairo, sans-serif`;
     measured = ctx.measureText(name).width;
   }
 
-  ctx.fillStyle     = '#ffffff';
-  ctx.shadowColor   = 'rgba(0,0,0,0.7)';
-  ctx.shadowBlur    = 15 * scale;
-  ctx.shadowOffsetX = 3 * scale;
-  ctx.shadowOffsetY = 3 * scale;
+  ctx.fillStyle     = '#1A5C32';
+  ctx.shadowColor   = 'rgba(0,0,0,0.08)';
+  ctx.shadowBlur    = 4 * scale;
+  ctx.shadowOffsetX = 1 * scale;
+  ctx.shadowOffsetY = 1 * scale;
   ctx.fillText(name, canvas.width / 2, canvas.height - (_NAME_Y_OFFSET * scale));
 
   ctx.shadowColor   = 'transparent';
@@ -94,7 +95,7 @@ function _renderLivePreview() {
     ctx.fillStyle = '#e8f5ec';
     ctx.fillRect(0, 0, _FULL_W, _FULL_H);
     ctx.fillStyle = '#1A5C32';
-    ctx.font = 'bold 40px Saudi, Cairo, sans-serif';
+    ctx.font = 'bold 40px Jarood, Saudi, Cairo, sans-serif';
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
     ctx.fillText('جاري تحميل القالب...', _FULL_W / 2, _FULL_H / 2);
@@ -137,7 +138,7 @@ async function generateEidCard() {
   btn.textContent = 'جاري الإنشاء...';
 
   try {
-    await ensureSaudiFont();
+    await ensureEidFonts();
     await _loadTemplateOnce();
 
     if (!_templateImg) {
@@ -214,7 +215,7 @@ function initEid() {
   _renderLivePreview();
 
   // تحميل الخط والقالب ثم إعادة الرسم
-  ensureSaudiFont()
+  ensureEidFonts()
     .then(() => _loadTemplateOnce())
     .then(() => _renderLivePreview())
     .catch(() => {

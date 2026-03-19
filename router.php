@@ -63,7 +63,7 @@ if (php_sapi_name() === 'cli-server') {
 
 // ── Coming Soon Mode (حذف هذا البلوك عند الإطلاق) ──
 $comingSoon = true;
-$exemptPaths = ['/eid', '/admin', '/api', '/assets', '/public'];
+$exemptPaths = ['/eid', '/card', '/admin', '/api', '/assets', '/public'];
 
 if ($comingSoon) {
     $isExempt = false;
@@ -98,6 +98,7 @@ $routes = [
     '/gallery' => ['file' => 'pages/gallery.php',  'page' => 'gallery', 'title' => 'المعرض',              'scripts' => ['/public/js/media.js']],
     '/contact' => ['file' => 'pages/contact.php',  'page' => 'contact', 'title' => 'تواصل معنا',          'scripts' => []],
     '/eid'     => ['file' => 'pages/eid.php',      'page' => 'eid',     'title' => 'تهنئة العيد',         'scripts' => ['/public/js/eid.js']],
+    '/card'    => ['file' => 'pages/card.php',    'page' => 'card',    'title' => 'بطاقة تهنئة',         'scripts' => ['/public/js/card.js']],
     '/riwaq'   => ['file' => 'pages/riwaq.php',   'page' => 'riwaq',   'title' => 'الرِّوَاق',          'scripts' => [], 'standalone' => true],
     '/login'   => ['file' => 'login/index.php',  'page' => 'login',   'title' => 'تسجيل الدخول',       'scripts' => [], 'standalone' => true],
 ];

@@ -11,6 +11,7 @@
     '/news':    ['/public/js/news.js'],
     '/events':  [],
     '/eid':     ['/public/js/eid.js'],
+    '/card':    ['/public/js/card.js'],
     '/contact': []
   };
 

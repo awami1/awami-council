@@ -22,8 +22,9 @@
     </a>
     <div style="display:flex;align-items:center;gap:4px">
       <button class="theme-toggle" id="themeToggle" aria-label="تبديل الوضع الداكن/الفاتح" title="تبديل الوضع">&#9790;</button>
-      <button class="menu-toggle" id="menuBtn" aria-label="القائمة" aria-expanded="false" aria-controls="mainNav">&#9776;</button>
+      <?php if (empty($comingSoon)): ?><button class="menu-toggle" id="menuBtn" aria-label="القائمة" aria-expanded="false" aria-controls="mainNav">&#9776;</button><?php endif; ?>
     </div>
+    <?php if (empty($comingSoon)): ?>
     <nav id="mainNav">
       <a href="/"<?= ($currentPage ?? '') === 'home' ? ' class="active"' : '' ?>>الرئيسية</a>
       <a href="/council"<?= ($currentPage ?? '') === 'council' ? ' class="active"' : '' ?>>المجلس</a>
@@ -34,5 +35,6 @@
       <a href="/gallery"<?= ($currentPage ?? '') === 'gallery' ? ' class="active"' : '' ?>>المعرض</a>
       <a href="/contact"<?= ($currentPage ?? '') === 'contact' ? ' class="active"' : '' ?>>تواصل معنا</a>
     </nav>
+    <?php endif; ?>
   </div>
 </header>

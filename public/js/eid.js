@@ -59,9 +59,10 @@ function _drawCard(ctx, canvas, img, name, weight, fontSize) {
   let scaledSize = fontSize * scale;
 
   ctx.font         = `${weight} ${scaledSize}px Jarood, Saudi, Cairo, sans-serif`;
-  ctx.textAlign    = 'center';
+  ctx.textAlign    = 'right';
   ctx.textBaseline = 'alphabetic';
 
+  const rightPad = 80 * scale;
   let measured = ctx.measureText(name).width;
   while (measured > canvas.width * 0.88 && scaledSize > 28 * scale) {
     scaledSize -= 4 * scale;
@@ -74,7 +75,7 @@ function _drawCard(ctx, canvas, img, name, weight, fontSize) {
   ctx.shadowBlur    = 4 * scale;
   ctx.shadowOffsetX = 1 * scale;
   ctx.shadowOffsetY = 1 * scale;
-  ctx.fillText(name, canvas.width / 2, canvas.height - (_NAME_Y_OFFSET * scale));
+  ctx.fillText(name, canvas.width - rightPad, canvas.height - (_NAME_Y_OFFSET * scale));
 
   ctx.shadowColor   = 'transparent';
   ctx.shadowBlur    = 0;

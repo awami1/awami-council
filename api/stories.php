@@ -459,9 +459,10 @@ function handleImageUpload(): void
     requireAuth();
 
     // التحقق من CSRF عبر الهيدر أو الحقل
-    startAdminSession();
+    // $_SESSION لا زالت في الذاكرة بعد session_write_close() في requireAuth()
     $token = $_SERVER['HTTP_X_CSRF_TOKEN'] ?? ($_POST['csrf_token'] ?? '');
-    if (!$token || !hash_equals($_SESSION['csrf_token'] ?? '', $token)) {
+    $storedToken = $_SESSION['csrf_token'] ?? '';
+    if (!$token || !hash_equals($storedToken, $token)) {
         respond(403, ['error' => 'CSRF token invalid.']);
     }
 

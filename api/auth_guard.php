@@ -23,7 +23,11 @@ function startAdminSession(): void
 function isAuthenticated(): bool
 {
     startAdminSession();
-    return isset($_SESSION['awami_admin']) && $_SESSION['awami_admin'] === true;
+    $auth = isset($_SESSION['awami_admin']) && $_SESSION['awami_admin'] === true;
+    // فك قفل ملف الـ session فوراً لتحسين التزامن
+    // (لا نحتاج كتابة على الـ session هنا)
+    session_write_close();
+    return $auth;
 }
 
 function requireAuth(): void
@@ -48,7 +52,10 @@ function getCsrfToken(): string
     if (empty($_SESSION['csrf_token'])) {
         $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
     }
-    return $_SESSION['csrf_token'];
+    $token = $_SESSION['csrf_token'];
+    // فك قفل ملف الـ session بعد القراءة/الكتابة
+    session_write_close();
+    return $token;
 }
 
 /**
@@ -62,7 +69,10 @@ function verifyCsrf(): void
     }
     startAdminSession();
     $token = $_SERVER['HTTP_X_CSRF_TOKEN'] ?? '';
-    if (!$token || !hash_equals($_SESSION['csrf_token'] ?? '', $token)) {
+    $storedToken = $_SESSION['csrf_token'] ?? '';
+    // فك قفل ملف الـ session فوراً لتحسين التزامن
+    session_write_close();
+    if (!$token || !hash_equals($storedToken, $token)) {
         http_response_code(403);
         header('Content-Type: application/json; charset=utf-8');
         echo json_encode(

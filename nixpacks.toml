@@ -1,0 +1,11 @@
+# Nixpacks configuration for CranL deployment
+# يستخدم Nginx + PHP-FPM بدل سيرفر PHP المدمج (single-threaded)
+
+[phases.setup]
+nixPkgs = ["nginx"]
+
+[phases.build]
+cmds = ["mkdir -p /etc/nginx/conf.d", "[ -f composer.json ] && composer install --no-dev --optimize-autoloader || true"]
+
+[start]
+cmd = "bash start-prod.sh"

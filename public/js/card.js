@@ -473,23 +473,13 @@ function initCard() {
       var item = document.createElement('div');
       item.className = 'card-template-item' + (idx === state.selectedTemplate ? ' selected' : '');
 
-      var badge = document.createElement('span');
-      badge.className = 'card-template-badge';
-      badge.textContent = '✓ محدد';
-
       var canvas = document.createElement('canvas');
       canvas.className = 'card-template-thumb';
-      var size = SIZES[state.selectedShape];
-      var thumbW = Math.round(size.w * THUMB_SCALE);
-      var thumbH = Math.round(size.h * THUMB_SCALE);
-      canvas.style.width = thumbW + 'px';
-      canvas.style.height = thumbH + 'px';
 
       var nameLabel = document.createElement('span');
       nameLabel.className = 'card-template-name';
       nameLabel.textContent = tpl.name;
 
-      item.appendChild(badge);
       item.appendChild(canvas);
       item.appendChild(nameLabel);
 

@@ -1,5 +1,6 @@
 #!/bin/bash
-# Start the web server (development & production)
+# Start the PHP built-in development server (للتطوير المحلي فقط)
+# ⚠️  لا تستخدم هذا في الإنتاج — استخدم start-prod.sh (Nginx + PHP-FPM)
 
 PORT=${PORT:-80}
 HOST=${HOST:-0.0.0.0}

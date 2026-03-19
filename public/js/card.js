@@ -80,7 +80,6 @@ function initCard() {
   const backEdit    = document.getElementById('card-back-edit');
   const carousel    = document.getElementById('card-carousel');
   const resultCanvas = document.getElementById('card-result-canvas');
-  const themeToggle = document.getElementById('card-theme-toggle');
   const shapeBtns   = wizard.querySelectorAll('.card-shape-btn');
 
   let lastRenderedShape = null;
@@ -474,23 +473,13 @@ function initCard() {
       var item = document.createElement('div');
       item.className = 'card-template-item' + (idx === state.selectedTemplate ? ' selected' : '');
 
-      var badge = document.createElement('span');
-      badge.className = 'card-template-badge';
-      badge.textContent = '✓ محدد';
-
       var canvas = document.createElement('canvas');
       canvas.className = 'card-template-thumb';
-      var size = SIZES[state.selectedShape];
-      var thumbW = Math.round(size.w * THUMB_SCALE);
-      var thumbH = Math.round(size.h * THUMB_SCALE);
-      canvas.style.width = thumbW + 'px';
-      canvas.style.height = thumbH + 'px';
 
       var nameLabel = document.createElement('span');
       nameLabel.className = 'card-template-name';
       nameLabel.textContent = tpl.name;
 
-      item.appendChild(badge);
       item.appendChild(canvas);
       item.appendChild(nameLabel);
 
@@ -568,27 +557,6 @@ function initCard() {
   }
 
   /* ════════════════════════════════════════════
-     Theme Toggle
-     ════════════════════════════════════════════ */
-  function updateThemeIcon() {
-    var current = document.documentElement.getAttribute('data-theme');
-    themeToggle.innerHTML = current === 'dark' ? '&#9788;' : '&#9790;';
-  }
-
-  function toggleTheme() {
-    var current = document.documentElement.getAttribute('data-theme');
-    var next = current === 'dark' ? 'light' : 'dark';
-    document.documentElement.setAttribute('data-theme', next);
-    localStorage.setItem('awami-theme', next);
-    updateThemeIcon();
-    // Sync with main theme toggle if it exists
-    var mainToggle = document.getElementById('themeToggle');
-    if (mainToggle) {
-      mainToggle.innerHTML = next === 'dark' ? '&#9788;' : '&#9790;';
-    }
-  }
-
-  /* ════════════════════════════════════════════
      Event Binding
      ════════════════════════════════════════════ */
 
@@ -625,10 +593,6 @@ function initCard() {
   downloadBtn.addEventListener('click', handleDownload);
   shareBtn.addEventListener('click', handleShare);
   backEdit.addEventListener('click', function() { goToStep(2); });
-
-  // Theme toggle
-  themeToggle.addEventListener('click', toggleTheme);
-  updateThemeIcon();
 
   /* ════════════════════════════════════════════
      Font Preload & Init

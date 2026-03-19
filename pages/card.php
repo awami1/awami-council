@@ -275,24 +275,15 @@
   font-family: var(--font-body);
 }
 
-/* ── Step 2: Template Carousel ── */
+/* ── Step 2: Template Grid ── */
 .card-carousel {
-  display: flex;
-  gap: 16px;
-  overflow-x: auto;
-  scroll-snap-type: x mandatory;
-  -webkit-overflow-scrolling: touch;
-  padding: 10px 4px 16px;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
   width: 100%;
-  box-sizing: border-box;
-  scrollbar-width: none;
-}
-.card-carousel::-webkit-scrollbar {
-  display: none;
+  padding: 10px 0 16px;
 }
 .card-template-item {
-  flex-shrink: 0;
-  scroll-snap-align: center;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -305,27 +296,12 @@
   border: 3px solid transparent;
   transition: all 0.25s ease;
   display: block;
+  width: 100%;
+  height: auto;
 }
 .card-template-item.selected .card-template-thumb {
   border-color: var(--accent, #c8a84b);
   box-shadow: 0 4px 20px rgba(200,168,75,0.3);
-}
-.card-template-badge {
-  display: none;
-  position: absolute;
-  top: -8px;
-  right: -8px;
-  background: var(--accent, #c8a84b);
-  color: #1a1a1a;
-  font-size: 12px;
-  font-weight: 700;
-  padding: 3px 10px;
-  border-radius: 20px;
-  font-family: var(--font-body);
-  z-index: 2;
-}
-.card-template-item.selected .card-template-badge {
-  display: block;
 }
 .card-template-name {
   color: rgba(255,255,255,0.7);
@@ -403,31 +379,6 @@
 }
 .card-back-link:hover {
   color: rgba(255,255,255,0.9);
-}
-
-/* ── Theme Toggle ── */
-.card-theme-toggle {
-  position: fixed;
-  bottom: 20px;
-  left: 20px;
-  width: 42px;
-  height: 42px;
-  border-radius: 50%;
-  background: rgba(255,255,255,0.12);
-  border: 1.5px solid rgba(255,255,255,0.2);
-  color: #fff;
-  font-size: 18px;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  backdrop-filter: blur(10px);
-  -webkit-backdrop-filter: blur(10px);
-  transition: all 0.25s ease;
-  z-index: 100;
-}
-.card-theme-toggle:hover {
-  background: rgba(255,255,255,0.2);
 }
 
 /* ── Responsive ── */
@@ -523,9 +474,6 @@
     </div>
 
   </div>
-
-  <!-- Theme Toggle -->
-  <button class="card-theme-toggle" id="card-theme-toggle" title="تبديل المظهر">&#9790;</button>
 </section>
 
 <script>

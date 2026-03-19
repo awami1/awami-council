@@ -168,7 +168,7 @@ async function generateEidCard() {
 }
 
 function _fallbackShare(canvas, name) {
-  const text = encodeURIComponent('كل عام وأنتم بخير - مجلس عائلة العوامي');
+  const text = encodeURIComponent('كل عام وأنتم بخير - أيامكم سعيدة يا رب');
   if (confirm('سيتم فتح واتساب. حمّل الصورة أولاً ثم أرسلها.')) {
     const a    = document.createElement('a');
     a.download = name + '.png';

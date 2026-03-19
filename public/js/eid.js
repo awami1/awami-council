@@ -8,7 +8,7 @@ let _rafPending    = false;
 const _TEMPLATE_SRCS = ['/assets/eid-template-new.png'];
 const _FULL_W = 1003;
 const _FULL_H = 1144;
-const _NAME_Y_OFFSET = 225;
+const _NAME_Y_OFFSET = 166;
 
 async function ensureEidFonts() {
   try {
@@ -62,7 +62,7 @@ function _drawCard(ctx, canvas, img, name, weight, fontSize) {
   ctx.textAlign    = 'right';
   ctx.textBaseline = 'alphabetic';
 
-  const rightPad = 165 * scale;
+  const rightPad = 110 * scale;
   let measured = ctx.measureText(name).width;
   while (measured > canvas.width * 0.88 && scaledSize > 28 * scale) {
     scaledSize -= 4 * scale;

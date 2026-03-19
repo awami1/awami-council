@@ -61,6 +61,24 @@ if (php_sapi_name() === 'cli-server') {
     }
 }
 
+// ── Coming Soon Mode (حذف هذا البلوك عند الإطلاق) ──
+$comingSoon = true;
+$exemptPaths = ['/eid', '/admin', '/api', '/assets', '/public'];
+
+if ($comingSoon) {
+    $isExempt = false;
+    foreach ($exemptPaths as $prefix) {
+        if (str_starts_with($uri, $prefix)) {
+            $isExempt = true;
+            break;
+        }
+    }
+    if (!$isExempt) {
+        include __DIR__ . '/pages/coming-soon.php';
+        exit;
+    }
+}
+
 require_once __DIR__ . '/includes/helpers.php';
 
 // خريطة التوجيه

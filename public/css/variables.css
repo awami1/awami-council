@@ -6,6 +6,7 @@
 /* خطوط سعودية */
 @font-face { font-family: 'Saudi'; src: url('/public/fonts/saudi-normal.ttf') format('truetype'); font-weight: normal; font-display: swap; }
 @font-face { font-family: 'Saudi'; src: url('/public/fonts/saudi-bold.ttf') format('truetype'); font-weight: bold; font-display: swap; }
+@font-face { font-family: 'Jarood'; src: url('/public/fonts/eid-Jarood.ttf') format('truetype'); font-weight: normal; font-display: swap; }
 
 /* ─── الوضع الفاتح (الافتراضي) ─── */
 :root {

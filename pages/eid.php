@@ -23,8 +23,8 @@
         <div>
           <label class="eid-label">&#x1F3A8; نوع الخط:</label>
           <select id="eid-font-weight" class="eid-input" onchange="updateEidPreview()">
-            <option value="normal">السعودي — عادي</option>
-            <option value="bold" selected>السعودي — عريض (Bold)</option>
+            <option value="normal" selected>جرود</option>
+            <option value="bold">جرود — عريض</option>
           </select>
         </div>
         <div>

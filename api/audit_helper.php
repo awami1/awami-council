@@ -30,7 +30,7 @@ function logAudit(
         ensureAuditTable($pdo);
 
         $user = 'admin';
-        if (session_status() === PHP_SESSION_ACTIVE && isset($_SESSION['awami_user'])) {
+        if (isset($_SESSION['awami_user'])) {
             $user = $_SESSION['awami_user'];
         }
 

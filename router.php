@@ -16,11 +16,11 @@ if (php_sapi_name() === 'cli-server') {
         $ext = strtolower(pathinfo($filePath, PATHINFO_EXTENSION));
         if (in_array($ext, ['css', 'js', 'png', 'jpg', 'jpeg', 'gif', 'svg', 'webp', 'woff', 'woff2', 'ttf', 'ico'], true)) {
             $mtime = filemtime($filePath);
+            $etag = '"' . dechex($mtime) . '-' . dechex(filesize($filePath)) . '"';
             header('Cache-Control: public, max-age=2592000'); // 30 يوم
-            header('ETag: "' . dechex($mtime) . '-' . dechex(filesize($filePath)) . '"');
+            header('ETag: ' . $etag);
             // إذا العميل عنده نسخة محدثة، رجّع 304
             $ifNoneMatch = $_SERVER['HTTP_IF_NONE_MATCH'] ?? '';
-            $etag = '"' . dechex($mtime) . '-' . dechex(filesize($filePath)) . '"';
             if ($ifNoneMatch === $etag) {
                 http_response_code(304);
                 return;

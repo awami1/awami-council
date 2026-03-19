@@ -5,7 +5,7 @@
 nixPkgs = ["nginx"]
 
 [phases.build]
-cmds = ["mkdir -p /etc/nginx/conf.d", "composer install --no-dev --optimize-autoloader 2>/dev/null || true"]
+cmds = ["mkdir -p /etc/nginx/conf.d", "[ -f composer.json ] && composer install --no-dev --optimize-autoloader || true"]
 
 [start]
 cmd = "bash start-prod.sh"

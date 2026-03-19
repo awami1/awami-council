@@ -18,6 +18,9 @@ fi
 # إنشاء المجلدات المطلوبة
 mkdir -p /tmp/php-fpm /tmp/nginx /var/log/nginx "$APP_DIR/data"
 
+# ─── Graceful shutdown: إيقاف PHP-FPM عند إيقاف الحاوية ───
+trap 'kill $(cat /tmp/php-fpm/php-fpm.pid) 2>/dev/null; exit 0' SIGTERM SIGINT
+
 # ─── إعداد PHP-FPM pool ───
 cat > /tmp/php-fpm.conf <<FPMEOF
 [global]
@@ -38,7 +41,8 @@ pm.min_spare_servers = 2
 pm.max_spare_servers = 8
 pm.max_requests = 500
 
-; فك قفل الـ session بسرعة
+; Sessions تُحفظ في /tmp — مقبول لـ single-container deployment
+; لا تُشارَك بين حاويات متعددة
 php_admin_value[session.save_handler] = files
 php_admin_value[session.save_path] = /tmp
 
@@ -72,6 +76,11 @@ http {
         root ${APP_DIR};
         index index.php;
         charset utf-8;
+
+        # ─── Security Headers ───
+        add_header X-Content-Type-Options "nosniff" always;
+        add_header X-Frame-Options "DENY" always;
+        add_header Referrer-Policy "strict-origin-when-cross-origin" always;
 
         # ─── ملفات ثابتة ───
         location /public/ {
@@ -130,6 +139,7 @@ http {
         location ~ /\.git { deny all; }
         location ~ /\.env { deny all; }
         location ~ \.db\$ { deny all; }
+        location /data/ { deny all; }
         location = /api/config.php { deny all; }
     }
 }
@@ -138,6 +148,15 @@ NGINXEOF
 # ─── تشغيل ───
 echo "🚀 تشغيل PHP-FPM (max_children=20)..."
 $PHP_FPM_BIN --fpm-config /tmp/php-fpm.conf
+
+# انتظار جاهزية PHP-FPM قبل تشغيل Nginx
+echo "⏳ انتظار PHP-FPM..."
+for i in $(seq 1 30); do
+    if [ -f /tmp/php-fpm/php-fpm.pid ] && kill -0 "$(cat /tmp/php-fpm/php-fpm.pid)" 2>/dev/null; then
+        break
+    fi
+    sleep 0.1
+done
 
 echo "🚀 تشغيل Nginx على البورت ${PORT}..."
 exec nginx -c /tmp/nginx.conf -g 'daemon off;'

@@ -269,6 +269,26 @@ if ($sqlite) {
 "CREATE INDEX IF NOT EXISTS idx_objections_member ON member_objections(member_id)",
 "CREATE INDEX IF NOT EXISTS idx_objections_status ON member_objections(status)",
 
+"CREATE TABLE IF NOT EXISTS report_archive (
+  id VARCHAR(36) NOT NULL PRIMARY KEY,
+  title VARCHAR(300) NOT NULL,
+  report_type TEXT NOT NULL DEFAULT 'أخرى'
+      CHECK(report_type IN ('مالي','إداري','محضر اجتماع','كشف حساب','أخرى')),
+  source TEXT NOT NULL DEFAULT 'manual'
+      CHECK(source IN ('manual','import','generated')),
+  description TEXT,
+  file_url VARCHAR(500) DEFAULT NULL,
+  file_type VARCHAR(20) DEFAULT NULL,
+  report_date DATE NOT NULL,
+  period_id VARCHAR(36) DEFAULT NULL,
+  committee_id VARCHAR(36) DEFAULT NULL,
+  import_stats TEXT DEFAULT NULL,
+  status TEXT NOT NULL DEFAULT 'active' CHECK(status IN ('active','archived')),
+  created_by VARCHAR(36) DEFAULT NULL,
+  created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+)",
+
     ]; // end SQLite
 } else {
     $statements = [
@@ -540,6 +560,29 @@ if ($sqlite) {
   INDEX `idx_objections_member` (`member_id`),
   INDEX `idx_objections_status` (`status`),
   CONSTRAINT `fk_objections_member` FOREIGN KEY (`member_id`) REFERENCES `members` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci",
+
+"CREATE TABLE IF NOT EXISTS `report_archive` (
+  `id` VARCHAR(36) NOT NULL,
+  `title` VARCHAR(300) NOT NULL,
+  `report_type` ENUM('مالي','إداري','محضر اجتماع','كشف حساب','أخرى') NOT NULL DEFAULT 'أخرى',
+  `source` ENUM('manual','import','generated') NOT NULL DEFAULT 'manual',
+  `description` TEXT,
+  `file_url` VARCHAR(500) DEFAULT NULL,
+  `file_type` VARCHAR(20) DEFAULT NULL,
+  `report_date` DATE NOT NULL,
+  `period_id` VARCHAR(36) DEFAULT NULL,
+  `committee_id` VARCHAR(36) DEFAULT NULL,
+  `import_stats` JSON DEFAULT NULL,
+  `status` ENUM('active','archived') NOT NULL DEFAULT 'active',
+  `created_by` VARCHAR(36) DEFAULT NULL,
+  `created_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  INDEX `idx_archive_type` (`report_type`),
+  INDEX `idx_archive_date` (`report_date`),
+  INDEX `idx_archive_source` (`source`),
+  INDEX `idx_archive_status` (`status`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci",
 
     ]; // end MySQL

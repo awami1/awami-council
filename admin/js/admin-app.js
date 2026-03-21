@@ -2734,16 +2734,451 @@ function switchReportsTab(tab) {
   else if (tab === 'archive') renderArchiveTab();
 }
 
-// ---- تبويب التقارير التلقائية (placeholder) ----
+// =====================================================
+// AUTO REPORTS — التقارير التلقائية
+// =====================================================
+
+var autoReportType = '';
+var autoReportData = null;
+var autoReportLoading = false;
+var autoReportExtraItems = [];
+
+var AR_TYPES = [
+  { key: 'summary',       icon: '📋', label: 'ملخص تنفيذي',  desc: 'أهم الأرقام في صفحة واحدة' },
+  { key: 'financial',     icon: '💰', label: 'مالي شامل',     desc: 'إيرادات ومصروفات وعُهَد اللجان' },
+  { key: 'subscriptions', icon: '💳', label: 'الاشتراكات',    desc: 'من دفع ومن لم يدفع' },
+  { key: 'committees',    icon: '👥', label: 'اللجان',        desc: 'الأعضاء والميزانيات' },
+  { key: 'events',        icon: '🎪', label: 'الفعاليات',     desc: 'الأنشطة والميزانيات' },
+];
+
 function renderAutoReportsTab() {
   var container = document.getElementById('rt-auto-reports');
   if (!container) return;
-  container.innerHTML =
-    '<div class="empty-state">' +
-    '<div class="empty-icon">📈</div>' +
-    '<p>التقارير التلقائية — قريباً</p>' +
-    '<p style="font-size:13px;color:var(--text-muted)">توليد تقارير مالية وإدارية من بيانات النظام</p>' +
-    '</div>';
+
+  var html = '';
+
+  // بطاقات الاختيار
+  html += '<div class="ar-type-grid">';
+  AR_TYPES.forEach(function(t) {
+    html += '<div class="ar-type-card' + (autoReportType === t.key ? ' active' : '') + '" onclick="selectReportType(\'' + t.key + '\')">';
+    html += '<div class="ar-type-icon">' + t.icon + '</div>';
+    html += '<div class="ar-type-label">' + t.label + '</div>';
+    html += '<div class="ar-type-desc">' + t.desc + '</div>';
+    html += '</div>';
+  });
+  html += '</div>';
+
+  // فلاتر
+  if (autoReportType) {
+    html += renderAutoReportFilters();
+  }
+
+  // نتائج
+  html += '<div id="ar-results"></div>';
+
+  container.innerHTML = html;
+
+  if (autoReportData && !autoReportLoading) {
+    renderAutoReportResults();
+  }
+}
+
+function selectReportType(key) {
+  autoReportType = key;
+  autoReportData = null;
+  autoReportExtraItems = [];
+  renderAutoReportsTab();
+}
+
+function renderAutoReportFilters() {
+  var committees = State.getCommittees ? State.getCommittees() : [];
+  var periods = State.getPeriods ? State.getPeriods() : [];
+  var showDate = ['summary', 'financial', 'events'].indexOf(autoReportType) >= 0;
+  var showCommittee = ['summary', 'financial', 'events'].indexOf(autoReportType) >= 0;
+  var showPeriod = ['summary', 'financial', 'subscriptions'].indexOf(autoReportType) >= 0;
+
+  var html = '<div class="ar-filters">';
+
+  if (showDate) {
+    html += '<label>من: <input type="date" id="ar-date-from"></label>';
+    html += '<label>إلى: <input type="date" id="ar-date-to"></label>';
+  }
+
+  if (showCommittee) {
+    html += '<label>اللجنة: <select id="ar-committee"><option value="">الكل</option>';
+    committees.forEach(function(c) { html += '<option value="' + c.id + '">' + c.name + '</option>'; });
+    html += '</select></label>';
+  }
+
+  if (showPeriod) {
+    html += '<label>الفترة: <select id="ar-period"><option value="">الكل</option>';
+    periods.forEach(function(p) { html += '<option value="' + p.id + '">' + p.name + '</option>'; });
+    html += '</select></label>';
+  }
+
+  html += '<button class="btn btn-primary" onclick="generateAutoReport()">🔄 توليد التقرير</button>';
+  html += '</div>';
+  return html;
+}
+
+function generateAutoReport() {
+  autoReportLoading = true;
+  renderAutoReportResults();
+
+  var params = '?type=' + autoReportType;
+  var df = document.getElementById('ar-date-from');
+  var dt = document.getElementById('ar-date-to');
+  var cm = document.getElementById('ar-committee');
+  var pr = document.getElementById('ar-period');
+  if (df && df.value) params += '&date_from=' + df.value;
+  if (dt && dt.value) params += '&date_to=' + dt.value;
+  if (cm && cm.value) params += '&committee_id=' + cm.value;
+  if (pr && pr.value) params += '&period_id=' + pr.value;
+
+  apiFetch('/api/report-generator.php' + params)
+    .then(function(res) {
+      autoReportData = res.data;
+      autoReportLoading = false;
+      renderAutoReportResults();
+    })
+    .catch(function(err) {
+      autoReportLoading = false;
+      autoReportData = null;
+      toast('خطأ في توليد التقرير: ' + err.message, 'error');
+      var c = document.getElementById('ar-results');
+      if (c) c.innerHTML = '';
+    });
+}
+
+function renderAutoReportResults() {
+  var container = document.getElementById('ar-results');
+  if (!container) return;
+
+  if (autoReportLoading) {
+    container.innerHTML = '<div style="text-align:center;padding:40px;color:var(--text-muted)"><div style="font-size:32px;margin-bottom:8px">⏳</div>جاري توليد التقرير...</div>';
+    return;
+  }
+  if (!autoReportData) { container.innerHTML = ''; return; }
+
+  var html = '';
+  switch (autoReportType) {
+    case 'summary':       html = renderSummaryReport(autoReportData); break;
+    case 'financial':     html = renderFinancialReport(autoReportData); break;
+    case 'subscriptions': html = renderSubscriptionsReport(autoReportData); break;
+    case 'committees':    html = renderCommitteesReport(autoReportData); break;
+    case 'events':        html = renderEventsReport(autoReportData); break;
+  }
+
+  html += '<div class="ar-actions" style="margin-top:20px;display:flex;gap:10px;flex-wrap:wrap">';
+  html += '<button class="btn btn-outline" onclick="printReport()">🖨️ طباعة</button>';
+  html += '<button class="btn btn-outline" onclick="exportReportPDF()">📄 تصدير PDF</button>';
+  html += '</div>';
+
+  container.innerHTML = html;
+}
+
+// ---- ملخص تنفيذي ----
+function renderSummaryReport(d) {
+  var fin = d.financial || {};
+  var mem = d.members || {};
+  var sub = d.subscriptions || {};
+  var comms = d.committee_budgets || [];
+  var upcoming = d.upcoming_events || [];
+
+  var html = '<h3 style="margin-bottom:16px">📋 الملخص التنفيذي</h3>';
+
+  // بطاقات مالية
+  html += '<div class="ar-stat-grid">';
+  html += arStatCard(fmt(fin.total_income || 0), 'إجمالي الإيرادات', 'var(--green)');
+  html += arStatCard(fmt(fin.total_expense || 0), 'إجمالي المصروفات', 'var(--danger)');
+  html += arStatCard(fmt(fin.net_balance || 0), 'صافي الرصيد', (fin.net_balance || 0) >= 0 ? 'var(--green)' : 'var(--danger)');
+  html += arStatCard((sub.collection_rate || 0) + '%', 'نسبة تحصيل الاشتراكات', '#0369a1');
+  html += '</div>';
+
+  // أعضاء
+  html += '<div class="card" style="margin-bottom:16px"><div class="card-header"><div class="card-title">👥 الأعضاء</div></div><div class="card-body">';
+  html += '<div style="display:flex;gap:16px;flex-wrap:wrap">';
+  Object.keys(mem).forEach(function(s) {
+    if (s === 'total') return;
+    html += '<div style="text-align:center;padding:8px 16px;background:var(--bg);border-radius:8px"><div style="font-size:20px;font-weight:900">' + mem[s] + '</div><div style="font-size:11px;color:var(--text-muted)">' + s + '</div></div>';
+  });
+  html += '</div></div></div>';
+
+  // لجان
+  if (comms.length) {
+    html += '<div class="card" style="margin-bottom:16px"><div class="card-header"><div class="card-title">🏛️ مصروفات اللجان</div></div><div class="card-body">';
+    html += '<table class="ar-table"><thead><tr><th>اللجنة</th><th>المصروف</th></tr></thead><tbody>';
+    comms.forEach(function(c) {
+      html += '<tr><td>' + (c.name || '') + '</td><td>' + fmt(c.spent) + ' ريال</td></tr>';
+    });
+    html += '</tbody></table></div></div>';
+  }
+
+  // فعاليات قادمة
+  if (upcoming.length) {
+    html += '<div class="card"><div class="card-header"><div class="card-title">📅 فعاليات قادمة</div></div><div class="card-body">';
+    html += '<table class="ar-table"><thead><tr><th>الفعالية</th><th>التاريخ</th><th>اللجنة</th></tr></thead><tbody>';
+    upcoming.forEach(function(e) {
+      html += '<tr><td>' + (e.name || '') + '</td><td>' + (e.date || '') + '</td><td>' + (e.committee_name || '—') + '</td></tr>';
+    });
+    html += '</tbody></table></div></div>';
+  }
+
+  return html;
+}
+
+// ---- تقرير مالي شامل ----
+function renderFinancialReport(d) {
+  var s = d.summary || {};
+  var inc = d.income_by_category || [];
+  var exp = d.expense_by_category || [];
+  var comms = d.committee_budgets || [];
+  var sub = d.subscription_summary || {};
+
+  var html = '<h3 style="margin-bottom:16px">💰 التقرير المالي الشامل</h3>';
+
+  // بطاقات
+  html += '<div class="ar-stat-grid">';
+  html += arStatCard(fmt(s.total_income || 0), 'إجمالي الإيرادات', 'var(--green)');
+  html += arStatCard(fmt(s.total_expense || 0), 'إجمالي المصروفات', 'var(--danger)');
+  html += arStatCard(fmt(s.net_balance || 0), 'صافي الرصيد', (s.net_balance || 0) >= 0 ? 'var(--green)' : 'var(--danger)');
+  html += arStatCard(s.total_count || 0, 'عدد المعاملات', '#6b21a8');
+  html += '</div>';
+
+  // إيرادات بالفئة
+  if (inc.length) {
+    html += '<div class="card" style="margin-bottom:16px"><div class="card-header"><div class="card-title">📈 الإيرادات حسب الفئة</div></div><div class="card-body">';
+    html += '<table class="ar-table"><thead><tr><th>الفئة</th><th>المبلغ</th><th>العدد</th><th>النسبة</th></tr></thead><tbody>';
+    inc.forEach(function(r) {
+      html += '<tr><td>' + (r.category || 'بدون') + '</td><td style="color:var(--green);font-weight:700">' + fmt(r.amount) + '</td><td>' + r.count + '</td><td>' + r.percentage + '%</td></tr>';
+    });
+    html += '</tbody></table></div></div>';
+  }
+
+  // مصروفات بالفئة
+  if (exp.length) {
+    html += '<div class="card" style="margin-bottom:16px"><div class="card-header"><div class="card-title">📉 المصروفات حسب الفئة</div></div><div class="card-body">';
+    html += '<table class="ar-table"><thead><tr><th>الفئة</th><th>المبلغ</th><th>العدد</th><th>النسبة</th></tr></thead><tbody>';
+    exp.forEach(function(r) {
+      html += '<tr><td>' + (r.category || 'بدون') + '</td><td style="color:var(--danger);font-weight:700">' + fmt(r.amount) + '</td><td>' + r.count + '</td><td>' + r.percentage + '%</td></tr>';
+    });
+    html += '</tbody></table></div></div>';
+  }
+
+  // لجان
+  if (comms.length) {
+    html += '<div class="card" style="margin-bottom:16px"><div class="card-header"><div class="card-title">🏛️ مصروفات اللجان</div></div><div class="card-body">';
+    html += '<table class="ar-table"><thead><tr><th>اللجنة</th><th>المصروف</th></tr></thead><tbody>';
+    comms.forEach(function(c) {
+      html += '<tr><td>' + (c.icon || '') + ' ' + (c.name || '') + '</td><td>' + fmt(c.spent) + ' ريال</td></tr>';
+    });
+    html += '</tbody></table></div></div>';
+  }
+
+  // اشتراكات
+  html += '<div class="card" style="margin-bottom:16px"><div class="card-header"><div class="card-title">💳 ملخص الاشتراكات</div></div><div class="card-body">';
+  html += '<div style="display:flex;gap:20px;flex-wrap:wrap">';
+  html += '<div>المستحق: <strong>' + fmt(sub.total_due || 0) + '</strong> ريال</div>';
+  html += '<div>المحصّل: <strong style="color:var(--green)">' + fmt(sub.total_paid || 0) + '</strong> ريال</div>';
+  html += '<div>نسبة التحصيل: <strong>' + (sub.collection_rate || 0) + '%</strong></div>';
+  html += '</div></div></div>';
+
+  // بنود يدوية
+  html += renderExtraItemsSection();
+
+  return html;
+}
+
+// ---- تقرير الاشتراكات ----
+function renderSubscriptionsReport(d) {
+  var mem = d.members || {};
+  var periods = d.periods || [];
+  var defaulters = d.defaulters || [];
+
+  var html = '<h3 style="margin-bottom:16px">💳 تقرير الاشتراكات</h3>';
+
+  // أعضاء
+  html += '<div class="ar-stat-grid">';
+  Object.keys(mem).forEach(function(s) {
+    html += arStatCard(mem[s], s, s === 'total' ? '#1B3456' : 'var(--text)');
+  });
+  html += '</div>';
+
+  // فترات
+  if (periods.length) {
+    html += '<div class="card" style="margin-bottom:16px"><div class="card-header"><div class="card-title">📊 الفترات المالية</div></div><div class="card-body">';
+    html += '<table class="ar-table"><thead><tr><th>الفترة</th><th>الرسم</th><th>دفعوا</th><th>لم يدفعوا</th><th>المحصّل</th><th>الالتزام</th></tr></thead><tbody>';
+    periods.forEach(function(p) {
+      html += '<tr><td>' + (p.name || '') + '</td><td>' + fmt(p.fee_amount) + '</td><td>' + p.paid_count + '</td><td>' + p.unpaid_count + '</td>';
+      html += '<td style="color:var(--green)">' + fmt(p.paid_amount) + '</td>';
+      html += '<td><strong>' + p.collection_rate + '%</strong></td></tr>';
+    });
+    html += '</tbody></table></div></div>';
+  }
+
+  // متخلفين
+  if (defaulters.length) {
+    html += '<div class="card"><div class="card-header"><div class="card-title" style="color:var(--danger)">⚠️ المتخلفون عن الدفع (' + defaulters.length + ')</div></div><div class="card-body">';
+    html += '<table class="ar-table"><thead><tr><th>الاسم</th><th>الهاتف</th><th>الفترة</th><th>المبلغ</th></tr></thead><tbody>';
+    defaulters.forEach(function(d) {
+      html += '<tr><td>' + (d.name || '') + '</td><td dir="ltr">' + (d.phone || '—') + '</td><td>' + (d.period_name || '') + '</td><td>' + fmt(d.fee_amount) + '</td></tr>';
+    });
+    html += '</tbody></table></div></div>';
+  } else {
+    html += '<div class="card"><div class="card-body"><div class="empty-state"><div class="empty-icon">✅</div><p>لا يوجد متخلفون — ممتاز!</p></div></div></div>';
+  }
+
+  return html;
+}
+
+// ---- تقرير اللجان ----
+function renderCommitteesReport(d) {
+  var comms = d.committees || [];
+  var summary = d.summary || {};
+
+  var html = '<h3 style="margin-bottom:16px">👥 تقرير اللجان</h3>';
+
+  html += '<div class="ar-stat-grid">';
+  html += arStatCard(summary.total_committees || 0, 'عدد اللجان', '#1B3456');
+  html += arStatCard(fmt(summary.total_spent || 0), 'إجمالي المصروف', 'var(--danger)');
+  html += '</div>';
+
+  comms.forEach(function(c) {
+    html += '<div class="card" style="margin-bottom:12px"><div class="card-header"><div class="card-title">' + (c.icon || '🏛️') + ' ' + (c.name || '') + '</div>';
+    html += '<div style="font-size:12px;color:var(--text-muted)">' + (c.member_count || 0) + ' عضو · ' + (c.event_count || 0) + ' فعالية</div></div>';
+    html += '<div class="card-body">';
+    html += '<div style="margin-bottom:8px">المصروف: <strong style="color:var(--danger)">' + fmt(c.spent) + '</strong> ريال</div>';
+    if (c.members && c.members.length) {
+      html += '<div style="font-size:12px;color:var(--text-muted)">الأعضاء: ';
+      html += c.members.map(function(m) { return m.name + (m.role ? ' (' + m.role + ')' : ''); }).join('، ');
+      html += '</div>';
+    }
+    html += '</div></div>';
+  });
+
+  if (!comms.length) {
+    html += '<div class="empty-state"><div class="empty-icon">🏛️</div><p>لا توجد لجان</p></div>';
+  }
+
+  return html;
+}
+
+// ---- تقرير الفعاليات ----
+function renderEventsReport(d) {
+  var stats = d.status_stats || {};
+  var events = d.events || [];
+  var summary = d.summary || {};
+
+  var html = '<h3 style="margin-bottom:16px">🎪 تقرير الفعاليات</h3>';
+
+  html += '<div class="ar-stat-grid">';
+  html += arStatCard(summary.total_events || 0, 'إجمالي الفعاليات', '#1B3456');
+  html += arStatCard(fmt(summary.total_budget || 0), 'إجمالي الميزانيات', 'var(--green)');
+  html += arStatCard(summary.total_participants || 0, 'إجمالي المشاركين', '#6b21a8');
+  var statusLabels = { 'قادم': '📅', 'جاري': '🔄', 'مكتمل': '✅', 'ملغي': '❌' };
+  Object.keys(stats).forEach(function(s) {
+    html += arStatCard(stats[s], s + ' ' + (statusLabels[s] || ''), 'var(--text)');
+  });
+  html += '</div>';
+
+  if (events.length) {
+    html += '<div class="card"><div class="card-header"><div class="card-title">📋 قائمة الفعاليات</div></div><div class="card-body">';
+    html += '<table class="ar-table"><thead><tr><th>الفعالية</th><th>التاريخ</th><th>اللجنة</th><th>الميزانية</th><th>المشاركين</th><th>الحالة</th></tr></thead><tbody>';
+    events.forEach(function(e) {
+      html += '<tr><td>' + (e.icon || '') + ' ' + (e.name || '') + '</td><td>' + (e.date || '') + '</td><td>' + (e.committee_name || '—') + '</td>';
+      html += '<td>' + fmt(e.budget || 0) + '</td><td>' + (e.participants || 0) + '</td><td>' + (e.status || '') + '</td></tr>';
+    });
+    html += '</tbody></table></div></div>';
+  } else {
+    html += '<div class="empty-state"><div class="empty-icon">🎪</div><p>لا توجد فعاليات</p></div>';
+  }
+
+  return html;
+}
+
+// ---- Helpers ----
+function arStatCard(value, label, color) {
+  return '<div class="ar-stat-card"><div class="ar-stat-value" style="color:' + color + '">' + value + '</div><div class="ar-stat-label">' + label + '</div></div>';
+}
+
+// ---- بنود يدوية إضافية ----
+function renderExtraItemsSection() {
+  var html = '<div class="card" style="margin-bottom:16px"><div class="card-header"><div class="card-title">📝 بنود إضافية (اختياري)</div></div>';
+  html += '<div class="card-body">';
+  html += '<p style="font-size:12px;color:var(--text-muted);margin-bottom:12px">أضف أرقاماً غير موجودة في النظام — تظهر في التقرير فقط ولا تُحفظ في قاعدة البيانات</p>';
+  html += '<div id="ar-extra-list"></div>';
+  html += '<div style="display:flex;gap:8px;align-items:center;margin-top:8px;flex-wrap:wrap">';
+  html += '<input type="text" id="ar-extra-label" placeholder="البند" class="form-control" style="flex:2;min-width:120px">';
+  html += '<input type="number" id="ar-extra-amount" placeholder="المبلغ" class="form-control" style="flex:1;min-width:80px">';
+  html += '<select id="ar-extra-type" class="form-control" style="flex:1;min-width:80px"><option value="إيراد">إيراد</option><option value="مصروف">مصروف</option><option value="معلومة">معلومة</option></select>';
+  html += '<button class="btn btn-primary btn-sm" onclick="addExtraItem()">+ إضافة</button>';
+  html += '</div></div></div>';
+  return html;
+}
+
+function addExtraItem() {
+  var label = document.getElementById('ar-extra-label').value.trim();
+  var amount = parseFloat(document.getElementById('ar-extra-amount').value) || 0;
+  var type = document.getElementById('ar-extra-type').value;
+  if (!label) { toast('أدخل اسم البند', 'error'); return; }
+  autoReportExtraItems.push({ label: label, amount: amount, type: type });
+  document.getElementById('ar-extra-label').value = '';
+  document.getElementById('ar-extra-amount').value = '';
+  renderExtraItemsList();
+}
+
+function removeExtraItem(idx) {
+  autoReportExtraItems.splice(idx, 1);
+  renderExtraItemsList();
+}
+
+function renderExtraItemsList() {
+  var el = document.getElementById('ar-extra-list');
+  if (!el) return;
+  if (!autoReportExtraItems.length) { el.innerHTML = ''; return; }
+  el.innerHTML = autoReportExtraItems.map(function(item, i) {
+    return '<div style="display:flex;gap:8px;align-items:center;padding:6px 0;border-bottom:1px solid var(--border)">' +
+      '<span style="flex:2">' + item.label + '</span>' +
+      '<span style="flex:1;font-weight:700;color:' + (item.type === 'مصروف' ? 'var(--danger)' : 'var(--green)') + '">' + fmt(item.amount) + ' ريال</span>' +
+      '<span style="font-size:11px;color:var(--text-muted)">' + item.type + '</span>' +
+      '<button class="btn btn-xs" style="color:var(--danger)" onclick="removeExtraItem(' + i + ')">✕</button></div>';
+  }).join('');
+}
+
+// ---- طباعة ----
+function printReport() {
+  if (!autoReportData) { toast('لا توجد بيانات للطباعة', 'error'); return; }
+  var content = document.getElementById('ar-results').innerHTML;
+  var win = window.open('', '_blank');
+  var h = '<!DOCTYPE html><html dir="rtl" lang="ar"><head><meta charset="utf-8">';
+  h += '<title>تقرير — مجلس عائلة العوامي</title><style>';
+  h += 'body{font-family:Cairo,Tajawal,sans-serif;direction:rtl;padding:20px;color:#333}';
+  h += 'h2,h3{color:#1B3456}';
+  h += 'table{width:100%;border-collapse:collapse;margin:10px 0}';
+  h += 'th,td{border:1px solid #ddd;padding:8px;text-align:right;font-size:13px}';
+  h += 'th{background:#1B3456;color:#fff}';
+  h += '.ar-actions,button,.ar-extra-items,.card-header .card-title+div{display:none!important}';
+  h += '.ar-stat-card{display:inline-block;border:1px solid #ddd;border-radius:8px;padding:12px;margin:4px;min-width:120px;text-align:center}';
+  h += '.card{border:1px solid #ddd;border-radius:8px;margin-bottom:12px}';
+  h += '.card-header{padding:10px 16px;border-bottom:1px solid #ddd;background:#f8f8f8}';
+  h += '.card-body{padding:12px 16px}';
+  h += '@media print{body{padding:0}}';
+  h += '</style></head><body>';
+  h += '<h2 style="text-align:center;margin-bottom:4px">مجلس عائلة العوامي</h2>';
+  h += '<p style="text-align:center;color:#666;font-size:13px">تاريخ الإصدار: ' + new Date().toLocaleDateString('ar-SA') + '</p>';
+  h += '<hr style="border-color:#c8a84b">';
+  h += content;
+  h += '<hr style="border-color:#c8a84b;margin-top:30px">';
+  h += '<p style="text-align:center;font-size:11px;color:#999">صدر من: الموقع الرسمي لعائلة العوامي</p>';
+  h += '</body></html>';
+  win.document.write(h);
+  win.document.close();
+  setTimeout(function() { win.print(); }, 500);
+}
+
+function exportReportPDF() {
+  toast('استخدم الطباعة ثم "حفظ كـ PDF" — تصدير PDF مباشر قريباً', 'info');
+  printReport();
 }
 
 // ---- تبويب الأرشيف (placeholder) ----

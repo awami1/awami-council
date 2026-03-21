@@ -2707,29 +2707,31 @@ var _origRenderMessages = typeof renderMessages === 'function' ? null : null;
 
 var reportsActiveTab = 'auto-reports';
 
+// ---- Import state ----
+var importWorkbook = null;
+var importRawData = null;
+var importFileName = '';
+var importData = [];
+var importSelectedRows = new Set();
+var importStep = 1;
+
+var IMPORT_CATEGORIES = ['رسوم الأعضاء', 'رحلة العمرة', 'غداء العيد', 'رحلة ترفيهية', 'مسابقة', 'مصاريف إدارية', 'استثمار', 'عقيقة جماعية', 'تبرعات', 'اشتراكات', 'ضيافة', 'نقل', 'صيانة', 'تعليم', 'رحلات', 'مناسبات', 'أخرى'];
+
 function renderReportsPage() {
   switchReportsTab(reportsActiveTab);
 }
 
 function switchReportsTab(tab) {
   reportsActiveTab = tab;
-
-  // تحديث التبويبات
   document.querySelectorAll('.reports-tab-btn').forEach(function(btn) {
     btn.classList.toggle('active', btn.dataset.tab === tab);
   });
   document.querySelectorAll('.reports-tab-content').forEach(function(el) {
     el.style.display = el.id === 'rt-' + tab ? 'block' : 'none';
   });
-
-  // تحميل محتوى التبويب
-  if (tab === 'auto-reports') {
-    renderAutoReportsTab();
-  } else if (tab === 'import') {
-    renderImportTab();
-  } else if (tab === 'archive') {
-    renderArchiveTab();
-  }
+  if (tab === 'auto-reports') renderAutoReportsTab();
+  else if (tab === 'import') renderImportTab();
+  else if (tab === 'archive') renderArchiveTab();
 }
 
 // ---- تبويب التقارير التلقائية (placeholder) ----
@@ -2744,18 +2746,6 @@ function renderAutoReportsTab() {
     '</div>';
 }
 
-// ---- تبويب استيراد المعاملات (placeholder) ----
-function renderImportTab() {
-  var container = document.getElementById('rt-import');
-  if (!container) return;
-  container.innerHTML =
-    '<div class="empty-state">' +
-    '<div class="empty-icon">📥</div>' +
-    '<p>استيراد معاملات من Excel — قريباً</p>' +
-    '<p style="font-size:13px;color:var(--text-muted)">رفع ملفات Excel ومراجعتها وإدخالها في النظام</p>' +
-    '</div>';
-}
-
 // ---- تبويب الأرشيف (placeholder) ----
 function renderArchiveTab() {
   var container = document.getElementById('rt-archive');
@@ -2766,6 +2756,564 @@ function renderArchiveTab() {
     '<p>أرشيف التقارير — قريباً</p>' +
     '<p style="font-size:13px;color:var(--text-muted)">حفظ وتصنيف الملفات والوثائق المالية</p>' +
     '</div>';
+}
+
+// =====================================================
+// IMPORT — استيراد معاملات من Excel
+// =====================================================
+
+function importBuildStepper(step) {
+  var labels = ['رفع', 'ربط', 'مراجعة', 'إدخال'];
+  var html = '<div class="import-stepper">';
+  for (var i = 1; i <= 4; i++) {
+    if (i > 1) html += '<div class="import-stepper-line' + (i <= step ? ' done' : '') + '"></div>';
+    html += '<div class="import-stepper-dot' + (i === step ? ' active' : (i < step ? ' done' : '')) + '">' + i + '</div>';
+  }
+  html += '</div>';
+  html += '<div style="display:flex;justify-content:center;gap:40px;margin-bottom:20px;font-size:12px;color:var(--text-muted)">';
+  labels.forEach(function(l, i) {
+    var cls = (i + 1) === step ? 'color:var(--green);font-weight:700' : '';
+    html += '<span style="' + cls + '">' + l + '</span>';
+  });
+  html += '</div>';
+  return html;
+}
+
+function renderImportTab() {
+  var container = document.getElementById('rt-import');
+  if (!container) return;
+  if (importStep === 1) renderImportStep1(container);
+  else if (importStep === 2) renderImportStep2(container);
+  else if (importStep === 3) renderImportStep3(container);
+  else if (importStep === 4) renderImportStep4(container);
+}
+
+// ---- Step 1: رفع الملف ----
+function renderImportStep1(container) {
+  var html = importBuildStepper(1);
+  html += '<div class="card"><div class="card-body" style="padding:32px">';
+  html += '<div class="import-upload-area" id="import-upload-area" onclick="document.getElementById(\'import-file-input\').click()">';
+  html += '<input type="file" id="import-file-input" accept=".xlsx,.xls,.csv" style="display:none" onchange="importProcessFile(this.files[0])">';
+  html += '<div style="font-size:56px;margin-bottom:12px">📊</div>';
+  html += '<div style="font-size:17px;font-weight:700;margin-bottom:8px">اسحب ملف Excel هنا أو انقر للاختيار</div>';
+  html += '<div style="font-size:13px;color:var(--text-muted)">يدعم: .xlsx, .xls, .csv (حد أقصى 10 ميجابايت)</div>';
+  html += '</div>';
+  html += '</div></div>';
+
+  if (importWorkbook) {
+    html += '<div style="text-align:center;margin-top:16px">';
+    html += '<button class="btn btn-outline" onclick="importReset()">🔄 بدء استيراد جديد</button>';
+    html += '</div>';
+  }
+
+  container.innerHTML = html;
+
+  // Drag & drop
+  var area = document.getElementById('import-upload-area');
+  if (area) {
+    area.addEventListener('dragover', function(e) { e.preventDefault(); e.stopPropagation(); this.classList.add('drag-over'); });
+    area.addEventListener('dragleave', function(e) { e.preventDefault(); e.stopPropagation(); this.classList.remove('drag-over'); });
+    area.addEventListener('drop', function(e) {
+      e.preventDefault(); e.stopPropagation(); this.classList.remove('drag-over');
+      if (e.dataTransfer.files.length > 0) importProcessFile(e.dataTransfer.files[0]);
+    });
+  }
+}
+
+function importProcessFile(file) {
+  if (!file) return;
+  if (!file.name.match(/\.(xlsx|xls|csv)$/i)) {
+    toast('نوع الملف غير مدعوم. يدعم: xlsx, xls, csv', 'error');
+    return;
+  }
+  if (file.size > 10 * 1024 * 1024) {
+    toast('حجم الملف يتجاوز 10 ميجابايت', 'error');
+    return;
+  }
+  importFileName = file.name;
+  var reader = new FileReader();
+  reader.onload = function(e) {
+    try {
+      var data = new Uint8Array(e.target.result);
+      importWorkbook = XLSX.read(data, { type: 'array', cellDates: true });
+      importReadSheet(0);
+    } catch (err) {
+      toast('خطأ في قراءة الملف: ' + err.message, 'error');
+    }
+  };
+  reader.readAsArrayBuffer(file);
+}
+
+function importReadSheet(sheetIndex) {
+  var sheetName = importWorkbook.SheetNames[sheetIndex];
+  var sheet = importWorkbook.Sheets[sheetName];
+  var json = XLSX.utils.sheet_to_json(sheet, { defval: '' });
+  if (!json.length) {
+    toast('الملف فارغ أو لا يحتوي بيانات', 'error');
+    return;
+  }
+  importRawData = json;
+  importStep = 2;
+  renderImportTab();
+}
+
+// ---- Step 2: ربط الأعمدة ----
+function renderImportStep2(container) {
+  var cols = Object.keys(importRawData[0]);
+  var html = importBuildStepper(2);
+
+  // Sheet selector
+  if (importWorkbook.SheetNames.length > 1) {
+    html += '<div style="margin-bottom:16px"><label class="form-label">اختر الصفحة:</label>';
+    html += '<select class="form-control" style="max-width:300px" onchange="importReadSheet(parseInt(this.value))">';
+    importWorkbook.SheetNames.forEach(function(name, i) {
+      html += '<option value="' + i + '">' + name + '</option>';
+    });
+    html += '</select></div>';
+  }
+
+  html += '<div class="card"><div class="card-header"><div class="card-title">📄 ' + importFileName + ' — ' + importRawData.length + ' صف</div></div>';
+  html += '<div class="card-body">';
+
+  // Column mapping
+  html += '<div style="background:var(--bg);border-radius:12px;padding:16px;margin-bottom:20px">';
+  html += '<div style="font-weight:700;font-size:13px;margin-bottom:12px">🔗 ربط الأعمدة</div>';
+  html += '<div class="form-grid" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px">';
+
+  var fields = [
+    { id: 'import-col-desc', label: 'الوصف / البيان *', required: true },
+    { id: 'import-col-amount', label: 'المبلغ *', required: true },
+    { id: 'import-col-date', label: 'التاريخ' },
+    { id: 'import-col-type', label: 'النوع (إيراد/مصروف)' }
+  ];
+
+  fields.forEach(function(f) {
+    html += '<div class="form-group"><label class="form-label">' + f.label + '</label>';
+    html += '<select id="' + f.id + '" class="form-control">';
+    html += '<option value="">— لا يوجد —</option>';
+    cols.forEach(function(c) { html += '<option value="' + c + '">' + c + '</option>'; });
+    html += '</select></div>';
+  });
+
+  html += '</div>';
+  html += '<div id="import-detect-info" style="margin-top:10px;font-size:12px;color:var(--text-muted)"></div>';
+  html += '</div>';
+
+  // Preview
+  html += '<div style="font-weight:700;font-size:13px;margin-bottom:8px">📋 معاينة أول 5 صفوف</div>';
+  html += '<div class="table-wrap" style="max-height:300px;overflow:auto"><table class="import-review-table"><thead><tr>';
+  cols.forEach(function(c) { html += '<th>' + c + '</th>'; });
+  html += '</tr></thead><tbody>';
+  importRawData.slice(0, 5).forEach(function(row) {
+    html += '<tr>';
+    cols.forEach(function(c) { html += '<td>' + (row[c] != null ? String(row[c]).substring(0, 50) : '') + '</td>'; });
+    html += '</tr>';
+  });
+  html += '</tbody></table></div>';
+
+  // Buttons
+  html += '<div style="display:flex;gap:10px;margin-top:20px;justify-content:flex-end">';
+  html += '<button class="btn btn-outline" onclick="importStep=1;renderImportTab()">← رجوع</button>';
+  html += '<button class="btn btn-primary" onclick="importPrepareReview()">التالي: مراجعة المعاملات →</button>';
+  html += '</div>';
+
+  html += '</div></div>';
+  container.innerHTML = html;
+
+  // Auto-detect columns
+  importAutoDetectColumns(cols);
+}
+
+function importAutoDetectColumns(cols) {
+  var descWords = ['الوصف', 'البيان', 'بيان', 'description', 'desc', 'وصف', 'تفاصيل', 'ملاحظة'];
+  var amountWords = ['المبلغ', 'القيمة', 'amount', 'value', 'مبلغ', 'قيمة', 'مدين', 'دائن'];
+  var dateWords = ['التاريخ', 'date', 'تاريخ'];
+  var typeWords = ['النوع', 'type', 'نوع'];
+
+  var detected = 0;
+  function tryDetect(selectId, keywords) {
+    var el = document.getElementById(selectId);
+    if (!el) return;
+    for (var i = 0; i < cols.length; i++) {
+      var cl = cols[i].toLowerCase().trim();
+      for (var j = 0; j < keywords.length; j++) {
+        if (cl.includes(keywords[j].toLowerCase())) {
+          el.value = cols[i];
+          detected++;
+          return;
+        }
+      }
+    }
+  }
+
+  tryDetect('import-col-desc', descWords);
+  tryDetect('import-col-amount', amountWords);
+  tryDetect('import-col-date', dateWords);
+  tryDetect('import-col-type', typeWords);
+
+  var info = document.getElementById('import-detect-info');
+  if (info) info.textContent = '🔍 تم كشف ' + detected + '/4 أعمدة تلقائياً';
+}
+
+function importPrepareReview() {
+  var descCol = document.getElementById('import-col-desc').value;
+  var amountCol = document.getElementById('import-col-amount').value;
+  var dateCol = document.getElementById('import-col-date').value;
+  var typeCol = document.getElementById('import-col-type').value;
+
+  if (!descCol || !amountCol) {
+    toast('يرجى تحديد عمود الوصف والمبلغ', 'error');
+    return;
+  }
+
+  importData = [];
+  importSelectedRows = new Set();
+
+  importRawData.forEach(function(row, i) {
+    var desc = String(row[descCol] || '').trim();
+    var amountStr = String(row[amountCol] || '0');
+    var amount = parseFloat(amountStr.replace(/[^\d.\-]/g, '')) || 0;
+    var dateStr = dateCol ? row[dateCol] : '';
+    var typeStr = typeCol ? String(row[typeCol] || '') : '';
+
+    // Parse date
+    var date = '';
+    if (dateStr) {
+      if (dateStr instanceof Date) {
+        date = dateStr.toISOString().split('T')[0];
+      } else {
+        var ds = String(dateStr);
+        if (!isNaN(Date.parse(ds))) {
+          date = new Date(ds).toISOString().split('T')[0];
+        } else if (ds.match(/^\d{1,2}[\/\-]\d{1,2}[\/\-]\d{2,4}$/)) {
+          var parts = ds.split(/[\/\-]/);
+          if (parts[2] && parts[2].length === 4) {
+            date = parts[2] + '-' + parts[1].padStart(2, '0') + '-' + parts[0].padStart(2, '0');
+          }
+        }
+      }
+    }
+    if (!date) date = new Date().toISOString().split('T')[0];
+
+    // Detect type
+    var type = '';
+    if (typeStr) {
+      var lt = typeStr.toLowerCase();
+      if (lt.includes('إيراد') || lt.includes('دخل') || lt.includes('income') || lt.includes('دائن') || lt.includes('credit')) type = 'إيراد';
+      else if (lt.includes('مصروف') || lt.includes('expense') || lt.includes('مدين') || lt.includes('debit')) type = 'مصروف';
+    }
+    if (!type) {
+      var ld = desc.toLowerCase();
+      if (ld.includes('اشتراك') || ld.includes('تبرع') || ld.includes('إيراد') || ld.includes('دخل')) type = 'إيراد';
+    }
+
+    importData.push({
+      index: i,
+      description: desc,
+      amount: Math.abs(amount),
+      date: date,
+      type: type,
+      category: '',
+      committee_id: '',
+      valid: desc.length > 0 && amount !== 0
+    });
+
+    if (desc.length > 0 && amount !== 0) importSelectedRows.add(i);
+  });
+
+  importStep = 3;
+  renderImportTab();
+}
+
+// ---- Step 3: مراجعة وتعديل ----
+function renderImportStep3(container) {
+  var committees = State.getCommittees ? State.getCommittees() : [];
+  var html = importBuildStepper(3);
+
+  // Bulk bar
+  html += '<div class="import-bulk-bar">';
+  html += '<label style="display:flex;align-items:center;gap:4px"><input type="checkbox" id="import-select-all" onchange="importToggleAll(this.checked)"> تحديد الكل</label>';
+  html += '<span id="import-selected-count" style="font-weight:700">0 محدد</span>';
+  html += '<select id="import-bulk-type" class="form-control" style="width:auto;font-size:12px"><option value="">النوع...</option><option value="إيراد">إيراد</option><option value="مصروف">مصروف</option></select>';
+  html += '<select id="import-bulk-category" class="form-control" style="width:auto;font-size:12px"><option value="">الفئة...</option>';
+  IMPORT_CATEGORIES.forEach(function(c) { html += '<option value="' + c + '">' + c + '</option>'; });
+  html += '</select>';
+  html += '<select id="import-bulk-committee" class="form-control" style="width:auto;font-size:12px"><option value="">اللجنة...</option>';
+  committees.forEach(function(c) { html += '<option value="' + c.id + '">' + c.name + '</option>'; });
+  html += '</select>';
+  html += '<button class="btn btn-primary btn-sm" onclick="importApplyBulk()">✓ تطبيق</button>';
+  html += '<button class="btn btn-sm" style="color:var(--danger)" onclick="importDeleteSelected()">🗑️ حذف</button>';
+  html += '</div>';
+
+  // Table
+  html += '<div class="table-wrap" style="max-height:500px;overflow:auto"><table class="import-review-table"><thead><tr>';
+  html += '<th style="width:36px">✓</th><th>التاريخ</th><th>الوصف</th><th>المبلغ</th><th>النوع</th><th>الفئة</th><th>اللجنة</th>';
+  html += '</tr></thead><tbody>';
+
+  importData.forEach(function(row, idx) {
+    var isSelected = importSelectedRows.has(idx);
+    var cls = isSelected ? 'selected' : '';
+    if (!row.valid) cls += ' invalid';
+    html += '<tr class="' + cls + '" data-idx="' + idx + '">';
+    html += '<td><input type="checkbox" class="import-row-check" data-idx="' + idx + '"' + (isSelected ? ' checked' : '') + ' onchange="importToggleRow(' + idx + ',this.checked)"></td>';
+    html += '<td><input type="date" value="' + row.date + '" onchange="importData[' + idx + '].date=this.value" class="import-edit-input" style="width:130px"></td>';
+    html += '<td><input type="text" value="' + (row.description || '').replace(/"/g, '&quot;') + '" onchange="importData[' + idx + '].description=this.value.trim()" class="import-edit-input import-edit-desc"></td>';
+    html += '<td><input type="number" value="' + row.amount + '" min="0" step="0.01" onchange="importData[' + idx + '].amount=parseFloat(this.value)||0;importUpdateSummary()" class="import-edit-input import-edit-amount"></td>';
+
+    // Type select
+    html += '<td><select onchange="importData[' + idx + '].type=this.value;importUpdateSummary()" class="import-edit-select">';
+    html += '<option value="">— اختر —</option>';
+    html += '<option value="إيراد"' + (row.type === 'إيراد' ? ' selected' : '') + '>إيراد</option>';
+    html += '<option value="مصروف"' + (row.type === 'مصروف' ? ' selected' : '') + '>مصروف</option>';
+    html += '</select></td>';
+
+    // Category select
+    html += '<td><select onchange="importData[' + idx + '].category=this.value" class="import-edit-select">';
+    html += '<option value="">— بدون —</option>';
+    IMPORT_CATEGORIES.forEach(function(c) {
+      html += '<option value="' + c + '"' + (row.category === c ? ' selected' : '') + '>' + c + '</option>';
+    });
+    html += '</select></td>';
+
+    // Committee select
+    html += '<td><select onchange="importData[' + idx + '].committee_id=this.value" class="import-edit-select">';
+    html += '<option value="">عام</option>';
+    committees.forEach(function(c) {
+      html += '<option value="' + c.id + '"' + (row.committee_id === c.id ? ' selected' : '') + '>' + c.name + '</option>';
+    });
+    html += '</select></td>';
+
+    html += '</tr>';
+  });
+
+  html += '</tbody></table></div>';
+
+  // Summary bar
+  html += '<div class="import-summary-bar" id="import-summary-bar"></div>';
+
+  // Buttons
+  html += '<div style="display:flex;gap:10px;margin-top:16px;justify-content:flex-end">';
+  html += '<button class="btn btn-outline" onclick="importStep=2;renderImportTab()">← رجوع لربط الأعمدة</button>';
+  html += '<button class="btn btn-primary" onclick="importValidateAndConfirm()">إدخال في النظام →</button>';
+  html += '</div>';
+
+  container.innerHTML = html;
+  importUpdateSummary();
+}
+
+function importToggleRow(idx, checked) {
+  if (checked) importSelectedRows.add(idx);
+  else importSelectedRows.delete(idx);
+  var tr = document.querySelector('tr[data-idx="' + idx + '"]');
+  if (tr) tr.classList.toggle('selected', checked);
+  importUpdateSummary();
+}
+
+function importToggleAll(checked) {
+  importData.forEach(function(row, idx) {
+    if (row.valid) {
+      if (checked) importSelectedRows.add(idx);
+      else importSelectedRows.delete(idx);
+    }
+  });
+  document.querySelectorAll('.import-row-check').forEach(function(cb) {
+    var idx = parseInt(cb.dataset.idx);
+    if (importData[idx] && importData[idx].valid) cb.checked = checked;
+  });
+  document.querySelectorAll('.import-review-table tbody tr').forEach(function(tr) {
+    var idx = parseInt(tr.dataset.idx);
+    if (importData[idx] && importData[idx].valid) tr.classList.toggle('selected', checked);
+  });
+  importUpdateSummary();
+}
+
+function importApplyBulk() {
+  var bulkType = document.getElementById('import-bulk-type').value;
+  var bulkCat = document.getElementById('import-bulk-category').value;
+  var bulkComm = document.getElementById('import-bulk-committee').value;
+  if (!bulkType && !bulkCat && !bulkComm) {
+    toast('اختر قيمة لتطبيقها', 'error');
+    return;
+  }
+  var count = 0;
+  importSelectedRows.forEach(function(idx) {
+    if (bulkType) importData[idx].type = bulkType;
+    if (bulkCat) importData[idx].category = bulkCat;
+    if (bulkComm) importData[idx].committee_id = bulkComm;
+    count++;
+  });
+  toast('تم التطبيق على ' + count + ' صف');
+  renderImportStep3(document.getElementById('rt-import'));
+}
+
+function importDeleteSelected() {
+  if (importSelectedRows.size === 0) { toast('لم يتم تحديد أي صف', 'error'); return; }
+  var newData = [];
+  importData.forEach(function(row, idx) {
+    if (!importSelectedRows.has(idx)) newData.push(row);
+  });
+  importData = newData;
+  importSelectedRows = new Set();
+  // Re-index
+  importData.forEach(function(row, i) { row.index = i; });
+  renderImportStep3(document.getElementById('rt-import'));
+}
+
+function importUpdateSummary() {
+  var bar = document.getElementById('import-summary-bar');
+  if (!bar) return;
+  var totalIncome = 0, totalExpense = 0;
+  importSelectedRows.forEach(function(idx) {
+    var row = importData[idx];
+    if (!row) return;
+    if (row.type === 'إيراد') totalIncome += row.amount;
+    else if (row.type === 'مصروف') totalExpense += row.amount;
+  });
+  var net = totalIncome - totalExpense;
+  var countEl = document.getElementById('import-selected-count');
+  if (countEl) countEl.textContent = importSelectedRows.size + ' محدد';
+  bar.innerHTML =
+    '<span>محدد: <strong>' + importSelectedRows.size + '</strong> من <strong>' + importData.length + '</strong></span>' +
+    '<span>إيرادات: <strong style="color:var(--green)">' + fmt(totalIncome) + '</strong> ريال</span>' +
+    '<span>مصروفات: <strong style="color:var(--danger)">' + fmt(totalExpense) + '</strong> ريال</span>' +
+    '<span>صافي: <strong style="color:' + (net >= 0 ? 'var(--green)' : 'var(--danger)') + '">' + (net >= 0 ? '+' : '') + fmt(net) + '</strong> ريال</span>';
+}
+
+function importValidateAndConfirm() {
+  var missing = [];
+  importSelectedRows.forEach(function(idx) {
+    var row = importData[idx];
+    if (!row.type) missing.push(idx + 1);
+  });
+  if (missing.length > 0) {
+    toast('الصفوف التالية تحتاج تحديد النوع (إيراد/مصروف): ' + missing.slice(0, 5).join('، ') + (missing.length > 5 ? '...' : ''), 'error');
+    return;
+  }
+  if (importSelectedRows.size === 0) {
+    toast('لم يتم تحديد أي معاملة', 'error');
+    return;
+  }
+  importStep = 4;
+  renderImportTab();
+}
+
+// ---- Step 4: تأكيد وإدخال ----
+function renderImportStep4(container) {
+  var html = importBuildStepper(4);
+
+  var incomeCount = 0, expenseCount = 0, incomeTotal = 0, expenseTotal = 0;
+  importSelectedRows.forEach(function(idx) {
+    var row = importData[idx];
+    if (row.type === 'إيراد') { incomeCount++; incomeTotal += row.amount; }
+    else { expenseCount++; expenseTotal += row.amount; }
+  });
+
+  html += '<div class="import-confirm-card">';
+  html += '<div style="font-size:28px;margin-bottom:12px">⚠️</div>';
+  html += '<div style="font-size:18px;font-weight:700;margin-bottom:16px">تأكيد الإدخال</div>';
+  html += '<div style="font-size:14px;line-height:2;text-align:right;margin-bottom:20px">';
+  html += 'سيتم إدخال <strong>' + importSelectedRows.size + '</strong> معاملة في النظام:<br>';
+  html += '• إيرادات: <strong>' + incomeCount + '</strong> معاملة (<strong style="color:var(--green)">' + fmt(incomeTotal) + '</strong> ريال)<br>';
+  html += '• مصروفات: <strong>' + expenseCount + '</strong> معاملة (<strong style="color:var(--danger)">' + fmt(expenseTotal) + '</strong> ريال)<br>';
+  html += '• الملف: <strong>' + importFileName + '</strong>';
+  html += '</div>';
+  html += '<div style="display:flex;gap:10px;justify-content:center">';
+  html += '<button class="btn btn-outline" onclick="importStep=3;renderImportTab()">← رجوع للمراجعة</button>';
+  html += '<button class="btn btn-primary" id="import-execute-btn" onclick="importExecute()">✅ إدخال في النظام</button>';
+  html += '</div>';
+  html += '</div>';
+
+  container.innerHTML = html;
+}
+
+function importExecute() {
+  var btn = document.getElementById('import-execute-btn');
+  if (btn) { btn.disabled = true; btn.textContent = 'جاري الإدخال...'; }
+
+  var transactions = [];
+  importSelectedRows.forEach(function(idx) {
+    var row = importData[idx];
+    transactions.push({
+      type: row.type,
+      amount: row.amount,
+      description: row.description,
+      tx_date: row.date,
+      category: row.category || 'أخرى',
+      committee_id: row.committee_id || ''
+    });
+  });
+
+  apiFetch('/api/transactions.php?bulk=1', {
+    method: 'POST',
+    body: JSON.stringify({ transactions: transactions })
+  }).then(function(res) {
+    // Archive the import
+    var incomeTotal = 0, expenseTotal = 0;
+    transactions.forEach(function(tx) {
+      if (tx.type === 'إيراد') incomeTotal += tx.amount;
+      else expenseTotal += tx.amount;
+    });
+
+    return ReportArchiveAPI.save({
+      title: 'استيراد: ' + importFileName,
+      report_type: 'كشف حساب',
+      source: 'import',
+      description: 'تم استيراد ' + res.inserted + ' معاملة من هذا الملف' +
+        (res.duplicates_skipped > 0 ? ' (تم تجاهل ' + res.duplicates_skipped + ' مكررة)' : ''),
+      report_date: new Date().toISOString().split('T')[0],
+      import_stats: {
+        file_name: importFileName,
+        total_rows: importData.length,
+        imported: res.inserted,
+        skipped: res.duplicates_skipped || 0,
+        total_income: incomeTotal,
+        total_expense: expenseTotal
+      }
+    }).then(function() { return res; });
+  }).then(function(res) {
+    importShowResult(res);
+    // Update State
+    if (res.data && res.data.length) {
+      var txs = State.getTransactions();
+      res.data.forEach(function(row) { txs.push(row); });
+    }
+  }).catch(function(err) {
+    toast('خطأ في الإدخال: ' + err.message, 'error');
+    if (btn) { btn.disabled = false; btn.textContent = '✅ إدخال في النظام'; }
+  });
+}
+
+function importShowResult(res) {
+  var container = document.getElementById('rt-import');
+  if (!container) return;
+
+  var html = '<div class="import-result-card">';
+  html += '<div style="font-size:48px;margin-bottom:12px">✅</div>';
+  html += '<div style="font-size:20px;font-weight:700;margin-bottom:16px;color:var(--green)">تم بنجاح!</div>';
+  html += '<div style="font-size:14px;line-height:2;text-align:right;margin-bottom:20px">';
+  html += '• تم إدخال: <strong>' + res.inserted + '</strong> معاملة<br>';
+  if (res.duplicates_skipped > 0) {
+    html += '• تكرارات تم تجاهلها: <strong>' + res.duplicates_skipped + '</strong><br>';
+  }
+  html += '• الملف محفوظ في الأرشيف';
+  html += '</div>';
+  html += '<div style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap">';
+  html += '<button class="btn btn-primary" onclick="showPage(\'budget\')">📊 عرض الميزانية</button>';
+  html += '<button class="btn btn-outline" onclick="importReset()">📥 استيراد آخر</button>';
+  html += '</div>';
+  html += '</div>';
+
+  container.innerHTML = html;
+}
+
+function importReset() {
+  importWorkbook = null;
+  importRawData = null;
+  importFileName = '';
+  importData = [];
+  importSelectedRows = new Set();
+  importStep = 1;
+  renderImportTab();
 }
 
 

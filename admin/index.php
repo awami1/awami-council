@@ -90,7 +90,6 @@ var CSRF_TOKEN = '<?php echo getCsrfToken(); ?>';
     <div class="nav-section">الرئيسية</div>
     <button class="nav-item active" type="button" onclick="showPage('dashboard',this)"><span class="icon">📊</span>لوحة التحكم</button>
     <div class="nav-section">المجلس</div>
-    <button class="nav-item" type="button" onclick="showPage('council',this)"><span class="icon">👑</span>مناصب المجلس</button>
     <button class="nav-item" type="button" onclick="showPage('members',this)"><span class="icon">👥</span>الأعضاء</button>
     <button class="nav-item" type="button" onclick="showPage('fees',this)"><span class="icon">💳</span>الرسوم والمدفوعات</button>
     <button class="nav-item" type="button" onclick="showPage('reminders',this)"><span class="icon">🔔</span>التذكيرات</button>
@@ -178,21 +177,6 @@ var CSRF_TOKEN = '<?php echo getCsrfToken(); ?>';
         <div class="card"><div class="card-header"><div class="card-title">آخر الرسائل الواردة</div><span class="badge badge-info" id="d-msg-badge">0 جديدة</span></div><div id="d-messages" style="padding:10px"></div></div>
         <div class="card"><div class="card-header"><div class="card-title">آخر الأخبار</div></div><div id="d-news" style="padding:10px"></div></div>
       </div>
-    </div>
-
-    <!-- COUNCIL POSITIONS -->
-    <div class="page" id="page-council">
-      <div class="council-hero">
-        <div style="display:flex;align-items:center;gap:16px;margin-bottom:14px">
-          <div style="width:56px;height:56px;background:rgba(255,255,255,.15);border-radius:14px;display:flex;align-items:center;justify-content:center;font-size:28px">👑</div>
-          <div>
-            <div style="font-size:20px;font-weight:800">إدارة مجلس عائلة العوامي</div>
-            <div style="opacity:.7;font-size:13px">الهيئة الإدارية • تأسس 1992م - 1413هـ</div>
-          </div>
-        </div>
-        <div style="font-size:13px;opacity:.75;line-height:1.7;font-style:italic">"أتقدم إليكم بجزيل الشكر وعظيم التقدير على تقدمكم لخدمة عائلتكم، مثالاً للحرص والمسؤولية لتحقيق المصلحة العامة لعائلتنا المترابطة"<br><span style="font-size:12px;opacity:.8">— الوالد أبو حسين علي سلمان</span></div>
-      </div>
-      <div id="dashboard-positions-grid" style="display:grid;grid-template-columns:repeat(2,1fr);gap:14px"></div>
     </div>
 
     <!-- MEMBERS -->

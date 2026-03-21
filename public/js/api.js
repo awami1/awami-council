@@ -216,7 +216,11 @@ uploadImage: (formData) => fetch(`${API_BASE}/stories.php?upload=1`, { method: '
 
 // –– Report Archive (أرشيف التقارير) ––
 const ReportArchiveAPI = {
+getAll: (params = {}) => { const qs = new URLSearchParams(params).toString(); return api.get('report-archive.php' + (qs ? '?' + qs : '')); },
+getOne: (id) => api.get('report-archive.php?id=' + id),
 save: (data) => api.post('report-archive.php', data),
+update: (id, data) => apiFetch(`${API_BASE}/report-archive.php?id=${id}`, { method: 'PUT', body: JSON.stringify(data) }),
+remove: (id) => api.del('report-archive.php', id),
 };
 
 // –– Gallery Stories (الرِّوَاق) ––

@@ -155,14 +155,145 @@ function handlePost(): void
     respond(201, ['data' => ['id' => $id, 'title' => $title], 'message' => 'تم حفظ التقرير في الأرشيف.']);
 }
 
+function handleGetAll(): void
+{
+    $pdo = getPDO();
+
+    $where = 'WHERE 1=1';
+    $params = [];
+
+    $type = $_GET['type'] ?? '';
+    if ($type && in_array($type, ['مالي', 'إداري', 'محضر اجتماع', 'كشف حساب', 'أخرى'], true)) {
+        $where .= ' AND report_type = :type';
+        $params[':type'] = $type;
+    }
+
+    $source = $_GET['source'] ?? '';
+    if ($source && in_array($source, ['manual', 'import', 'generated'], true)) {
+        $where .= ' AND source = :source';
+        $params[':source'] = $source;
+    }
+
+    if (!empty($_GET['date_from'])) {
+        $where .= ' AND report_date >= :df';
+        $params[':df'] = $_GET['date_from'];
+    }
+    if (!empty($_GET['date_to'])) {
+        $where .= ' AND report_date <= :dt';
+        $params[':dt'] = $_GET['date_to'];
+    }
+
+    if (!empty($_GET['committee_id'])) {
+        $where .= ' AND committee_id = :cid';
+        $params[':cid'] = $_GET['committee_id'];
+    }
+
+    if (!empty($_GET['period_id'])) {
+        $where .= ' AND period_id = :pid';
+        $params[':pid'] = $_GET['period_id'];
+    }
+
+    $search = trim($_GET['search'] ?? '');
+    if ($search) {
+        $where .= ' AND (title LIKE :search OR description LIKE :search2)';
+        $params[':search'] = "%{$search}%";
+        $params[':search2'] = "%{$search}%";
+    }
+
+    $status = $_GET['status'] ?? 'active';
+    if (in_array($status, ['active', 'archived'], true)) {
+        $where .= ' AND status = :status';
+        $params[':status'] = $status;
+    }
+
+    $stmt = $pdo->prepare(
+        "SELECT * FROM report_archive {$where} ORDER BY report_date DESC, created_at DESC"
+    );
+    $stmt->execute($params);
+
+    $data = array_map('archiveToShape', $stmt->fetchAll());
+    respond(200, ['data' => $data, 'total' => count($data)]);
+}
+
+function handleGetOne(string $id): void
+{
+    $pdo = getPDO();
+    $stmt = $pdo->prepare('SELECT * FROM report_archive WHERE id = :id LIMIT 1');
+    $stmt->execute([':id' => $id]);
+    $row = $stmt->fetch();
+
+    if (!$row) {
+        respond(404, ['error' => 'التقرير غير موجود.']);
+    }
+
+    respond(200, ['data' => archiveToShape($row)]);
+}
+
+function handlePut(string $id): void
+{
+    $pdo = getPDO();
+    $body = bodyJson();
+
+    $stmt = $pdo->prepare('SELECT id, title FROM report_archive WHERE id = :id LIMIT 1');
+    $stmt->execute([':id' => $id]);
+    $existing = $stmt->fetch();
+    if (!$existing) {
+        respond(404, ['error' => 'التقرير غير موجود.']);
+    }
+
+    $allowed = ['title', 'report_type', 'description', 'file_url', 'file_type',
+                'report_date', 'period_id', 'committee_id', 'status'];
+    $fields = [];
+    $params = [':id' => $id];
+
+    foreach ($body as $key => $value) {
+        if (!in_array($key, $allowed, true)) continue;
+        $fields[] = "{$key} = :{$key}";
+        $params[":{$key}"] = $value;
+    }
+
+    if (isSQLite()) {
+        $fields[] = "updated_at = datetime('now')";
+    }
+
+    if (empty($fields)) {
+        respond(422, ['error' => 'لا توجد بيانات للتحديث.']);
+    }
+
+    $sql = 'UPDATE report_archive SET ' . implode(', ', $fields) . ' WHERE id = :id';
+    $pdo->prepare($sql)->execute($params);
+
+    logAudit('تعديل', 'أرشيف تقرير', $id, $params[':title'] ?? $existing['title']);
+    respond(200, ['message' => 'تم تحديث التقرير.']);
+}
+
+function handleDelete(string $id): void
+{
+    $pdo = getPDO();
+    $stmt = $pdo->prepare('SELECT id, title FROM report_archive WHERE id = :id LIMIT 1');
+    $stmt->execute([':id' => $id]);
+    $row = $stmt->fetch();
+    if (!$row) {
+        respond(404, ['error' => 'التقرير غير موجود.']);
+    }
+
+    $pdo->prepare('DELETE FROM report_archive WHERE id = :id')->execute([':id' => $id]);
+    logAudit('حذف', 'أرشيف تقرير', $id, $row['title']);
+    respond(200, ['message' => 'تم حذف التقرير.']);
+}
+
 // ---- Router ----
 $method = $_SERVER['REQUEST_METHOD'];
 $id     = parseId();
 
 try {
     match (true) {
-        $method === 'POST' => handlePost(),
-        default            => respond(405, ['error' => 'Method not allowed.']),
+        $method === 'GET'    && $id === null  => handleGetAll(),
+        $method === 'GET'    && $id !== null  => handleGetOne($id),
+        $method === 'POST'                    => handlePost(),
+        $method === 'PUT'    && $id !== null  => handlePut($id),
+        $method === 'DELETE' && $id !== null  => handleDelete($id),
+        default                               => respond(405, ['error' => 'Method not allowed.']),
     };
 } catch (\Throwable $e) {
     error_log('Report Archive API error: ' . $e->getMessage());

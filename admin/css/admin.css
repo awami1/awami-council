@@ -711,6 +711,56 @@ tr:hover td{background:var(--bg-hover);}
   .ar-table { display: block; overflow-x: auto; }
 }
 
+/* ═══ Archive Cards ═══ */
+.archive-card {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 16px;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  margin-bottom: 10px;
+  transition: border-color 0.2s;
+}
+.archive-card:hover { border-color: var(--green); }
+.archive-card-header { flex: 1; min-width: 0; }
+.archive-card-title { font-weight: 700; font-size: 15px; margin-bottom: 6px; }
+.archive-card-meta {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  align-items: center;
+  font-size: 12px;
+  color: var(--text-muted);
+}
+.archive-badge {
+  padding: 3px 10px;
+  border-radius: 20px;
+  font-size: 11px;
+  font-weight: 600;
+}
+.archive-card-desc {
+  font-size: 12px;
+  color: var(--text-muted);
+  margin-top: 6px;
+  line-height: 1.5;
+  max-height: 40px;
+  overflow: hidden;
+}
+.archive-card-actions {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+  flex-shrink: 0;
+}
+
+@media (max-width: 768px) {
+  .archive-card { flex-direction: column; }
+  .archive-card-actions { width: 100%; justify-content: flex-end; }
+}
+
 /* ─── Rich Text Editor ─── */
 #story-content-editor:empty::before {
   content: attr(data-placeholder);

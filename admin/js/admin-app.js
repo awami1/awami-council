@@ -3177,8 +3177,23 @@ function printReport() {
 }
 
 function exportReportPDF() {
-  toast('استخدم الطباعة ثم "حفظ كـ PDF" — تصدير PDF مباشر قريباً', 'info');
-  printReport();
+  if (!autoReportData || !autoReportType) {
+    toast('ولّد التقرير أولاً', 'error');
+    return;
+  }
+  var params = '?type=' + autoReportType;
+  var df = document.getElementById('ar-date-from');
+  var dt = document.getElementById('ar-date-to');
+  var cm = document.getElementById('ar-committee');
+  var pr = document.getElementById('ar-period');
+  if (df && df.value) params += '&date_from=' + df.value;
+  if (dt && dt.value) params += '&date_to=' + dt.value;
+  if (cm && cm.value) params += '&committee_id=' + cm.value;
+  if (pr && pr.value) params += '&period_id=' + pr.value;
+  if (autoReportType === 'financial' && autoReportExtraItems.length > 0) {
+    params += '&extra_items=' + encodeURIComponent(JSON.stringify(autoReportExtraItems));
+  }
+  window.open('/api/report-pdf.php' + params, '_blank');
 }
 
 // ---- تبويب الأرشيف (placeholder) ----

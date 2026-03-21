@@ -3196,16 +3196,238 @@ function exportReportPDF() {
   window.open('/api/report-pdf.php' + params, '_blank');
 }
 
-// ---- تبويب الأرشيف (placeholder) ----
+// =====================================================
+// ARCHIVE — أرشيف التقارير
+// =====================================================
+
+var archiveList = [];
+var archiveLoading = false;
+var archiveSearch = '';
+var archiveFilterType = '';
+var archiveFilterCommittee = '';
+
 function renderArchiveTab() {
   var container = document.getElementById('rt-archive');
   if (!container) return;
-  container.innerHTML =
-    '<div class="empty-state">' +
-    '<div class="empty-icon">📁</div>' +
-    '<p>أرشيف التقارير — قريباً</p>' +
-    '<p style="font-size:13px;color:var(--text-muted)">حفظ وتصنيف الملفات والوثائق المالية</p>' +
-    '</div>';
+
+  var html = '<div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:16px">';
+  html += '<button class="btn btn-primary" onclick="openArchiveModal()">+ رفع تقرير جديد</button>';
+  html += '<input type="text" id="archive-search" placeholder="🔍 بحث في العنوان والوصف..." value="' + archiveSearch.replace(/"/g, '&quot;') + '" ';
+  html += 'oninput="archiveSearch=this.value; debouncedLoadArchive()" class="form-control" style="flex:1;min-width:200px">';
+  html += '</div>';
+
+  html += '<div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:16px">';
+  html += '<select id="archive-filter-type" onchange="archiveFilterType=this.value; loadArchiveList()" class="form-control" style="min-width:130px">';
+  html += '<option value="">كل الأنواع</option>';
+  ['مالي', 'إداري', 'محضر اجتماع', 'كشف حساب', 'أخرى'].forEach(function(t) {
+    html += '<option value="' + t + '"' + (archiveFilterType === t ? ' selected' : '') + '>' + t + '</option>';
+  });
+  html += '</select>';
+
+  html += '<select id="archive-filter-committee" onchange="archiveFilterCommittee=this.value; loadArchiveList()" class="form-control" style="min-width:130px">';
+  html += '<option value="">كل اللجان</option>';
+  var committees = State.getCommittees ? State.getCommittees() : [];
+  committees.forEach(function(c) {
+    html += '<option value="' + c.id + '"' + (archiveFilterCommittee === c.id ? ' selected' : '') + '>' + c.name + '</option>';
+  });
+  html += '</select>';
+  html += '</div>';
+
+  html += '<div id="archive-list-container">';
+  if (archiveLoading) {
+    html += '<div style="text-align:center;padding:40px;color:var(--text-muted)">⏳ جاري التحميل...</div>';
+  } else if (!archiveList.length) {
+    html += '<div class="empty-state"><div class="empty-icon">📁</div><p>لا توجد تقارير في الأرشيف</p></div>';
+  } else {
+    html += archiveList.map(renderArchiveCard).join('');
+  }
+  html += '</div>';
+
+  container.innerHTML = html;
+
+  if (!archiveList.length && !archiveLoading) loadArchiveList();
+}
+
+function loadArchiveList() {
+  archiveLoading = true;
+  var listEl = document.getElementById('archive-list-container');
+  if (listEl) listEl.innerHTML = '<div style="text-align:center;padding:40px;color:var(--text-muted)">⏳ جاري التحميل...</div>';
+
+  var params = { status: 'active' };
+  if (archiveFilterType) params.type = archiveFilterType;
+  if (archiveFilterCommittee) params.committee_id = archiveFilterCommittee;
+  if (archiveSearch) params.search = archiveSearch;
+
+  ReportArchiveAPI.getAll(params)
+    .then(function(res) {
+      archiveList = res.data || [];
+      archiveLoading = false;
+      var el = document.getElementById('archive-list-container');
+      if (el) {
+        el.innerHTML = archiveList.length
+          ? archiveList.map(renderArchiveCard).join('')
+          : '<div class="empty-state"><div class="empty-icon">📁</div><p>لا توجد تقارير</p></div>';
+      }
+    })
+    .catch(function(err) {
+      archiveLoading = false;
+      toast('خطأ في تحميل الأرشيف: ' + err.message, 'error');
+    });
+}
+
+var debouncedLoadArchive = debounce(loadArchiveList, 400);
+
+function renderArchiveCard(item) {
+  var typeBadges = {
+    'مالي':           { bg: '#dcfce7', color: '#166534', icon: '💰' },
+    'إداري':          { bg: '#dbeafe', color: '#1e40af', icon: '📋' },
+    'محضر اجتماع':    { bg: '#fef3c7', color: '#92400e', icon: '📝' },
+    'كشف حساب':       { bg: '#f3e8ff', color: '#6b21a8', icon: '💳' },
+    'أخرى':           { bg: '#f1f5f9', color: '#475569', icon: '📄' },
+  };
+  var badge = typeBadges[item.report_type] || typeBadges['أخرى'];
+
+  var sourceBadge = '';
+  if (item.source === 'import') {
+    sourceBadge = '<span style="font-size:10px;background:#fef3c7;color:#92400e;padding:2px 8px;border-radius:10px">📥 مُستورد من Excel</span>';
+    if (item.import_stats) {
+      sourceBadge += ' <span style="font-size:10px;color:var(--text-muted)">' + (item.import_stats.imported || 0) + ' معاملة</span>';
+    }
+  } else if (item.source === 'generated') {
+    sourceBadge = '<span style="font-size:10px;background:#dcfce7;color:#166534;padding:2px 8px;border-radius:10px">📈 مُولَّد من النظام</span>';
+  }
+
+  var committeeName = '';
+  if (item.committee_id) {
+    var comm = (State.getCommittees ? State.getCommittees() : []).find(function(c) { return c.id === item.committee_id; });
+    if (comm) committeeName = ' • ' + (comm.icon || '') + ' ' + comm.name;
+  }
+
+  var dateStr = item.report_date || '';
+  try { if (dateStr) dateStr = new Date(item.report_date).toLocaleDateString('ar-SA'); } catch(e) {}
+
+  return '<div class="archive-card">' +
+    '<div class="archive-card-header">' +
+      '<div class="archive-card-title">' + (item.title || '') + '</div>' +
+      '<div class="archive-card-meta">' +
+        '<span class="archive-badge" style="background:' + badge.bg + ';color:' + badge.color + '">' + badge.icon + ' ' + item.report_type + '</span>' +
+        '<span>📅 ' + dateStr + '</span>' +
+        committeeName +
+      '</div>' +
+      (sourceBadge ? '<div style="margin-top:4px">' + sourceBadge + '</div>' : '') +
+      (item.description ? '<div class="archive-card-desc">' + item.description + '</div>' : '') +
+    '</div>' +
+    '<div class="archive-card-actions">' +
+      (item.file_url ? '<a href="' + item.file_url + '" target="_blank" class="btn btn-xs btn-primary">🔗 فتح</a>' : '') +
+      '<button class="btn btn-xs btn-outline" onclick="openArchiveModal(\'' + item.id + '\')">✏️ تعديل</button>' +
+      '<button class="btn btn-xs" style="color:var(--danger)" onclick="deleteArchiveItem(\'' + item.id + '\')">🗑️</button>' +
+    '</div>' +
+  '</div>';
+}
+
+function openArchiveModal(editId) {
+  document.getElementById('archive-edit-id').value = '';
+  document.getElementById('archive-title').value = '';
+  document.getElementById('archive-type').value = 'أخرى';
+  document.getElementById('archive-date').value = new Date().toISOString().split('T')[0];
+  document.getElementById('archive-url').value = '';
+  document.getElementById('archive-desc').value = '';
+  document.getElementById('archive-committee').value = '';
+  document.getElementById('archive-period').value = '';
+
+  // ملء اللجان
+  var commSelect = document.getElementById('archive-committee');
+  commSelect.innerHTML = '<option value="">— بدون —</option>';
+  (State.getCommittees ? State.getCommittees() : []).forEach(function(c) {
+    commSelect.innerHTML += '<option value="' + c.id + '">' + c.name + '</option>';
+  });
+
+  // ملء الفترات
+  var perSelect = document.getElementById('archive-period');
+  perSelect.innerHTML = '<option value="">— بدون —</option>';
+  (State.getPeriods ? State.getPeriods() : []).forEach(function(p) {
+    perSelect.innerHTML += '<option value="' + p.id + '">' + p.name + '</option>';
+  });
+
+  if (editId) {
+    document.getElementById('archive-modal-title').textContent = 'تعديل التقرير';
+    var item = archiveList.find(function(r) { return r.id === editId; });
+    if (item) {
+      document.getElementById('archive-edit-id').value = item.id;
+      document.getElementById('archive-title').value = item.title;
+      document.getElementById('archive-type').value = item.report_type;
+      document.getElementById('archive-date').value = item.report_date;
+      document.getElementById('archive-url').value = item.file_url || '';
+      document.getElementById('archive-desc').value = item.description || '';
+      document.getElementById('archive-committee').value = item.committee_id || '';
+      document.getElementById('archive-period').value = item.period_id || '';
+    }
+  } else {
+    document.getElementById('archive-modal-title').textContent = 'إضافة تقرير جديد';
+  }
+
+  openModal('modal-archive');
+}
+
+function saveArchiveItem() {
+  var title = document.getElementById('archive-title').value.trim();
+  var reportDate = document.getElementById('archive-date').value;
+  var fileUrl = document.getElementById('archive-url').value.trim();
+
+  if (!title) { toast('العنوان مطلوب', 'error'); return; }
+  if (!reportDate) { toast('التاريخ مطلوب', 'error'); return; }
+  if (!fileUrl) { toast('رابط الملف مطلوب', 'error'); return; }
+
+  var data = {
+    title: title,
+    report_type: document.getElementById('archive-type').value,
+    report_date: reportDate,
+    file_url: fileUrl,
+    file_type: guessFileType(fileUrl),
+    description: document.getElementById('archive-desc').value.trim(),
+    committee_id: document.getElementById('archive-committee').value || null,
+    period_id: document.getElementById('archive-period').value || null,
+  };
+
+  var editId = document.getElementById('archive-edit-id').value;
+  var btn = document.getElementById('archive-save-btn');
+  btn.disabled = true;
+  btn.textContent = 'جاري الحفظ...';
+
+  var promise = editId
+    ? ReportArchiveAPI.update(editId, data)
+    : ReportArchiveAPI.save(data);
+
+  promise.then(function() {
+    toast(editId ? 'تم تحديث التقرير' : 'تم إضافة التقرير');
+    closeModal('modal-archive');
+    loadArchiveList();
+  }).catch(function(err) {
+    toast('خطأ: ' + err.message, 'error');
+  }).finally(function() {
+    btn.disabled = false;
+    btn.textContent = '💾 حفظ';
+  });
+}
+
+function guessFileType(url) {
+  var lower = url.toLowerCase();
+  if (lower.includes('.pdf')) return 'pdf';
+  if (lower.includes('.xlsx') || lower.includes('.xls')) return 'xlsx';
+  if (lower.includes('.csv')) return 'csv';
+  if (lower.includes('.docx') || lower.includes('.doc')) return 'docx';
+  if (lower.includes('drive.google.com')) return 'gdrive';
+  return 'link';
+}
+
+function deleteArchiveItem(id) {
+  if (!confirm('حذف هذا التقرير نهائياً؟')) return;
+  ReportArchiveAPI.remove(id)
+    .then(function() {
+      toast('تم الحذف');
+      loadArchiveList();
+    })
+    .catch(function(err) { toast('خطأ: ' + err.message, 'error'); });
 }
 
 // =====================================================

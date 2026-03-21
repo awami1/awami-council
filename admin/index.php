@@ -1271,6 +1271,60 @@ var CSRF_TOKEN = '<?php echo getCsrfToken(); ?>';
   </div>
 </div>
 
+<!-- مودال إضافة/تعديل تقرير أرشيف -->
+<div class="modal-overlay" id="modal-archive">
+  <div class="modal" style="max-width:500px">
+    <div class="modal-header">
+      <h3 id="archive-modal-title">إضافة تقرير</h3>
+      <button class="modal-close" onclick="closeModal('modal-archive')">✕</button>
+    </div>
+    <div class="modal-body">
+      <input type="hidden" id="archive-edit-id">
+
+      <label class="form-label">العنوان *</label>
+      <input type="text" id="archive-title" class="form-control" placeholder="مثال: التقرير المالي — الربع الأول 2026" maxlength="300">
+
+      <label class="form-label" style="margin-top:12px">النوع *</label>
+      <select id="archive-type" class="form-control">
+        <option value="مالي">💰 مالي</option>
+        <option value="إداري">📋 إداري</option>
+        <option value="محضر اجتماع">📝 محضر اجتماع</option>
+        <option value="كشف حساب">💳 كشف حساب</option>
+        <option value="أخرى" selected>📄 أخرى</option>
+      </select>
+
+      <label class="form-label" style="margin-top:12px">تاريخ الإصدار *</label>
+      <input type="date" id="archive-date" class="form-control">
+
+      <label class="form-label" style="margin-top:12px">رابط الملف *</label>
+      <input type="url" id="archive-url" class="form-control" placeholder="https://drive.google.com/..." dir="ltr">
+      <span style="font-size:11px;color:var(--text-muted)">رابط Google Drive أو أي رابط مباشر للملف</span>
+
+      <label class="form-label" style="margin-top:12px">الوصف</label>
+      <textarea id="archive-desc" class="form-control" rows="2" placeholder="وصف مختصر (اختياري)"></textarea>
+
+      <div style="display:flex;gap:10px;margin-top:12px">
+        <div style="flex:1">
+          <label class="form-label">اللجنة</label>
+          <select id="archive-committee" class="form-control">
+            <option value="">— بدون —</option>
+          </select>
+        </div>
+        <div style="flex:1">
+          <label class="form-label">الفترة المالية</label>
+          <select id="archive-period" class="form-control">
+            <option value="">— بدون —</option>
+          </select>
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-outline" onclick="closeModal('modal-archive')">إلغاء</button>
+      <button class="btn btn-primary" id="archive-save-btn" onclick="saveArchiveItem()">💾 حفظ</button>
+    </div>
+  </div>
+</div>
+
 <script src="<?= adminAsset('js/admin-core.js') ?>"></script>
 <script src="<?= adminAsset('js/admin-app.js') ?>"></script>
 <script src="<?= adminAsset('js/admin-members-ui.js') ?>"></script>

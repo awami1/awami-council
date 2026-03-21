@@ -109,7 +109,7 @@ var CSRF_TOKEN = '<?php echo getCsrfToken(); ?>';
     <div class="nav-section">العائلة</div>
     <button class="nav-item" type="button" onclick="showPage('familytree',this)"><span class="icon">🌳</span>شجرة العائلة</button>
     <div class="nav-section">التقارير</div>
-    <button class="nav-item" type="button" onclick="showPage('smart-reports',this)"><span class="icon">🤖</span>التقارير الذكية</button>
+    <button class="nav-item" type="button" onclick="showPage('smart-reports',this)"><span class="icon">📊</span>التقارير</button>
     <button class="nav-item" type="button" onclick="showPage('portal',this)"><span class="icon">👤</span>بوابة العضو</button>
     <button class="nav-item" type="button" onclick="showPage('reports',this)"><span class="icon">📈</span>التقارير</button>
     <button class="nav-item" type="button" onclick="showPage('export',this)"><span class="icon">📥</span>تصدير البيانات</button>
@@ -534,228 +534,44 @@ var CSRF_TOKEN = '<?php echo getCsrfToken(); ?>';
       </div>
     </div>
 
-    <!-- SMART REPORTS AI -->
+    <!-- ══════════ التقارير ══════════ -->
     <div class="page" id="page-smart-reports">
 
-      <!-- Stepper -->
-      <div class="smart-report-stepper" id="sr-stepper">
-        <div class="sr-step active" data-step="1"><span class="sr-step-num">1</span><span class="sr-step-label">رفع الملف</span></div>
-        <div class="sr-step-line"></div>
-        <div class="sr-step" data-step="2"><span class="sr-step-num">2</span><span class="sr-step-label">معاينة وربط</span></div>
-        <div class="sr-step-line"></div>
-        <div class="sr-step" data-step="3"><span class="sr-step-num">3</span><span class="sr-step-label">التحليل</span></div>
-        <div class="sr-step-line"></div>
-        <div class="sr-step" data-step="4"><span class="sr-step-num">4</span><span class="sr-step-label">النتائج والتحرير</span></div>
-        <div class="sr-step-line"></div>
-        <div class="sr-step" data-step="5"><span class="sr-step-num">5</span><span class="sr-step-label">الإجراء</span></div>
-      </div>
-
-      <!-- Step 1: Upload -->
-      <div class="card" id="sr-upload-card">
-        <div class="card-header">
-          <div class="card-title">🤖 التقارير الذكية - تحليل مدعوم بالذكاء الاصطناعي</div>
-        </div>
-        <div class="card-body">
-          <div style="background:#e0f2fe;border:2px solid #7dd3fc;border-radius:12px;padding:20px;margin-bottom:24px">
-            <div style="font-size:16px;font-weight:700;color:#075985;margin-bottom:10px">✨ قوة الذكاء الاصطناعي في خدمتك</div>
-            <div style="font-size:13px;color:#075985;line-height:1.6">
-              • رفع ملفات Excel أو CSV مع معاينة ذكية<br>
-              • تحليل وتصنيف المعاملات تلقائياً مع نسب ثقة<br>
-              • تحرير وتعديل النتائج قبل الاعتماد<br>
-              • حفظ وأرشفة التقارير للرجوع إليها لاحقاً<br>
-              • طباعة تقارير احترافية جاهزة
-            </div>
-          </div>
-
-          <div id="upload-area" ondrop="handleAIDrop(event)" ondragover="handleAIDragOver(event)" ondragleave="handleAIDragLeave(event)" onclick="document.getElementById('file-input-ai').click()">
-            <input type="file" id="file-input-ai" accept=".xlsx,.xls,.csv" style="display:none" onchange="handleAIFileUpload(event)">
-            <div class="upload-icon" id="upload-icon">📊</div>
-            <div style="font-size:18px;font-weight:700;margin-bottom:8px">اسحب ملف Excel هنا أو انقر للاختيار</div>
-            <div style="font-size:13px;color:var(--text-muted)">يدعم: .xlsx, .xls, .csv (حد أقصى 10 ميجابايت)</div>
-            <div id="upload-file-info" style="display:none;margin-top:12px;font-size:13px;font-weight:600;color:var(--green)"></div>
-          </div>
+      <div class="reports-header" style="margin-bottom:20px">
+        <div class="reports-tabs" style="display:flex;gap:8px;flex-wrap:wrap">
+          <button class="reports-tab-btn active" data-tab="auto-reports" onclick="switchReportsTab('auto-reports')">
+            📈 تقارير تلقائية
+          </button>
+          <button class="reports-tab-btn" data-tab="import" onclick="switchReportsTab('import')">
+            📥 استيراد معاملات
+          </button>
+          <button class="reports-tab-btn" data-tab="archive" onclick="switchReportsTab('archive')">
+            📁 الأرشيف
+          </button>
         </div>
       </div>
 
-      <!-- Step 2: Preview & Column Mapping -->
-      <div class="card" id="sr-preview-card" style="display:none">
-        <div class="card-header">
-          <div class="card-title">👁️ معاينة البيانات وربط الأعمدة</div>
-          <div style="display:flex;gap:8px">
-            <select id="sr-sheet-select" class="filter-select" style="display:none" onchange="srSelectSheet(this.value)"></select>
-          </div>
-        </div>
-        <div class="card-body">
-          <!-- Column Mapping -->
-          <div style="background:var(--bg);border-radius:12px;padding:16px;margin-bottom:20px">
-            <div style="font-weight:700;font-size:13px;margin-bottom:12px">🔗 ربط الأعمدة — اختر العمود المناسب لكل حقل</div>
-            <div class="form-grid" id="sr-column-mapping">
-              <div class="form-group">
-                <label class="form-label">الوصف / البيان *</label>
-                <select id="sr-col-desc" class="form-control"></select>
-              </div>
-              <div class="form-group">
-                <label class="form-label">المبلغ *</label>
-                <select id="sr-col-amount" class="form-control"></select>
-              </div>
-              <div class="form-group">
-                <label class="form-label">التاريخ</label>
-                <select id="sr-col-date" class="form-control"></select>
-              </div>
-              <div class="form-group">
-                <label class="form-label">النوع (إيراد/مصروف)</label>
-                <select id="sr-col-type" class="form-control"></select>
-              </div>
-            </div>
-            <div id="sr-detection-info" style="margin-top:10px;font-size:12px;color:var(--text-muted)"></div>
-          </div>
-
-          <!-- Data Preview Table -->
-          <div style="font-weight:700;font-size:13px;margin-bottom:8px">📋 معاينة أول 5 صفوف</div>
-          <div class="table-wrap" style="max-height:300px;overflow:auto">
-            <table id="sr-preview-table"><thead></thead><tbody></tbody></table>
-          </div>
-
-          <div id="sr-cleaning-info" style="margin-top:16px;display:none;background:#f0fdf4;border:1px solid #86efac;border-radius:10px;padding:14px;font-size:13px;color:#166534"></div>
-
-          <div style="display:flex;gap:10px;margin-top:20px;justify-content:flex-end">
-            <button class="btn btn-outline" onclick="resetAIAnalysis()">إلغاء</button>
-            <button class="btn btn-primary" onclick="srStartAnalysis()">متابعة التحليل ←</button>
-          </div>
+      <!-- تبويب: التقارير التلقائية -->
+      <div id="rt-auto-reports" class="reports-tab-content">
+        <div class="empty-state">
+          <div class="empty-icon">📈</div>
+          <p>التقارير التلقائية — قريباً</p>
         </div>
       </div>
 
-      <!-- Step 3: Processing -->
-      <div id="ai-processing" style="display:none">
-        <div class="card">
-          <div class="card-body" style="padding:40px;text-align:center">
-            <div style="font-size:48px;margin-bottom:16px">🔬</div>
-            <div style="font-weight:700;font-size:16px;margin-bottom:12px;color:var(--green-dark)" id="ai-status-text">جاري تحليل الملف...</div>
-            <div style="max-width:400px;margin:0 auto">
-              <div style="background:var(--bg);border-radius:8px;height:10px;overflow:hidden">
-                <div id="ai-progress-bar" style="height:100%;background:linear-gradient(90deg,var(--green),var(--green-light));width:0%;transition:width .5s"></div>
-              </div>
-              <div id="ai-progress-pct" style="font-size:12px;color:var(--text-muted);margin-top:6px">0%</div>
-            </div>
-          </div>
+      <!-- تبويب: استيراد معاملات -->
+      <div id="rt-import" class="reports-tab-content" style="display:none">
+        <div class="empty-state">
+          <div class="empty-icon">📥</div>
+          <p>استيراد معاملات من Excel — قريباً</p>
         </div>
       </div>
 
-      <!-- Step 4: Results -->
-      <div id="ai-results" style="display:none">
-        <!-- Summary Cards -->
-        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:16px;margin-bottom:20px">
-          <div class="stat-card green">
-            <div class="stat-label">إجمالي المعاملات</div>
-            <div class="stat-value" id="ai-total-count">0</div>
-            <div class="stat-icon">📊</div>
-          </div>
-          <div class="stat-card blue">
-            <div class="stat-label">إجمالي الإيرادات</div>
-            <div class="stat-value" id="ai-total-income">0</div>
-            <div class="stat-sub">ريال</div>
-            <div class="stat-icon">💰</div>
-          </div>
-          <div class="stat-card orange">
-            <div class="stat-label">إجمالي المصروفات</div>
-            <div class="stat-value" id="ai-total-expense">0</div>
-            <div class="stat-sub">ريال</div>
-            <div class="stat-icon">💸</div>
-          </div>
-          <div class="stat-card gold">
-            <div class="stat-label">صافي الربح</div>
-            <div class="stat-value" id="ai-net-profit">0</div>
-            <div class="stat-sub">ريال</div>
-            <div class="stat-icon">📈</div>
-          </div>
-        </div>
-
-        <!-- AI Insights -->
-        <div class="card" style="margin-bottom:20px">
-          <div class="card-header"><div class="card-title">🧠 رؤى ذكية</div></div>
-          <div class="card-body">
-            <div id="ai-insights" style="font-size:14px;line-height:1.8"></div>
-          </div>
-        </div>
-
-        <!-- Category Breakdown -->
-        <div class="card" style="margin-bottom:20px">
-          <div class="card-header">
-            <div class="card-title">🏷️ التصنيف الذكي</div>
-            <div style="display:flex;gap:6px">
-              <select id="sr-confidence-filter" class="filter-select" onchange="srFilterByConfidence(this.value)">
-                <option value="all">كل مستويات الثقة</option>
-                <option value="high">عالي الثقة</option>
-                <option value="medium">متوسط الثقة</option>
-                <option value="low">منخفض الثقة</option>
-              </select>
-            </div>
-          </div>
-          <div class="card-body">
-            <div id="ai-categories"></div>
-          </div>
-        </div>
-
-        <!-- Transaction Table (Editable) -->
-        <div class="card" style="margin-bottom:20px">
-          <div class="card-header">
-            <div class="card-title">📋 تفاصيل المعاملات</div>
-            <div style="font-size:12px;color:var(--text-muted)" id="sr-tx-count-label"></div>
-          </div>
-          <!-- Bulk Edit Toolbar -->
-          <div id="sr-bulk-toolbar" style="display:none;padding:10px 18px;background:#f0f9ff;border-bottom:1px solid #bae6fd;display:none;align-items:center;gap:10px;flex-wrap:wrap">
-            <span style="font-size:12px;font-weight:700;color:#0369a1" id="sr-selected-count">0 محدد</span>
-            <select id="sr-bulk-category" class="filter-select" style="font-size:12px"><option value="">تغيير الفئة...</option></select>
-            <select id="sr-bulk-type" class="filter-select" style="font-size:12px"><option value="">تغيير النوع...</option><option value="income">إيراد</option><option value="expense">مصروف</option></select>
-            <button class="btn btn-xs btn-primary" onclick="srApplyBulkEdit()">تطبيق</button>
-            <button class="btn btn-xs btn-danger" onclick="srDeleteSelected()">حذف المحدد</button>
-          </div>
-          <div class="table-wrap" style="max-height:500px;overflow:auto">
-            <table id="sr-transactions-table">
-              <thead>
-                <tr>
-                  <th style="width:36px"><input type="checkbox" id="sr-select-all" onchange="srToggleSelectAll(this.checked)"></th>
-                  <th style="width:36px">#</th>
-                  <th>التاريخ</th>
-                  <th>الوصف</th>
-                  <th>المبلغ</th>
-                  <th>النوع</th>
-                  <th>الفئة</th>
-                  <th>الثقة</th>
-                </tr>
-              </thead>
-              <tbody id="sr-transactions-tbody"></tbody>
-            </table>
-          </div>
-        </div>
-
-        <!-- Action Buttons (Step 5) -->
-        <div class="card">
-          <div class="card-body">
-            <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:12px">
-              <button class="btn btn-success" onclick="srSaveReport()">💾 حفظ التقرير</button>
-              <button class="btn btn-primary" onclick="syncAIDataToDB()">✅ مزامنة مع النظام</button>
-              <button class="btn btn-outline" onclick="resetAIAnalysis()">🔄 تحليل ملف جديد</button>
-            </div>
-            <div style="display:flex;gap:10px;flex-wrap:wrap">
-              <button class="btn btn-accent" onclick="downloadAIReport()">📥 تحميل CSV</button>
-              <button class="btn btn-outline" onclick="srPrintReport()">🖨️ طباعة التقرير</button>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <!-- Saved Reports Section -->
-      <div class="card" style="margin-top:20px" id="sr-saved-card">
-        <div class="card-header">
-          <div class="card-title">📋 التقارير المحفوظة</div>
-          <div class="tabs" style="border:none;margin:0">
-            <div class="tab active" onclick="srLoadSavedReports('active',this)" style="padding:6px 12px;font-size:12px">النشطة</div>
-            <div class="tab" onclick="srLoadSavedReports('archived',this)" style="padding:6px 12px;font-size:12px">المؤرشفة</div>
-          </div>
-        </div>
-        <div class="card-body" id="sr-saved-list">
-          <div class="empty-state"><div class="empty-icon">📋</div><p>لا توجد تقارير محفوظة بعد. ابدأ بتحليل ملف لإنشاء تقريرك الأول.</p></div>
+      <!-- تبويب: الأرشيف -->
+      <div id="rt-archive" class="reports-tab-content" style="display:none">
+        <div class="empty-state">
+          <div class="empty-icon">📁</div>
+          <p>أرشيف التقارير — قريباً</p>
         </div>
       </div>
 

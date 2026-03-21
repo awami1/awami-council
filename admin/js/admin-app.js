@@ -15,12 +15,12 @@ function showPage(name,el){
     closeMobileSidebar();
   }
   
-  const T={dashboard:'لوحة التحكم|مجلس عائلة العوامي',council:'مناصب المجلس|الهيئة الإدارية',members:'الأعضاء|إدارة الأعضاء',fees:'الرسوم|متابعة المدفوعات',reminders:'التذكيرات|تذكيرات الأعضاء غير الدافعين',committees:'اللجان|اللجان الفرعية للمجلس',orgchart:'الهيكل التنظيمي|مجلس عائلة العوامي',budget:'الميزانية|السجل المالي',events:'الفعاليات|الأنشطة',calendar:'التقويم|عرض تقويمي',familytree:'شجرة العائلة|الأفرع العائلية',voting:'التصويت|استطلاعات الرأي',portal:'بوابة العضو|الملف الشخصي','smart-reports':'التقارير الذكية|تحليل مدعوم بالذكاء الاصطناعي',reports:'التقارير|إحصائيات',audit:'سجل التدقيق|من غيّر ماذا ومتى','export':'تصدير البيانات|Excel و CSV',websettings:'الموقع العام|إدارة المحتوى',settings:'النسخ الاحتياطي|إدارة البيانات',riwaq:'الرِّوَاق|معرض الحكايات'};
+  const T={dashboard:'لوحة التحكم|مجلس عائلة العوامي',members:'الأعضاء|إدارة الأعضاء',fees:'الرسوم|متابعة المدفوعات',reminders:'التذكيرات|تذكيرات الأعضاء غير الدافعين',committees:'اللجان|اللجان الفرعية للمجلس',orgchart:'الهيكل التنظيمي|مجلس عائلة العوامي',budget:'الميزانية|السجل المالي',events:'الفعاليات|الأنشطة',calendar:'التقويم|عرض تقويمي',familytree:'شجرة العائلة|الأفرع العائلية',voting:'التصويت|استطلاعات الرأي',portal:'بوابة العضو|الملف الشخصي','smart-reports':'التقارير الذكية|تحليل مدعوم بالذكاء الاصطناعي',reports:'التقارير|إحصائيات',audit:'سجل التدقيق|من غيّر ماذا ومتى','export':'تصدير البيانات|Excel و CSV',websettings:'الموقع العام|إدارة المحتوى',settings:'النسخ الاحتياطي|إدارة البيانات',riwaq:'الرِّوَاق|معرض الحكايات'};
   const [t,s]=(T[name]||'--|--').split('|');
   document.getElementById('topbar-title').innerHTML=t+` <span>${s}</span>`;
   const A={members:`<button class="btn btn-primary" onclick="openAddMember()">+ إضافة عضو</button>`,budget:`<button class="btn btn-primary" onclick="openModal('modal-tx')">+ معاملة</button>`,events:`<button class="btn btn-primary" onclick="openAddEvent()">+ فعالية</button>`,riwaq:`<button class="btn btn-primary" onclick="openAddGalleryStory()">+ إضافة قصة</button>`};
   document.getElementById('topbar-action').innerHTML=A[name]||'';
-  const renderers={dashboard:renderDashboard,council:renderCouncil,members:renderMembers,fees:renderFees,reminders:renderReminders,committees:renderCommittees,orgchart:renderOrgChart,budget:renderBudget,events:renderEvents,calendar:renderCalendar,familytree:renderFamilyTree,voting:renderVoting,portal:renderPortalSelect,'smart-reports':function(){ srLoadSavedReports('active'); },reports:renderReports,audit:renderAuditLog,'export':function(){},websettings:renderWebsiteSettings,settings:renderSettings,messages:renderMessages,news:renderNews,riwaq:async function(){ if(!_riwaqLoaded) await loadRiwaqData(); renderRiwaq(); }};
+  const renderers={dashboard:renderDashboard,members:renderMembers,fees:renderFees,reminders:renderReminders,committees:renderCommittees,orgchart:renderOrgChart,budget:renderBudget,events:renderEvents,calendar:renderCalendar,familytree:renderFamilyTree,voting:renderVoting,portal:renderPortalSelect,'smart-reports':function(){ srLoadSavedReports('active'); },reports:renderReports,audit:renderAuditLog,'export':function(){},websettings:renderWebsiteSettings,settings:renderSettings,messages:renderMessages,news:renderNews,riwaq:async function(){ if(!_riwaqLoaded) await loadRiwaqData(); renderRiwaq(); }};
   if(renderers[name]) renderers[name]();
   updateSidebar();
 }
@@ -991,11 +991,6 @@ function updateCountdown(){
   dateEl.textContent=target.toLocaleDateString('ar-SA',{weekday:'short',year:'numeric',month:'short',day:'numeric',hour:'2-digit',minute:'2-digit'});
 }
 setInterval(updateCountdown,60000); // update every minute
-
-// =================== COUNCIL ===================
-async function renderCouncil(){
-  await renderPositionsList();
-}
 
 // =================== MEMBERS ===================
 function openAddMember(){ clearMemberForm(); document.getElementById('modal-member-title').textContent='➕ إضافة عضو جديد'; openModal('modal-member'); _memberDupConfirmed=false; }

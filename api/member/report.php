@@ -122,6 +122,9 @@ $pdf->setRTL(true);
 $arabicFont = 'dejavusans';
 $arabicFontNormal = 'dejavusans';
 
+// تضمين الخط كاملاً بدون subsetting لتجنب فقدان حروف عربية مركبة
+$pdf->setFontSubsetting(false);
+
 $pdf->AddPage();
 
 // ── رأس التقرير ──
@@ -311,9 +314,9 @@ exit;
 function getStatusLabel(string $status): string
 {
     return match ($status) {
-        'مشترك'     => 'مشترك ✅',
-        'منقطع'      => 'منقطع ⚠️',
-        'غير مشترك' => 'غير مشترك ❌',
+        'مشترك'     => 'مشترك',
+        'منقطع'      => 'منقطع',
+        'غير مشترك' => 'غير مشترك',
         default      => $status,
     };
 }

@@ -76,7 +76,7 @@ if (php_sapi_name() === 'cli-server') {
 
 // ── Coming Soon Mode (حذف هذا البلوك عند الإطلاق) ──
 $comingSoon = true;
-$exemptPaths = ['/eid', '/card', '/admin', '/api', '/assets', '/public'];
+$exemptPaths = ['/card', '/admin', '/api', '/assets', '/public'];
 
 if ($comingSoon) {
     $isExempt = false;

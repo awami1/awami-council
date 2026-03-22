@@ -73,51 +73,27 @@ h1 {
   line-height: 1.8;
   margin-bottom: 1.5rem;
 }
-.divider {
-  color: var(--green-dark);
-  font-size: 1.2rem;
-  margin-bottom: 1.5rem;
-  opacity: .6;
-  letter-spacing: .5em;
-}
-.eid-btn {
-  display: inline-block;
-  padding: .875rem 2rem;
-  background: var(--gradient-header);
-  color: #fff;
-  text-decoration: none;
-  border-radius: 12px;
-  font-family: 'Cairo', sans-serif;
-  font-size: 1.05rem;
-  font-weight: 600;
-  transition: transform .25s ease, box-shadow .25s ease;
-  box-shadow: 0 4px 16px rgba(26,92,50,.25);
-}
-.eid-btn:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 8px 28px rgba(26,92,50,.35);
-}
 .theme-toggle {
   position: fixed;
   top: 1rem;
   left: 1rem;
   background: none;
-  border: 2px solid var(--text-muted);
-  color: var(--text-muted);
+  border: 2px solid var(--green-dark);
+  color: var(--green-dark);
   width: 40px;
   height: 40px;
   border-radius: 50%;
   font-size: 1.2rem;
   cursor: pointer;
-  transition: border-color .3s, color .3s, transform .25s;
+  transition: border-color .3s, color .3s, transform .25s, opacity .3s;
+  opacity: .7;
   display: flex;
   align-items: center;
   justify-content: center;
   line-height: 1;
 }
 .theme-toggle:hover {
-  border-color: var(--green-dark);
-  color: var(--green-dark);
+  opacity: 1;
   transform: scale(1.1);
 }
 </style>
@@ -134,17 +110,21 @@ h1 {
   </div>
   <h1>مجلس عائلة العوامي</h1>
   <p class="message">الموقع تحت الإنشاء — نعمل على تجهيزه لكم قريباً إن شاء الله</p>
-  <div class="divider">✦ ✦ ✦</div>
-  <a href="/eid" class="eid-btn"> انشئ بطاقة تهنئة العيد </a>
 </div>
 <script>
 (function(){
   var btn = document.getElementById('themeToggle');
+  function updateIcon() {
+    var isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+    btn.textContent = isDark ? '\u2600' : '\u263E';
+  }
+  updateIcon();
   btn.addEventListener('click', function(){
     var current = document.documentElement.getAttribute('data-theme');
     var next = current === 'dark' ? 'light' : 'dark';
     document.documentElement.setAttribute('data-theme', next);
     localStorage.setItem('awami-theme', next);
+    updateIcon();
   });
 })();
 </script>

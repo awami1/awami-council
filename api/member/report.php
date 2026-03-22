@@ -118,20 +118,9 @@ $pdf->SetAutoPageBreak(true, 25);
 // اتجاه RTL
 $pdf->setRTL(true);
 
-// إضافة خط عربي — استخدام الخط المحلي إذا متوفر
-$fontPath = __DIR__ . '/../../public/fonts/saudi-bold.ttf';
-if (is_file($fontPath)) {
-    $arabicFont = TCPDF_FONTS::addTTFfont($fontPath, 'TrueTypeUnicode', '', 96);
-} else {
-    $arabicFont = 'dejavusans';
-}
-
-$fontPathNormal = __DIR__ . '/../../public/fonts/saudi-normal.ttf';
-if (is_file($fontPathNormal)) {
-    $arabicFontNormal = TCPDF_FONTS::addTTFfont($fontPathNormal, 'TrueTypeUnicode', '', 96);
-} else {
-    $arabicFontNormal = 'dejavusans';
-}
+// خط عربي — dejavusans مدمج مع TCPDF ومتوافق مع كل العارضات
+$arabicFont = 'dejavusans';
+$arabicFontNormal = 'dejavusans';
 
 $pdf->AddPage();
 

@@ -1761,7 +1761,7 @@ function buildFSPdfCopy(s, netMovement, currentBalance, totalMembers, collection
   h += '<div class="sub-sum-row">';
 
   // Left column: subscription stats
-  h += '<div>';
+  h += '<div class="card">';
   h += '<div class="sec-title">\uD83D\uDCB3 الاشتراكات</div>';
   h += '<div class="mini-grid">';
   h += '<div class="mini-box" style="background:#e8f5ec"><div class="mini-lbl">الفعّالين</div><div class="mini-val-lg" style="color:#1A5C32">' + s.activeMembers + '</div></div>';
@@ -1772,7 +1772,7 @@ function buildFSPdfCopy(s, netMovement, currentBalance, totalMembers, collection
   h += '</div>';
 
   // Right column: summary strip
-  h += '<div>';
+  h += '<div class="card">';
   h += '<div class="sec-title">\uD83D\uDCCA الملخص</div>';
   h += '<div class="mini-grid">';
   h += '<div class="mini-box" style="background:#f0f4ff"><div class="mini-lbl">المصروفات</div><div class="mini-val-sm" style="color:#1B3456">' + fsFmt(totalExpenses) + '</div><div class="mini-unit">ر.س</div></div>';
@@ -1808,7 +1808,7 @@ function buildFSPdfCopy(s, netMovement, currentBalance, totalMembers, collection
       }
     }
     h += '<tr>';
-    h += '<td>' + c.icon + ' ' + c.name + '</td>';
+    h += '<td>' + c.icon + ' \u00A0' + c.name + '</td>';
     h += '<td>' + fsFmt(c.expenses) + '</td>';
     h += '<td>' + (hasRevenue ? fsFmt(c.revenue) : '\u2014') + '</td>';
     h += '<td class="' + resClass + '">' + resText + '</td>';
@@ -1845,15 +1845,16 @@ function getFSPdfStyles() {
     // Body
     + '.bd{padding:12px 16px 10px;}'
     // Sub+Sum row
-    + '.sub-sum-row{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:12px;}'
-    + '.sec-title{font-family:"Amiri",serif;font-size:16px;font-weight:700;color:#1A5C32;margin-bottom:6px;padding-bottom:3px;border-bottom:1.5px solid #e8f5ec;}'
+    + '.sub-sum-row{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:16px;}'
+    + '.card{background:#fff;border:1px solid #c2cec5;border-radius:14px;padding:14px;box-shadow:0 2px 8px rgba(0,0,0,0.05)}'
+    + '.sec-title{font-family:"Amiri",serif;font-size:16px;font-weight:700;color:#1A5C32;margin-bottom:10px;padding-bottom:6px;border-bottom:1.5px solid #e8f5ec;}'
     + '.mini-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;}'
     + '.mini-box{border-radius:8px;padding:8px 6px;text-align:center;}'
     + '.mini-lbl{font-size:10px;color:#546358;font-weight:600;margin-bottom:2px;}'
     + '.mini-val-lg{font-size:28px;font-weight:700;}'
     + '.mini-val-sm{font-size:19px;font-weight:700;}'
     + '.mini-unit{font-size:9px;color:#546358;display:block;margin-top:1px;}'
-    + '.prog-bar{height:5px;background:#fee2e2;border-radius:100px;overflow:hidden;margin-top:5px;}'
+    + '.prog-bar{height:8px;background:#fee2e2;border-radius:100px;overflow:hidden;margin-top:10px;}'
     + '.prog-fill{height:100%;background:linear-gradient(90deg,#1A5C32,#3D8B37);border-radius:100px;}'
     // Table
     + '.tbl-title{font-family:"Amiri",serif;font-size:16px;font-weight:700;color:#1A5C32;margin-bottom:6px;padding-bottom:3px;border-bottom:1.5px solid #e8f5ec;}'

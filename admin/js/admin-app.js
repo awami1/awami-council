@@ -1422,6 +1422,67 @@ function fsFmt(n) {
   return Number(n || 0).toLocaleString('en-US');
 }
 
+function updateFSCalculations() {
+  var s = fsState;
+  var netMovement = s.committees
+    .filter(function(c) { return c.revenue !== null; })
+    .reduce(function(sum, c) { return sum + ((c.revenue || 0) - (c.expenses || 0)); }, 0);
+  var currentBalance = s.prevBalance + netMovement;
+  var totalMembers = s.activeMembers + s.defaultingMembers;
+  var collectionRate = totalMembers > 0 ? ((s.activeMembers / totalMembers) * 100).toFixed(1) : '0';
+  var totalExpenses = s.committees.reduce(function(sum, c) { return sum + (c.expenses || 0); }, 0);
+  var totalRevenue = s.committees.reduce(function(sum, c) { return sum + (c.revenue || 0); }, 0);
+
+  var el;
+  el = document.getElementById('fs-net-movement');
+  if (el) {
+    el.innerHTML = (netMovement >= 0 ? '+' : '') + fsFmt(netMovement) + ' <span class="fs-fund-unit">ر.س</span>';
+    el.style.color = netMovement >= 0 ? '#6ee7b7' : '#fca5a5';
+  }
+  el = document.getElementById('fs-current-balance');
+  if (el) el.innerHTML = fsFmt(currentBalance) + ' <span class="fs-fund-unit">ر.س</span>';
+
+  el = document.getElementById('fs-collection-rate');
+  if (el) el.textContent = collectionRate + '%';
+  el = document.getElementById('fs-progress-fill');
+  if (el) el.style.width = collectionRate + '%';
+
+  el = document.getElementById('fs-total-expenses');
+  if (el) el.textContent = fsFmt(totalExpenses);
+  el = document.getElementById('fs-total-revenue');
+  if (el) el.textContent = fsFmt(totalRevenue);
+  el = document.getElementById('fs-net-result');
+  if (el) {
+    el.textContent = (netMovement >= 0 ? '+' : '') + fsFmt(netMovement);
+    el.style.color = netMovement >= 0 ? '#1A5C32' : '#c62828';
+  }
+
+  s.committees.forEach(function(c) {
+    var hasRevenue = c.revenue !== null;
+    var surplus = hasRevenue ? (c.revenue - c.expenses) : 0;
+    var badgeEl = document.getElementById('fs-com-badge-' + c.id);
+    var resultEl = document.getElementById('fs-com-result-' + c.id);
+    if (hasRevenue && badgeEl) {
+      if (surplus >= 0) {
+        badgeEl.textContent = '✓ فائض';
+        badgeEl.className = 'fs-badge fs-badge-surplus';
+      } else {
+        badgeEl.textContent = '⚠️ عجز';
+        badgeEl.className = 'fs-badge fs-badge-deficit';
+      }
+    }
+    if (hasRevenue && resultEl) {
+      var tagColor = surplus >= 0 ? '#1A5C32' : '#c62828';
+      var tagBg = surplus >= 0 ? '#e8f5ec' : '#fee2e2';
+      var tagIcon = surplus >= 0 ? '↑' : '↓';
+      var tagLabel = surplus >= 0 ? 'فائض' : 'عجز';
+      resultEl.style.color = tagColor;
+      resultEl.style.background = tagBg;
+      resultEl.textContent = tagIcon + ' ' + tagLabel + ' ' + fsFmt(Math.abs(surplus)) + ' ر.س';
+    }
+  });
+}
+
 function renderFSPreview() {
   var s = fsState;
   var el = document.getElementById('fs-preview');
@@ -1454,20 +1515,20 @@ function renderFSPreview() {
   html += '<div class="fs-fund-card">';
   html += '<div class="fs-fund-row"><div class="fs-fund-label">الرصيد السابق</div>';
   if (edit) {
-    html += '<div class="fs-fund-value"><input class="fs-edit-input-header" style="font-size:26px;width:160px" type="number" value="' + s.prevBalance + '" oninput="fsState.prevBalance=Number(this.value);renderFSPreview()"></div>';
+    html += '<div class="fs-fund-value"><input class="fs-edit-input-header" style="font-size:26px;width:160px" type="number" value="' + s.prevBalance + '" oninput="fsState.prevBalance=Number(this.value);updateFSCalculations()" onblur="renderFSPreview()"></div>';
   } else {
     html += '<div class="fs-fund-value">' + fsFmt(s.prevBalance) + ' <span class="fs-fund-unit">ر.س</span></div>';
   }
   html += '</div>';
 
   html += '<div class="fs-fund-row"><div class="fs-fund-label">صافي الحركة المالية للفترة المنصرمة</div>';
-  html += '<div class="fs-fund-value-net" style="color:' + (netMovement >= 0 ? '#6ee7b7' : '#fca5a5') + '">' + (netMovement >= 0 ? '+' : '') + fsFmt(netMovement) + ' <span class="fs-fund-unit">ر.س</span></div>';
+  html += '<div class="fs-fund-value-net" id="fs-net-movement" style="color:' + (netMovement >= 0 ? '#6ee7b7' : '#fca5a5') + '">' + (netMovement >= 0 ? '+' : '') + fsFmt(netMovement) + ' <span class="fs-fund-unit">ر.س</span></div>';
   html += '</div>';
 
   html += '<div class="fs-fund-divider"></div>';
 
   html += '<div class="fs-fund-row" style="margin-bottom:0"><div class="fs-fund-label">الرصيد الحالي للصندوق</div>';
-  html += '<div class="fs-fund-value-main">' + fsFmt(currentBalance) + ' <span class="fs-fund-unit">ر.س</span></div>';
+  html += '<div class="fs-fund-value-main" id="fs-current-balance">' + fsFmt(currentBalance) + ' <span class="fs-fund-unit">ر.س</span></div>';
   html += '</div>';
   html += '</div>'; // fund-card
   html += '</div>'; // header
@@ -1484,7 +1545,7 @@ function renderFSPreview() {
   html += '<div class="fs-stat-box" style="background:#e8f5ec">';
   html += '<div class="fs-stat-label">المشتركين الفعّالين</div>';
   if (edit) {
-    html += '<div class="fs-stat-value" style="color:#1A5C32"><input class="fs-edit-input" style="font-size:26px;color:#1A5C32;background:#e8f5ec" type="number" value="' + s.activeMembers + '" oninput="fsState.activeMembers=Number(this.value);renderFSPreview()"></div>';
+    html += '<div class="fs-stat-value" style="color:#1A5C32"><input class="fs-edit-input" style="font-size:26px;color:#1A5C32;background:#e8f5ec" type="number" value="' + s.activeMembers + '" oninput="fsState.activeMembers=Number(this.value);updateFSCalculations()" onblur="renderFSPreview()"></div>';
   } else {
     html += '<div class="fs-stat-value" style="color:#1A5C32">' + s.activeMembers + '</div>';
   }
@@ -1494,7 +1555,7 @@ function renderFSPreview() {
   html += '<div class="fs-stat-box" style="background:#fee2e2">';
   html += '<div class="fs-stat-label">المتخلفين</div>';
   if (edit) {
-    html += '<div class="fs-stat-value" style="color:#c62828"><input class="fs-edit-input" style="font-size:26px;color:#c62828;background:#fee2e2" type="number" value="' + s.defaultingMembers + '" oninput="fsState.defaultingMembers=Number(this.value);renderFSPreview()"></div>';
+    html += '<div class="fs-stat-value" style="color:#c62828"><input class="fs-edit-input" style="font-size:26px;color:#c62828;background:#fee2e2" type="number" value="' + s.defaultingMembers + '" oninput="fsState.defaultingMembers=Number(this.value);updateFSCalculations()" onblur="renderFSPreview()"></div>';
   } else {
     html += '<div class="fs-stat-value" style="color:#c62828">' + s.defaultingMembers + '</div>';
   }
@@ -1503,20 +1564,20 @@ function renderFSPreview() {
   // Collection rate
   html += '<div class="fs-stat-box" style="background:#f5f9f6">';
   html += '<div class="fs-stat-label">نسبة التحصيل</div>';
-  html += '<div class="fs-stat-value" style="color:#1B3456">' + collectionRate + '%</div>';
+  html += '<div class="fs-stat-value" id="fs-collection-rate" style="color:#1B3456">' + collectionRate + '%</div>';
   html += '</div>';
 
   html += '</div>'; // grid-3
 
   // Progress bar
-  html += '<div class="fs-progress-bar"><div class="fs-progress-fill" style="width:' + collectionRate + '%"></div></div>';
+  html += '<div class="fs-progress-bar"><div class="fs-progress-fill" id="fs-progress-fill" style="width:' + collectionRate + '%"></div></div>';
   html += '</div>'; // section-card
 
   // Summary strip
   html += '<div class="fs-grid-3" style="margin-bottom:14px">';
-  html += '<div class="fs-summary-box"><div class="fs-summary-label">إجمالي المصروفات</div><div class="fs-summary-value" style="color:#1B3456">' + fsFmt(totalExpenses) + '</div></div>';
-  html += '<div class="fs-summary-box"><div class="fs-summary-label">إجمالي الإيرادات</div><div class="fs-summary-value" style="color:#1A5C32">' + fsFmt(totalRevenue) + '</div></div>';
-  html += '<div class="fs-summary-box"><div class="fs-summary-label">صافي النتيجة</div><div class="fs-summary-value" style="color:' + (netMovement >= 0 ? '#1A5C32' : '#c62828') + '">' + (netMovement >= 0 ? '+' : '') + fsFmt(netMovement) + '</div></div>';
+  html += '<div class="fs-summary-box"><div class="fs-summary-label">إجمالي المصروفات</div><div class="fs-summary-value" id="fs-total-expenses" style="color:#1B3456">' + fsFmt(totalExpenses) + '</div></div>';
+  html += '<div class="fs-summary-box"><div class="fs-summary-label">إجمالي الإيرادات</div><div class="fs-summary-value" id="fs-total-revenue" style="color:#1A5C32">' + fsFmt(totalRevenue) + '</div></div>';
+  html += '<div class="fs-summary-box"><div class="fs-summary-label">صافي النتيجة</div><div class="fs-summary-value" id="fs-net-result" style="color:' + (netMovement >= 0 ? '#1A5C32' : '#c62828') + '">' + (netMovement >= 0 ? '+' : '') + fsFmt(netMovement) + '</div></div>';
   html += '</div>';
 
   // Committees section
@@ -1527,11 +1588,11 @@ function renderFSPreview() {
     var surplus = hasRevenue ? (c.revenue - c.expenses) : 0;
     var statusBadge = '';
     if (hasRevenue && surplus >= 0) {
-      statusBadge = '<span class="fs-badge fs-badge-surplus">✓ فائض</span>';
+      statusBadge = '<span class="fs-badge fs-badge-surplus" id="fs-com-badge-' + c.id + '">✓ فائض</span>';
     } else if (hasRevenue && surplus < 0) {
-      statusBadge = '<span class="fs-badge fs-badge-deficit">⚠️ عجز</span>';
+      statusBadge = '<span class="fs-badge fs-badge-deficit" id="fs-com-badge-' + c.id + '">⚠️ عجز</span>';
     } else {
-      statusBadge = '<span class="fs-badge fs-badge-pending">⏳ لم يُسلَّم</span>';
+      statusBadge = '<span class="fs-badge fs-badge-pending" id="fs-com-badge-' + c.id + '">⏳ لم يُسلَّم</span>';
     }
 
     html += '<div class="fs-com-card">';
@@ -1565,7 +1626,7 @@ function renderFSPreview() {
     html += '<div class="fs-fin-row">';
     html += '<div><div class="fs-fin-label">المصروفات</div>';
     if (edit) {
-      html += '<div class="fs-fin-value" style="color:#1B3456"><input class="fs-edit-input" style="color:#1B3456" type="number" value="' + (c.expenses || 0) + '" oninput="var cm=fsState.committees.find(function(x){return x.id===\'' + c.id + '\'});cm.expenses=Number(this.value);renderFSPreview()"></div>';
+      html += '<div class="fs-fin-value" style="color:#1B3456"><input class="fs-edit-input" style="color:#1B3456" type="number" value="' + (c.expenses || 0) + '" oninput="var cm=fsState.committees.find(function(x){return x.id===\'' + c.id + '\'});cm.expenses=Number(this.value);updateFSCalculations()" onblur="renderFSPreview()"></div>';
     } else {
       html += '<div class="fs-fin-value" style="color:#1B3456">' + fsFmt(c.expenses) + '</div>';
     }
@@ -1575,7 +1636,7 @@ function renderFSPreview() {
 
     html += '<div><div class="fs-fin-label">الإيرادات</div>';
     if (edit) {
-      html += '<div class="fs-fin-value" style="color:#1A5C32"><input class="fs-edit-input" style="color:#1A5C32" type="number" value="' + (c.revenue === null ? '' : c.revenue) + '" placeholder="لم يُسلَّم" oninput="var cm=fsState.committees.find(function(x){return x.id===\'' + c.id + '\'});cm.revenue=this.value===\'\'?null:Number(this.value);renderFSPreview()"></div>';
+      html += '<div class="fs-fin-value" style="color:#1A5C32"><input class="fs-edit-input" style="color:#1A5C32" type="number" value="' + (c.revenue === null ? '' : c.revenue) + '" placeholder="لم يُسلَّم" oninput="var cm=fsState.committees.find(function(x){return x.id===\'' + c.id + '\'});cm.revenue=this.value===\'\'?null:Number(this.value);updateFSCalculations()" onblur="renderFSPreview()"></div>';
     } else {
       html += '<div class="fs-fin-value" style="color:#1A5C32">' + (hasRevenue ? fsFmt(c.revenue) : '—') + '</div>';
     }
@@ -1588,7 +1649,7 @@ function renderFSPreview() {
       var tagBg = surplus >= 0 ? '#e8f5ec' : '#fee2e2';
       var tagIcon = surplus >= 0 ? '↑' : '↓';
       var tagLabel = surplus >= 0 ? 'فائض' : 'عجز';
-      html += '<div class="fs-surplus-tag" style="color:' + tagColor + ';background:' + tagBg + '">' + tagIcon + ' ' + tagLabel + ' ' + fsFmt(Math.abs(surplus)) + ' ر.س</div>';
+      html += '<div class="fs-surplus-tag" id="fs-com-result-' + c.id + '" style="color:' + tagColor + ';background:' + tagBg + '">' + tagIcon + ' ' + tagLabel + ' ' + fsFmt(Math.abs(surplus)) + ' ر.س</div>';
     } else {
       html += '<div class="fs-pending-notice"><span class="fs-pending-dot"></span> لم يتم استلام الإيرادات بعد</div>';
     }

@@ -1714,18 +1714,15 @@ function exportFSPdf() {
   var totalExpenses = s.committees.reduce(function(sum, c) { return sum + (c.expenses || 0); }, 0);
   var totalRevenue = s.committees.reduce(function(sum, c) { return sum + (c.revenue || 0); }, 0);
 
-  var copyHtml = buildFSPdfCopy(s, netMovement, currentBalance, totalMembers, collectionRate, totalExpenses, totalRevenue);
+  var contentHtml = buildFSPdfCopy(s, netMovement, currentBalance, totalMembers, collectionRate, totalExpenses, totalRevenue);
 
   var fullHtml = '<!DOCTYPE html><html lang="ar" dir="rtl"><head>'
     + '<meta charset="UTF-8">'
     + '<link href="https://fonts.googleapis.com/css2?family=Amiri:wght@400;700&family=Cairo:wght@400;600;700&display=swap" rel="stylesheet">'
     + '<style>' + getFSPdfStyles() + '</style>'
     + '</head><body>'
-    + '<div class="page-wrap">'
-    + '<div class="cut-label">\u2702 خط القص</div>'
-    + '<div class="cut-line"></div>'
-    + copyHtml + copyHtml
-    + '</div></body></html>';
+    + contentHtml
+    + '</body></html>';
 
   var win = window.open('', '_blank');
   win.document.write(fullHtml);
@@ -1739,11 +1736,10 @@ function exportFSPdf() {
 
 function buildFSPdfCopy(s, netMovement, currentBalance, totalMembers, collectionRate, totalExpenses, totalRevenue) {
   var h = '';
-  h += '<div class="copy">';
 
   // Header
   h += '<div class="hdr">';
-  h += '<div class="hdr-badge">الملخص المالي الشامل</div>';
+  h += '<div class="hdr-badge">الميزانية العامة للصندوق</div>';
   h += '<div class="hdr-title">' + s.meta.title + '</div>';
   h += '<div class="hdr-sub">' + s.meta.subtitle + '</div>';
 
@@ -1751,7 +1747,7 @@ function buildFSPdfCopy(s, netMovement, currentBalance, totalMembers, collection
   h += '<div class="bal-row">';
   h += '<div class="bal-cell"><div class="bal-lbl">الرصيد السابق</div><div class="bal-val">' + fsFmt(s.prevBalance) + ' <span class="bal-unit">ر.س</span></div></div>';
   h += '<div class="bal-sep"></div>';
-  h += '<div class="bal-cell"><div class="bal-lbl">صافي الحركة</div><div class="bal-val" style="color:' + (netMovement >= 0 ? '#6ee7b7' : '#fca5a5') + '">' + (netMovement >= 0 ? '+' : '') + fsFmt(netMovement) + ' <span class="bal-unit">ر.س</span></div></div>';
+  h += '<div class="bal-cell"><div class="bal-lbl">صافي الحركة</div><div class="bal-net" style="color:' + (netMovement >= 0 ? '#6ee7b7' : '#fca5a5') + '">' + (netMovement >= 0 ? '+' : '') + fsFmt(netMovement) + ' <span class="bal-unit">ر.س</span></div></div>';
   h += '<div class="bal-sep"></div>';
   h += '<div class="bal-cell"><div class="bal-lbl">الرصيد الحالي</div><div class="bal-val-main">' + fsFmt(currentBalance) + ' <span class="bal-unit">ر.س</span></div></div>';
   h += '</div>'; // bal-row
@@ -1765,123 +1761,121 @@ function buildFSPdfCopy(s, netMovement, currentBalance, totalMembers, collection
   h += '<div class="sub-sum-row">';
 
   // Left column: subscription stats
-  h += '<div class="sub-col">';
+  h += '<div>';
   h += '<div class="sec-title">\uD83D\uDCB3 الاشتراكات</div>';
   h += '<div class="mini-grid">';
-  h += '<div class="mini-box" style="background:#e8f5ec"><div class="mini-lbl">الفعّالين</div><div class="mini-val" style="color:#1A5C32">' + s.activeMembers + '</div></div>';
-  h += '<div class="mini-box" style="background:#fee2e2"><div class="mini-lbl">المتخلفين</div><div class="mini-val" style="color:#c62828">' + s.defaultingMembers + '</div></div>';
-  h += '<div class="mini-box" style="background:#f5f9f6"><div class="mini-lbl">التحصيل</div><div class="mini-val" style="color:#1B3456">' + collectionRate + '%</div></div>';
+  h += '<div class="mini-box" style="background:#e8f5ec"><div class="mini-lbl">الفعّالين</div><div class="mini-val-lg" style="color:#1A5C32">' + s.activeMembers + '</div></div>';
+  h += '<div class="mini-box" style="background:#fee2e2"><div class="mini-lbl">المتخلفين</div><div class="mini-val-lg" style="color:#c62828">' + s.defaultingMembers + '</div></div>';
+  h += '<div class="mini-box" style="background:#f5f9f6"><div class="mini-lbl">التحصيل</div><div class="mini-val-lg" style="color:#1B3456">' + collectionRate + '%</div></div>';
   h += '</div>';
   h += '<div class="prog-bar"><div class="prog-fill" style="width:' + collectionRate + '%"></div></div>';
   h += '</div>';
 
   // Right column: summary strip
-  h += '<div class="sum-col">';
+  h += '<div>';
   h += '<div class="sec-title">\uD83D\uDCCA الملخص</div>';
   h += '<div class="mini-grid">';
-  h += '<div class="mini-box" style="background:#f0f4ff"><div class="mini-lbl">المصروفات</div><div class="mini-val" style="color:#1B3456">' + fsFmt(totalExpenses) + '</div></div>';
-  h += '<div class="mini-box" style="background:#e8f5ec"><div class="mini-lbl">الإيرادات</div><div class="mini-val" style="color:#1A5C32">' + fsFmt(totalRevenue) + '</div></div>';
-  h += '<div class="mini-box" style="background:' + (netMovement >= 0 ? '#e8f5ec' : '#fee2e2') + '"><div class="mini-lbl">الصافي</div><div class="mini-val" style="color:' + (netMovement >= 0 ? '#1A5C32' : '#c62828') + '">' + (netMovement >= 0 ? '+' : '') + fsFmt(netMovement) + '</div></div>';
+  h += '<div class="mini-box" style="background:#f0f4ff"><div class="mini-lbl">المصروفات</div><div class="mini-val-sm" style="color:#1B3456">' + fsFmt(totalExpenses) + '</div><div class="mini-unit">ر.س</div></div>';
+  h += '<div class="mini-box" style="background:#e8f5ec"><div class="mini-lbl">الإيرادات</div><div class="mini-val-sm" style="color:#1A5C32">' + fsFmt(totalRevenue) + '</div><div class="mini-unit">ر.س</div></div>';
+  h += '<div class="mini-box" style="background:' + (netMovement >= 0 ? '#e8f5ec' : '#fee2e2') + '"><div class="mini-lbl">الصافي</div><div class="mini-val-sm" style="color:' + (netMovement >= 0 ? '#1A5C32' : '#c62828') + '">' + (netMovement >= 0 ? '+' : '') + fsFmt(netMovement) + '</div><div class="mini-unit">ر.س</div></div>';
   h += '</div>';
   h += '</div>';
 
   h += '</div>'; // sub-sum-row
 
-  // Committees (2-column grid)
-  h += '<div class="sec-title" style="margin-top:5px">\uD83D\uDCCA اللجان</div>';
-  h += '<div class="com-grid">';
+  // Financial movement table
+  h += '<div class="tbl-title">\uD83D\uDCCB الحركة المالية</div>';
+  h += '<table class="fin-tbl"><thead><tr>';
+  h += '<th>البند</th><th>المصروفات</th><th>الإيرادات</th><th>النتيجة</th><th></th>';
+  h += '</tr></thead><tbody>';
   s.committees.forEach(function(c) {
     var hasRevenue = c.revenue !== null;
     var surplus = hasRevenue ? (c.revenue - c.expenses) : 0;
-    var badge = '';
-    if (hasRevenue && surplus >= 0) badge = '<span class="bdg bdg-s">\u2713 فائض</span>';
-    else if (hasRevenue && surplus < 0) badge = '<span class="bdg bdg-d">\u26A0\uFE0F عجز</span>';
-    else badge = '<span class="bdg bdg-p">\u23F3 لم يُسلَّم</span>';
-
-    h += '<div class="com-card">';
-    h += '<div class="com-hdr"><div class="com-ic" style="background:' + c.iconBg + '">' + c.icon + '</div><div class="com-info"><div class="com-nm">' + c.name + '</div>' + badge + '</div></div>';
-
-    h += '<div class="com-fin">';
-    h += '<div><div class="com-fin-lbl">المصروفات</div><div class="com-fin-val" style="color:#1B3456">' + fsFmt(c.expenses) + '</div></div>';
-    h += '<div class="com-arrow">\u2192</div>';
-    h += '<div><div class="com-fin-lbl">الإيرادات</div><div class="com-fin-val" style="color:#1A5C32">' + (hasRevenue ? fsFmt(c.revenue) : '\u2014') + '</div></div>';
-    h += '</div>';
-
+    var barPct = 0;
+    var barColor = '#c8a84b';
+    var resClass = 'res-pending';
+    var resText = '\u23F3 لم يُسلَّم';
     if (hasRevenue) {
-      var tC = surplus >= 0 ? '#1A5C32' : '#c62828';
-      var tBg = surplus >= 0 ? '#e8f5ec' : '#fee2e2';
-      var tIc = surplus >= 0 ? '\u2191' : '\u2193';
-      var tLb = surplus >= 0 ? 'فائض' : 'عجز';
-      h += '<div class="com-tag" style="color:' + tC + ';background:' + tBg + '">' + tIc + ' ' + tLb + ' ' + fsFmt(Math.abs(surplus)) + ' ر.س</div>';
-    } else {
-      h += '<div class="com-pend">\u25CF لم يتم استلام الإيرادات بعد</div>';
+      barPct = c.expenses > 0 ? Math.min((c.revenue / c.expenses) * 100, 100) : 100;
+      if (surplus >= 0) {
+        barColor = '#1A5C32';
+        resClass = 'res-surplus';
+        resText = '+' + fsFmt(surplus);
+      } else {
+        barColor = '#c62828';
+        resClass = 'res-deficit';
+        resText = '-' + fsFmt(Math.abs(surplus));
+      }
     }
-
-    h += '</div>'; // com-card
+    h += '<tr>';
+    h += '<td>' + c.icon + ' ' + c.name + '</td>';
+    h += '<td>' + fsFmt(c.expenses) + '</td>';
+    h += '<td>' + (hasRevenue ? fsFmt(c.revenue) : '\u2014') + '</td>';
+    h += '<td class="' + resClass + '">' + resText + '</td>';
+    h += '<td><div class="bar-wrap"><div class="bar-fill" style="width:' + barPct + '%;background:' + barColor + '"></div></div></td>';
+    h += '</tr>';
   });
-  h += '</div>'; // com-grid
+  h += '</tbody></table>';
 
   // Footer
   h += '<div class="ftr">مجلس عائلة العوامي — الجلسة العمومية ' + s.meta.meetingDate + '</div>';
 
   h += '</div>'; // bd
-  h += '</div>'; // copy
   return h;
 }
 
 function getFSPdfStyles() {
   return '@page{size:A4 portrait;margin:0}'
     + '*{margin:0;padding:0;box-sizing:border-box}'
-    + 'body{width:210mm;font-family:"Cairo",sans-serif;direction:rtl;-webkit-print-color-adjust:exact;print-color-adjust:exact;}'
-    + '.page-wrap{width:210mm;height:297mm;position:relative;display:flex;flex-direction:column;align-items:center;}'
-    + '.cut-line{position:absolute;top:148.5mm;left:8mm;right:8mm;border-top:1.5px dashed #bbb;}'
-    + '.cut-label{position:absolute;top:146mm;left:50%;transform:translateX(-50%);font-size:6.5px;color:#999;background:#fff;padding:0 6px;z-index:1;}'
-    + '.copy{width:194mm;height:143mm;overflow:hidden;margin-top:2.5mm;background:#FDFCF8;border-radius:4px;}'
-    + '.copy:first-of-type{margin-top:3mm;}'
+    + 'body{font-family:"Cairo",sans-serif;background:#FDFCF8;width:210mm;color:#1a2a1e;-webkit-print-color-adjust:exact;print-color-adjust:exact;}'
     // Header
-    + '.hdr{background:linear-gradient(135deg,#1A5C32,#0f3d22 50%,#1B3456);color:#fff;padding:10px 14px 12px;text-align:center;}'
-    + '.hdr-badge{display:inline-block;font-size:6px;font-weight:600;color:rgba(255,255,255,0.85);background:rgba(255,255,255,0.12);padding:2px 10px;border-radius:100px;margin-bottom:5px;border:1px solid rgba(255,255,255,0.15);}'
-    + '.hdr-title{font-family:"Amiri",serif;font-size:14px;font-weight:700;margin-bottom:1px;}'
-    + '.hdr-sub{font-size:7.5px;opacity:0.8;margin-bottom:8px;}'
+    + '.hdr{background:linear-gradient(135deg,#1A5C32,#0f3d22 50%,#1B3456);color:#fff;padding:18px 20px 20px;text-align:center;}'
+    + '.hdr-badge{display:inline-block;font-size:9px;font-weight:600;color:rgba(255,255,255,0.85);background:rgba(255,255,255,0.12);padding:3px 14px;border-radius:100px;margin-bottom:8px;border:1px solid rgba(255,255,255,0.15);}'
+    + '.hdr-title{font-family:"Amiri",serif;font-size:24px;font-weight:700;margin-bottom:2px;}'
+    + '.hdr-sub{font-size:12px;opacity:0.8;margin-bottom:14px;}'
     // Balance row
-    + '.bal-row{display:grid;grid-template-columns:1fr auto 1fr auto 1fr;align-items:center;background:rgba(255,255,255,0.08);border-radius:8px;padding:8px 6px;border:1px solid rgba(255,255,255,0.12);}'
+    + '.bal-row{display:grid;grid-template-columns:1fr auto 1fr auto 1fr;align-items:center;background:rgba(255,255,255,0.08);border-radius:10px;padding:12px 10px;border:1px solid rgba(255,255,255,0.12);}'
     + '.bal-cell{text-align:center;}'
-    + '.bal-lbl{font-size:5.5px;opacity:0.65;margin-bottom:2px;}'
-    + '.bal-val{font-size:13px;font-weight:700;}'
-    + '.bal-val-main{font-size:17px;font-weight:700;}'
-    + '.bal-unit{font-size:6px;opacity:0.6;}'
-    + '.bal-sep{width:1px;height:24px;background:rgba(255,255,255,0.2);margin:0 2px;}'
+    + '.bal-lbl{font-size:11px;opacity:0.65;margin-bottom:3px;}'
+    + '.bal-val{font-size:24px;font-weight:700;}'
+    + '.bal-net{font-size:21px;font-weight:700;}'
+    + '.bal-val-main{font-size:26px;font-weight:700;}'
+    + '.bal-unit{font-size:11px;opacity:0.6;}'
+    + '.bal-sep{width:1px;height:32px;background:rgba(255,255,255,0.15);margin:0 4px;}'
     // Body
-    + '.bd{padding:6px 8px 8px;}'
-    + '.sec-title{font-family:"Amiri",serif;font-size:9.5px;font-weight:700;color:#1A5C32;margin-bottom:4px;padding-bottom:2px;border-bottom:1px solid #e8f5ec;}'
+    + '.bd{padding:12px 16px 10px;}'
     // Sub+Sum row
-    + '.sub-sum-row{display:grid;grid-template-columns:1fr 2fr;gap:6px;margin-bottom:5px;}'
-    + '.sub-col,.sum-col{}'
-    + '.mini-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:3px;}'
-    + '.mini-box{border-radius:6px;padding:4px 3px;text-align:center;}'
-    + '.mini-lbl{font-size:5.5px;color:#546358;font-weight:600;margin-bottom:1px;}'
-    + '.mini-val{font-size:15px;font-weight:700;}'
-    + '.prog-bar{height:4px;background:#fee2e2;border-radius:100px;overflow:hidden;margin-top:3px;}'
+    + '.sub-sum-row{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:12px;}'
+    + '.sec-title{font-family:"Amiri",serif;font-size:16px;font-weight:700;color:#1A5C32;margin-bottom:6px;padding-bottom:3px;border-bottom:1.5px solid #e8f5ec;}'
+    + '.mini-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;}'
+    + '.mini-box{border-radius:8px;padding:8px 6px;text-align:center;}'
+    + '.mini-lbl{font-size:10px;color:#546358;font-weight:600;margin-bottom:2px;}'
+    + '.mini-val-lg{font-size:28px;font-weight:700;}'
+    + '.mini-val-sm{font-size:19px;font-weight:700;}'
+    + '.mini-unit{font-size:9px;color:#546358;display:block;margin-top:1px;}'
+    + '.prog-bar{height:5px;background:#fee2e2;border-radius:100px;overflow:hidden;margin-top:5px;}'
     + '.prog-fill{height:100%;background:linear-gradient(90deg,#1A5C32,#3D8B37);border-radius:100px;}'
-    // Committees
-    + '.com-grid{display:grid;grid-template-columns:1fr 1fr;gap:5px;}'
-    + '.com-card{background:#fff;border:1px solid #c2cec5;border-radius:8px;padding:6px 7px;}'
-    + '.com-hdr{display:flex;align-items:center;gap:5px;margin-bottom:5px;}'
-    + '.com-ic{width:22px;height:22px;border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:11px;flex-shrink:0;}'
-    + '.com-info{flex:1;}'
-    + '.com-nm{font-family:"Amiri",serif;font-size:8.5px;font-weight:700;color:#1A5C32;line-height:1.3;}'
-    + '.bdg{font-size:6px;font-weight:700;padding:1px 6px;border-radius:100px;display:inline-block;}'
-    + '.bdg-s{color:#1A5C32;background:#e8f5ec;border:1px solid #b8dfc2;}'
-    + '.bdg-d{color:#c62828;background:#fee2e2;border:1px solid #f5c6c6;}'
-    + '.bdg-p{color:#8a6d00;background:#fef9e7;border:1px solid #f0dfa0;}'
-    + '.com-fin{display:grid;grid-template-columns:1fr auto 1fr;align-items:center;background:#f5f9f6;border-radius:6px;padding:5px 4px;border:1px solid rgba(0,0,0,0.03);}'
-    + '.com-fin-lbl{font-size:5.5px;color:#546358;font-weight:600;margin-bottom:1px;text-align:center;}'
-    + '.com-fin-val{font-size:11px;font-weight:700;text-align:center;}'
-    + '.com-arrow{font-size:9px;color:#aaa;padding:0 2px;}'
-    + '.com-tag{display:inline-block;margin-top:4px;font-size:7.5px;font-weight:700;padding:2px 7px;border-radius:6px;}'
-    + '.com-pend{margin-top:4px;font-size:6px;font-weight:600;color:#8a6d00;}'
+    // Table
+    + '.tbl-title{font-family:"Amiri",serif;font-size:16px;font-weight:700;color:#1A5C32;margin-bottom:6px;padding-bottom:3px;border-bottom:1.5px solid #e8f5ec;}'
+    + '.fin-tbl{width:100%;border-collapse:collapse;border-radius:8px;overflow:hidden;}'
+    + '.fin-tbl thead th{background:linear-gradient(135deg,#1A5C32,#1B3456);color:#fff;font-size:12px;font-weight:600;padding:7px 8px;}'
+    + '.fin-tbl th:first-child{text-align:right;width:34%}'
+    + '.fin-tbl th:nth-child(2),.fin-tbl th:nth-child(3){text-align:center;width:15%}'
+    + '.fin-tbl th:nth-child(4){text-align:center;width:16%}'
+    + '.fin-tbl th:nth-child(5){width:20%}'
+    + '.fin-tbl tbody tr:nth-child(even){background:#f9fafb}'
+    + '.fin-tbl tbody tr:nth-child(odd){background:#fff}'
+    + '.fin-tbl td{padding:6px 8px;font-size:14px;}'
+    + '.fin-tbl td:first-child{text-align:right;font-size:12.5px;font-weight:600;color:#1a2a1e;}'
+    + '.fin-tbl td:nth-child(2),.fin-tbl td:nth-child(3){text-align:center;}'
+    + '.fin-tbl td:nth-child(4){text-align:center;font-size:13px;font-weight:700;}'
+    + '.res-surplus{color:#1A5C32}'
+    + '.res-deficit{color:#c62828}'
+    + '.res-pending{color:#8a6d00;font-size:11.5px!important;font-weight:600!important;}'
+    + '.bar-wrap{height:6px;background:#e8ece9;border-radius:100px;overflow:hidden;}'
+    + '.bar-fill{height:100%;border-radius:100px;}'
     // Footer
-    + '.ftr{text-align:center;margin-top:5px;padding-top:4px;border-top:1px solid #e8f5ec;font-size:6.5px;color:#546358;font-weight:600;}';
+    + '.ftr{text-align:center;margin-top:10px;padding-top:8px;border-top:1.5px solid #e8f5ec;font-size:11.5px;color:#546358;font-weight:600;}';
 }
 
 // =================== CALENDAR ===================

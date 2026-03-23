@@ -1366,7 +1366,8 @@ var FS_ICONS = ['🏆','🌙','🎯','🍽️','🕋','🐑','📚','🎨','⚽'
 
 function openFinancialSummary() {
   var modal = document.getElementById('financial-summary-modal');
-  modal.style.display = 'flex';
+  modal.style.display = 'block';
+  document.body.classList.add('fs-modal-open');
   renderFSPreview();
   modal.onclick = function(e) {
     if (e.target === modal) closeFSModal();
@@ -1381,6 +1382,7 @@ function _fsEscHandler(e) {
 }
 
 function closeFSModal() {
+  document.body.classList.remove('fs-modal-open');
   document.getElementById('financial-summary-modal').style.display = 'none';
   fsState.editMode = false;
   document.getElementById('fs-edit-btn').textContent = '✏️ تعديل';

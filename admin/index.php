@@ -1325,6 +1325,27 @@ var CSRF_TOKEN = '<?php echo getCsrfToken(); ?>';
   </div>
 </div>
 
+<!-- Financial Summary Modal -->
+<div id="financial-summary-modal" class="fs-modal-overlay" style="display:none">
+  <div class="fs-modal">
+    <div class="fs-toolbar">
+      <div class="fs-toolbar-right">
+        <button class="btn btn-outline btn-sm" onclick="toggleFSEditMode()" id="fs-edit-btn">✏️ تعديل</button>
+        <button class="btn btn-outline btn-sm" onclick="addFSCommittee()" id="fs-add-btn" style="display:none">+ لجنة</button>
+      </div>
+      <div class="fs-toolbar-left">
+        <button class="btn btn-primary btn-sm" onclick="exportFSSummary()" id="fs-export-btn">📥 PNG</button>
+        <button class="btn btn-outline btn-sm" onclick="exportFSPdf()" id="fs-pdf-btn">📄 PDF طباعة</button>
+        <button class="btn btn-outline btn-sm" onclick="closeFSModal()">✕ إغلاق</button>
+      </div>
+    </div>
+    <div class="fs-preview-wrap">
+      <div id="fs-preview" class="fs-preview"></div>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js" defer></script>
 <script src="<?= adminAsset('js/admin-core.js') ?>"></script>
 <script src="<?= adminAsset('js/admin-app.js') ?>"></script>
 <script src="<?= adminAsset('js/admin-members-ui.js') ?>"></script>

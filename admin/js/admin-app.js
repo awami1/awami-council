@@ -18,7 +18,7 @@ function showPage(name,el){
   const T={dashboard:'لوحة التحكم|مجلس عائلة العوامي',members:'الأعضاء|إدارة الأعضاء',fees:'الرسوم|متابعة المدفوعات',reminders:'التذكيرات|تذكيرات الأعضاء غير الدافعين',committees:'اللجان|اللجان الفرعية للمجلس',orgchart:'الهيكل التنظيمي|مجلس عائلة العوامي',budget:'الميزانية|السجل المالي',events:'الفعاليات|الأنشطة',calendar:'التقويم|عرض تقويمي',familytree:'شجرة العائلة|الأفرع العائلية',voting:'التصويت|استطلاعات الرأي',portal:'بوابة العضو|الملف الشخصي','smart-reports':'التقارير|إنتاج وأرشفة التقارير المالية',reports:'التقارير|إحصائيات',audit:'سجل التدقيق|من غيّر ماذا ومتى','export':'تصدير البيانات|Excel و CSV',websettings:'الموقع العام|إدارة المحتوى',settings:'النسخ الاحتياطي|إدارة البيانات',riwaq:'الرِّوَاق|معرض الحكايات'};
   const [t,s]=(T[name]||'--|--').split('|');
   document.getElementById('topbar-title').innerHTML=t+` <span>${s}</span>`;
-  const A={members:`<button class="btn btn-primary" onclick="openAddMember()">+ إضافة عضو</button>`,budget:`<button class="btn btn-primary" onclick="openModal('modal-tx')">+ معاملة</button>`,events:`<button class="btn btn-primary" onclick="openAddEvent()">+ فعالية</button>`,riwaq:`<button class="btn btn-primary" onclick="openAddGalleryStory()">+ إضافة قصة</button>`};
+  const A={members:`<button class="btn btn-primary" onclick="openAddMember()">+ إضافة عضو</button>`,budget:`<button class="btn btn-outline" onclick="openFinancialSummary()" style="margin-left:8px">📊 ملخص مالي</button><button class="btn btn-primary" onclick="openModal('modal-tx')">+ معاملة</button>`,events:`<button class="btn btn-primary" onclick="openAddEvent()">+ فعالية</button>`,riwaq:`<button class="btn btn-primary" onclick="openAddGalleryStory()">+ إضافة قصة</button>`};
   document.getElementById('topbar-action').innerHTML=A[name]||'';
   const renderers={dashboard:renderDashboard,members:renderMembers,fees:renderFees,reminders:renderReminders,committees:renderCommittees,orgchart:renderOrgChart,budget:renderBudget,events:renderEvents,calendar:renderCalendar,familytree:renderFamilyTree,voting:renderVoting,portal:renderPortalSelect,'smart-reports':function(){ renderReportsPage(); },reports:renderReports,audit:renderAuditLog,'export':function(){},websettings:renderWebsiteSettings,settings:renderSettings,messages:renderMessages,news:renderNews,riwaq:async function(){ if(!_riwaqLoaded) await loadRiwaqData(); renderRiwaq(); }};
   if(renderers[name]) renderers[name]();
@@ -1340,6 +1340,486 @@ function renderBudget(page){
 }
 
 function deleteTx(id){ FinanceService.deleteTx(id); }
+
+// =================== FINANCIAL SUMMARY ===================
+var fsState = {
+  editMode: false,
+  prevBalance: 137944,
+  activeMembers: 38,
+  defaultingMembers: 30,
+  meta: {
+    title: 'الملخص المالي الشامل',
+    subtitle: 'مجلس عائلة العوامي',
+    meetingDate: '١٥ شوال ١٤٤٧ هـ',
+  },
+  committees: [
+    { id: 'fs1', name: 'لجنة المسابقة الرمضانية (الرجال)', icon: '🏆', iconBg: '#e8f5ec', iconColor: '#1A5C32', expenses: 3000, revenue: 5745 },
+    { id: 'fs2', name: 'الرحلة والمسابقة الرمضانية (النساء)', icon: '🌙', iconBg: '#fce8f1', iconColor: '#b5436e', expenses: 4000, revenue: 4222 },
+    { id: 'fs3', name: 'لجنة مسابقة العيد', icon: '🎯', iconBg: '#fef9e7', iconColor: '#8a6d00', expenses: 5000, revenue: null },
+    { id: 'fs4', name: 'لجنة غداء العيدين', icon: '🍽️', iconBg: '#eee8f7', iconColor: '#5b3e96', expenses: 7000, revenue: null },
+    { id: 'fs5', name: 'لجنة العمرة الرجبية', icon: '🕋', iconBg: '#e3f2fd', iconColor: '#1565c0', expenses: 10000, revenue: null },
+    { id: 'fs6', name: 'لجنة العيدين (الأضحى)', icon: '🐑', iconBg: '#fff3e0', iconColor: '#e65100', expenses: 6000, revenue: 4660 },
+  ]
+};
+
+var FS_ICONS = ['🏆','🌙','🎯','🍽️','🕋','🐑','📚','🎨','⚽','🏥','🎪','💡','🔧','🎭'];
+
+function openFinancialSummary() {
+  var modal = document.getElementById('financial-summary-modal');
+  modal.style.display = 'flex';
+  renderFSPreview();
+  modal.onclick = function(e) {
+    if (e.target === modal) closeFSModal();
+  };
+  document.addEventListener('keydown', _fsEscHandler);
+}
+
+function _fsEscHandler(e) {
+  if (e.key === 'Escape' && document.getElementById('financial-summary-modal').style.display !== 'none') {
+    closeFSModal();
+  }
+}
+
+function closeFSModal() {
+  document.getElementById('financial-summary-modal').style.display = 'none';
+  fsState.editMode = false;
+  document.getElementById('fs-edit-btn').textContent = '✏️ تعديل';
+  document.getElementById('fs-edit-btn').style.background = '';
+  document.getElementById('fs-add-btn').style.display = 'none';
+  document.removeEventListener('keydown', _fsEscHandler);
+}
+
+function toggleFSEditMode() {
+  fsState.editMode = !fsState.editMode;
+  var btn = document.getElementById('fs-edit-btn');
+  var addBtn = document.getElementById('fs-add-btn');
+  if (fsState.editMode) {
+    btn.textContent = '✓ إنهاء التعديل';
+    btn.style.background = '#e8f5ec';
+    addBtn.style.display = '';
+  } else {
+    btn.textContent = '✏️ تعديل';
+    btn.style.background = '';
+    addBtn.style.display = 'none';
+  }
+  renderFSPreview();
+}
+
+function addFSCommittee() {
+  var id = 'fs' + Date.now();
+  fsState.committees.push({ id: id, name: 'لجنة جديدة', icon: '📋', iconBg: '#f0f0f0', iconColor: '#555', expenses: 0, revenue: null });
+  renderFSPreview();
+}
+
+function removeFSCommittee(id) {
+  fsState.committees = fsState.committees.filter(function(c) { return c.id !== id; });
+  renderFSPreview();
+}
+
+function fsFmt(n) {
+  return Number(n || 0).toLocaleString('en-US');
+}
+
+function renderFSPreview() {
+  var s = fsState;
+  var el = document.getElementById('fs-preview');
+  var edit = s.editMode;
+
+  // Calculations
+  var netMovement = s.committees
+    .filter(function(c) { return c.revenue !== null; })
+    .reduce(function(sum, c) { return sum + ((c.revenue || 0) - (c.expenses || 0)); }, 0);
+  var currentBalance = s.prevBalance + netMovement;
+  var totalMembers = s.activeMembers + s.defaultingMembers;
+  var collectionRate = totalMembers > 0 ? ((s.activeMembers / totalMembers) * 100).toFixed(1) : '0';
+  var totalExpenses = s.committees.reduce(function(sum, c) { return sum + (c.expenses || 0); }, 0);
+  var totalRevenue = s.committees.reduce(function(sum, c) { return sum + (c.revenue || 0); }, 0);
+
+  var html = '';
+
+  // ── Header ──
+  html += '<div class="fs-header">';
+  html += '<div class="fs-header-badge">الملخص المالي الشامل</div>';
+  if (edit) {
+    html += '<h2><input class="fs-edit-input-header" value="' + s.meta.title + '" oninput="fsState.meta.title=this.value"></h2>';
+    html += '<p><input class="fs-edit-input-header" style="font-size:13px;opacity:0.8" value="' + s.meta.subtitle + '" oninput="fsState.meta.subtitle=this.value"></p>';
+  } else {
+    html += '<h2>' + s.meta.title + '</h2>';
+    html += '<p>' + s.meta.subtitle + '</p>';
+  }
+
+  // Fund card
+  html += '<div class="fs-fund-card">';
+  html += '<div class="fs-fund-row"><div class="fs-fund-label">الرصيد السابق</div>';
+  if (edit) {
+    html += '<div class="fs-fund-value"><input class="fs-edit-input-header" style="font-size:26px;width:160px" type="number" value="' + s.prevBalance + '" oninput="fsState.prevBalance=Number(this.value);renderFSPreview()"></div>';
+  } else {
+    html += '<div class="fs-fund-value">' + fsFmt(s.prevBalance) + ' <span class="fs-fund-unit">ر.س</span></div>';
+  }
+  html += '</div>';
+
+  html += '<div class="fs-fund-row"><div class="fs-fund-label">صافي الحركة المالية للفترة المنصرمة</div>';
+  html += '<div class="fs-fund-value-net" style="color:' + (netMovement >= 0 ? '#6ee7b7' : '#fca5a5') + '">' + (netMovement >= 0 ? '+' : '') + fsFmt(netMovement) + ' <span class="fs-fund-unit">ر.س</span></div>';
+  html += '</div>';
+
+  html += '<div class="fs-fund-divider"></div>';
+
+  html += '<div class="fs-fund-row" style="margin-bottom:0"><div class="fs-fund-label">الرصيد الحالي للصندوق</div>';
+  html += '<div class="fs-fund-value-main">' + fsFmt(currentBalance) + ' <span class="fs-fund-unit">ر.س</span></div>';
+  html += '</div>';
+  html += '</div>'; // fund-card
+  html += '</div>'; // header
+
+  // ── Body ──
+  html += '<div class="fs-body">';
+
+  // Subscriptions section
+  html += '<div class="fs-section-card">';
+  html += '<div class="fs-section-title">💳 الاشتراكات</div>';
+  html += '<div class="fs-grid-3">';
+
+  // Active members
+  html += '<div class="fs-stat-box" style="background:#e8f5ec">';
+  html += '<div class="fs-stat-label">المشتركين الفعّالين</div>';
+  if (edit) {
+    html += '<div class="fs-stat-value" style="color:#1A5C32"><input class="fs-edit-input" style="font-size:26px;color:#1A5C32;background:#e8f5ec" type="number" value="' + s.activeMembers + '" oninput="fsState.activeMembers=Number(this.value);renderFSPreview()"></div>';
+  } else {
+    html += '<div class="fs-stat-value" style="color:#1A5C32">' + s.activeMembers + '</div>';
+  }
+  html += '</div>';
+
+  // Defaulting members
+  html += '<div class="fs-stat-box" style="background:#fee2e2">';
+  html += '<div class="fs-stat-label">المتخلفين</div>';
+  if (edit) {
+    html += '<div class="fs-stat-value" style="color:#c62828"><input class="fs-edit-input" style="font-size:26px;color:#c62828;background:#fee2e2" type="number" value="' + s.defaultingMembers + '" oninput="fsState.defaultingMembers=Number(this.value);renderFSPreview()"></div>';
+  } else {
+    html += '<div class="fs-stat-value" style="color:#c62828">' + s.defaultingMembers + '</div>';
+  }
+  html += '</div>';
+
+  // Collection rate
+  html += '<div class="fs-stat-box" style="background:#f5f9f6">';
+  html += '<div class="fs-stat-label">نسبة التحصيل</div>';
+  html += '<div class="fs-stat-value" style="color:#1B3456">' + collectionRate + '%</div>';
+  html += '</div>';
+
+  html += '</div>'; // grid-3
+
+  // Progress bar
+  html += '<div class="fs-progress-bar"><div class="fs-progress-fill" style="width:' + collectionRate + '%"></div></div>';
+  html += '</div>'; // section-card
+
+  // Summary strip
+  html += '<div class="fs-grid-3" style="margin-bottom:14px">';
+  html += '<div class="fs-summary-box"><div class="fs-summary-label">إجمالي المصروفات</div><div class="fs-summary-value" style="color:#1B3456">' + fsFmt(totalExpenses) + '</div></div>';
+  html += '<div class="fs-summary-box"><div class="fs-summary-label">إجمالي الإيرادات</div><div class="fs-summary-value" style="color:#1A5C32">' + fsFmt(totalRevenue) + '</div></div>';
+  html += '<div class="fs-summary-box"><div class="fs-summary-label">صافي النتيجة</div><div class="fs-summary-value" style="color:' + (netMovement >= 0 ? '#1A5C32' : '#c62828') + '">' + (netMovement >= 0 ? '+' : '') + fsFmt(netMovement) + '</div></div>';
+  html += '</div>';
+
+  // Committees section
+  html += '<div class="fs-section-title" style="margin-top:8px">📊 اللجان</div>';
+
+  s.committees.forEach(function(c) {
+    var hasRevenue = c.revenue !== null;
+    var surplus = hasRevenue ? (c.revenue - c.expenses) : 0;
+    var statusBadge = '';
+    if (hasRevenue && surplus >= 0) {
+      statusBadge = '<span class="fs-badge fs-badge-surplus">✓ فائض</span>';
+    } else if (hasRevenue && surplus < 0) {
+      statusBadge = '<span class="fs-badge fs-badge-deficit">⚠️ عجز</span>';
+    } else {
+      statusBadge = '<span class="fs-badge fs-badge-pending">⏳ لم يُسلَّم</span>';
+    }
+
+    html += '<div class="fs-com-card">';
+
+    // Delete button in edit mode
+    if (edit) {
+      html += '<button class="fs-del-btn" onclick="removeFSCommittee(\'' + c.id + '\')">✕</button>';
+    }
+
+    // Header row: icon + name + badge
+    html += '<div style="display:flex;align-items:center;gap:10px;margin-bottom:12px">';
+    if (edit) {
+      html += '<select style="font-size:18px;width:44px;height:44px;text-align:center;border-radius:12px;border:1px solid #c2cec5;background:' + c.iconBg + '" onchange="var cm=fsState.committees.find(function(x){return x.id===\'' + c.id + '\'});cm.icon=this.value;renderFSPreview()">';
+      FS_ICONS.forEach(function(ic) {
+        html += '<option' + (ic === c.icon ? ' selected' : '') + '>' + ic + '</option>';
+      });
+      html += '</select>';
+    } else {
+      html += '<div class="fs-com-icon" style="background:' + c.iconBg + ';color:' + c.iconColor + '">' + c.icon + '</div>';
+    }
+    html += '<div style="flex:1">';
+    if (edit) {
+      html += '<input class="fs-edit-text" style="font-family:Amiri,serif;font-size:16px;font-weight:700;color:#1A5C32" value="' + c.name + '" oninput="var cm=fsState.committees.find(function(x){return x.id===\'' + c.id + '\'});cm.name=this.value">';
+    } else {
+      html += '<div class="fs-com-title">' + c.name + '</div>';
+    }
+    html += statusBadge;
+    html += '</div></div>';
+
+    // Financial row
+    html += '<div class="fs-fin-row">';
+    html += '<div><div class="fs-fin-label">المصروفات</div>';
+    if (edit) {
+      html += '<div class="fs-fin-value" style="color:#1B3456"><input class="fs-edit-input" style="color:#1B3456" type="number" value="' + (c.expenses || 0) + '" oninput="var cm=fsState.committees.find(function(x){return x.id===\'' + c.id + '\'});cm.expenses=Number(this.value);renderFSPreview()"></div>';
+    } else {
+      html += '<div class="fs-fin-value" style="color:#1B3456">' + fsFmt(c.expenses) + '</div>';
+    }
+    html += '<div class="fs-fin-unit">ر.س</div></div>';
+
+    html += '<div style="font-size:20px;color:#aaa;padding:0 6px">←</div>';
+
+    html += '<div><div class="fs-fin-label">الإيرادات</div>';
+    if (edit) {
+      html += '<div class="fs-fin-value" style="color:#1A5C32"><input class="fs-edit-input" style="color:#1A5C32" type="number" value="' + (c.revenue === null ? '' : c.revenue) + '" placeholder="لم يُسلَّم" oninput="var cm=fsState.committees.find(function(x){return x.id===\'' + c.id + '\'});cm.revenue=this.value===\'\'?null:Number(this.value);renderFSPreview()"></div>';
+    } else {
+      html += '<div class="fs-fin-value" style="color:#1A5C32">' + (hasRevenue ? fsFmt(c.revenue) : '—') + '</div>';
+    }
+    html += '<div class="fs-fin-unit">ر.س</div></div>';
+    html += '</div>'; // fin-row
+
+    // Surplus/deficit tag
+    if (hasRevenue) {
+      var tagColor = surplus >= 0 ? '#1A5C32' : '#c62828';
+      var tagBg = surplus >= 0 ? '#e8f5ec' : '#fee2e2';
+      var tagIcon = surplus >= 0 ? '↑' : '↓';
+      var tagLabel = surplus >= 0 ? 'فائض' : 'عجز';
+      html += '<div class="fs-surplus-tag" style="color:' + tagColor + ';background:' + tagBg + '">' + tagIcon + ' ' + tagLabel + ' ' + fsFmt(Math.abs(surplus)) + ' ر.س</div>';
+    } else {
+      html += '<div class="fs-pending-notice"><span class="fs-pending-dot"></span> لم يتم استلام الإيرادات بعد</div>';
+    }
+
+    html += '</div>'; // com-card
+  });
+
+  // Footer
+  html += '<div class="fs-footer">';
+  if (edit) {
+    html += '<p>مجلس عائلة العوامي — الجلسة العمومية <input class="fs-edit-text" style="display:inline;width:160px;text-align:center" value="' + s.meta.meetingDate + '" oninput="fsState.meta.meetingDate=this.value"></p>';
+  } else {
+    html += '<p>مجلس عائلة العوامي — الجلسة العمومية ' + s.meta.meetingDate + '</p>';
+  }
+  html += '</div>';
+
+  html += '</div>'; // body
+
+  el.innerHTML = html;
+}
+
+function exportFSSummary() {
+  var btn = document.getElementById('fs-export-btn');
+  btn.disabled = true;
+  btn.textContent = 'جاري التصدير...';
+
+  var el = document.getElementById('fs-preview');
+  html2canvas(el, {
+    scale: 3,
+    useCORS: true,
+    backgroundColor: '#FDFCF8',
+    width: 420,
+    windowWidth: 420
+  }).then(function(canvas) {
+    var link = document.createElement('a');
+    link.download = 'financial-summary.png';
+    link.href = canvas.toDataURL('image/png');
+    link.click();
+    btn.disabled = false;
+    btn.textContent = '📥 PNG';
+    toast('تم تصدير الملخص المالي', 'success');
+  }).catch(function(err) {
+    console.error(err);
+    btn.disabled = false;
+    btn.textContent = '📥 PNG';
+    toast('حدث خطأ أثناء التصدير', 'error');
+  });
+}
+
+function exportFSPdf() {
+  var btn = document.getElementById('fs-pdf-btn');
+  btn.disabled = true;
+  btn.textContent = 'جاري التجهيز...';
+
+  var s = fsState;
+  var netMovement = s.committees
+    .filter(function(c) { return c.revenue !== null; })
+    .reduce(function(sum, c) { return sum + ((c.revenue || 0) - (c.expenses || 0)); }, 0);
+  var currentBalance = s.prevBalance + netMovement;
+  var totalMembers = s.activeMembers + s.defaultingMembers;
+  var collectionRate = totalMembers > 0 ? ((s.activeMembers / totalMembers) * 100).toFixed(1) : '0';
+  var totalExpenses = s.committees.reduce(function(sum, c) { return sum + (c.expenses || 0); }, 0);
+  var totalRevenue = s.committees.reduce(function(sum, c) { return sum + (c.revenue || 0); }, 0);
+
+  var copyHtml = buildFSPdfCopy(s, netMovement, currentBalance, totalMembers, collectionRate, totalExpenses, totalRevenue);
+
+  var fullHtml = '<!DOCTYPE html><html lang="ar" dir="rtl"><head>'
+    + '<meta charset="UTF-8">'
+    + '<link href="https://fonts.googleapis.com/css2?family=Amiri:wght@400;700&family=Cairo:wght@400;600;700&display=swap" rel="stylesheet">'
+    + '<style>' + getFSPdfStyles() + '</style>'
+    + '</head><body>'
+    + '<div class="page-wrap">'
+    + '<div class="cut-label">\u2702 خط القص</div>'
+    + '<div class="cut-line"></div>'
+    + copyHtml + copyHtml
+    + '</div></body></html>';
+
+  var win = window.open('', '_blank');
+  win.document.write(fullHtml);
+  win.document.close();
+  setTimeout(function() {
+    win.print();
+    btn.disabled = false;
+    btn.textContent = '📄 PDF طباعة';
+  }, 1500);
+}
+
+function buildFSPdfCopy(s, netMovement, currentBalance, totalMembers, collectionRate, totalExpenses, totalRevenue) {
+  var h = '';
+  h += '<div class="copy">';
+
+  // Header
+  h += '<div class="hdr">';
+  h += '<div class="hdr-badge">الملخص المالي الشامل</div>';
+  h += '<div class="hdr-title">' + s.meta.title + '</div>';
+  h += '<div class="hdr-sub">' + s.meta.subtitle + '</div>';
+
+  // Balances row (horizontal)
+  h += '<div class="bal-row">';
+  h += '<div class="bal-cell"><div class="bal-lbl">الرصيد السابق</div><div class="bal-val">' + fsFmt(s.prevBalance) + ' <span class="bal-unit">ر.س</span></div></div>';
+  h += '<div class="bal-sep"></div>';
+  h += '<div class="bal-cell"><div class="bal-lbl">صافي الحركة</div><div class="bal-val" style="color:' + (netMovement >= 0 ? '#6ee7b7' : '#fca5a5') + '">' + (netMovement >= 0 ? '+' : '') + fsFmt(netMovement) + ' <span class="bal-unit">ر.س</span></div></div>';
+  h += '<div class="bal-sep"></div>';
+  h += '<div class="bal-cell"><div class="bal-lbl">الرصيد الحالي</div><div class="bal-val-main">' + fsFmt(currentBalance) + ' <span class="bal-unit">ر.س</span></div></div>';
+  h += '</div>'; // bal-row
+
+  h += '</div>'; // hdr
+
+  // Body
+  h += '<div class="bd">';
+
+  // Subscriptions + Summary in 2-column layout
+  h += '<div class="sub-sum-row">';
+
+  // Left column: subscription stats
+  h += '<div class="sub-col">';
+  h += '<div class="sec-title">\uD83D\uDCB3 الاشتراكات</div>';
+  h += '<div class="mini-grid">';
+  h += '<div class="mini-box" style="background:#e8f5ec"><div class="mini-lbl">الفعّالين</div><div class="mini-val" style="color:#1A5C32">' + s.activeMembers + '</div></div>';
+  h += '<div class="mini-box" style="background:#fee2e2"><div class="mini-lbl">المتخلفين</div><div class="mini-val" style="color:#c62828">' + s.defaultingMembers + '</div></div>';
+  h += '<div class="mini-box" style="background:#f5f9f6"><div class="mini-lbl">التحصيل</div><div class="mini-val" style="color:#1B3456">' + collectionRate + '%</div></div>';
+  h += '</div>';
+  h += '<div class="prog-bar"><div class="prog-fill" style="width:' + collectionRate + '%"></div></div>';
+  h += '</div>';
+
+  // Right column: summary strip
+  h += '<div class="sum-col">';
+  h += '<div class="sec-title">\uD83D\uDCCA الملخص</div>';
+  h += '<div class="mini-grid">';
+  h += '<div class="mini-box" style="background:#f0f4ff"><div class="mini-lbl">المصروفات</div><div class="mini-val" style="color:#1B3456">' + fsFmt(totalExpenses) + '</div></div>';
+  h += '<div class="mini-box" style="background:#e8f5ec"><div class="mini-lbl">الإيرادات</div><div class="mini-val" style="color:#1A5C32">' + fsFmt(totalRevenue) + '</div></div>';
+  h += '<div class="mini-box" style="background:' + (netMovement >= 0 ? '#e8f5ec' : '#fee2e2') + '"><div class="mini-lbl">الصافي</div><div class="mini-val" style="color:' + (netMovement >= 0 ? '#1A5C32' : '#c62828') + '">' + (netMovement >= 0 ? '+' : '') + fsFmt(netMovement) + '</div></div>';
+  h += '</div>';
+  h += '</div>';
+
+  h += '</div>'; // sub-sum-row
+
+  // Committees (2-column grid)
+  h += '<div class="sec-title" style="margin-top:5px">\uD83D\uDCCA اللجان</div>';
+  h += '<div class="com-grid">';
+  s.committees.forEach(function(c) {
+    var hasRevenue = c.revenue !== null;
+    var surplus = hasRevenue ? (c.revenue - c.expenses) : 0;
+    var badge = '';
+    if (hasRevenue && surplus >= 0) badge = '<span class="bdg bdg-s">\u2713 فائض</span>';
+    else if (hasRevenue && surplus < 0) badge = '<span class="bdg bdg-d">\u26A0\uFE0F عجز</span>';
+    else badge = '<span class="bdg bdg-p">\u23F3 لم يُسلَّم</span>';
+
+    h += '<div class="com-card">';
+    h += '<div class="com-hdr"><div class="com-ic" style="background:' + c.iconBg + '">' + c.icon + '</div><div class="com-info"><div class="com-nm">' + c.name + '</div>' + badge + '</div></div>';
+
+    h += '<div class="com-fin">';
+    h += '<div><div class="com-fin-lbl">المصروفات</div><div class="com-fin-val" style="color:#1B3456">' + fsFmt(c.expenses) + '</div></div>';
+    h += '<div class="com-arrow">\u2192</div>';
+    h += '<div><div class="com-fin-lbl">الإيرادات</div><div class="com-fin-val" style="color:#1A5C32">' + (hasRevenue ? fsFmt(c.revenue) : '\u2014') + '</div></div>';
+    h += '</div>';
+
+    if (hasRevenue) {
+      var tC = surplus >= 0 ? '#1A5C32' : '#c62828';
+      var tBg = surplus >= 0 ? '#e8f5ec' : '#fee2e2';
+      var tIc = surplus >= 0 ? '\u2191' : '\u2193';
+      var tLb = surplus >= 0 ? 'فائض' : 'عجز';
+      h += '<div class="com-tag" style="color:' + tC + ';background:' + tBg + '">' + tIc + ' ' + tLb + ' ' + fsFmt(Math.abs(surplus)) + ' ر.س</div>';
+    } else {
+      h += '<div class="com-pend">\u25CF لم يتم استلام الإيرادات بعد</div>';
+    }
+
+    h += '</div>'; // com-card
+  });
+  h += '</div>'; // com-grid
+
+  // Footer
+  h += '<div class="ftr">مجلس عائلة العوامي — الجلسة العمومية ' + s.meta.meetingDate + '</div>';
+
+  h += '</div>'; // bd
+  h += '</div>'; // copy
+  return h;
+}
+
+function getFSPdfStyles() {
+  return '@page{size:A4 portrait;margin:0}'
+    + '*{margin:0;padding:0;box-sizing:border-box}'
+    + 'body{width:210mm;font-family:"Cairo",sans-serif;direction:rtl;-webkit-print-color-adjust:exact;print-color-adjust:exact;}'
+    + '.page-wrap{width:210mm;height:297mm;position:relative;display:flex;flex-direction:column;align-items:center;}'
+    + '.cut-line{position:absolute;top:148.5mm;left:8mm;right:8mm;border-top:1.5px dashed #bbb;}'
+    + '.cut-label{position:absolute;top:146mm;left:50%;transform:translateX(-50%);font-size:6.5px;color:#999;background:#fff;padding:0 6px;z-index:1;}'
+    + '.copy{width:194mm;height:143mm;overflow:hidden;margin-top:2.5mm;background:#FDFCF8;border-radius:4px;}'
+    + '.copy:first-of-type{margin-top:3mm;}'
+    // Header
+    + '.hdr{background:linear-gradient(135deg,#1A5C32,#0f3d22 50%,#1B3456);color:#fff;padding:10px 14px 12px;text-align:center;}'
+    + '.hdr-badge{display:inline-block;font-size:6px;font-weight:600;color:rgba(255,255,255,0.85);background:rgba(255,255,255,0.12);padding:2px 10px;border-radius:100px;margin-bottom:5px;border:1px solid rgba(255,255,255,0.15);}'
+    + '.hdr-title{font-family:"Amiri",serif;font-size:14px;font-weight:700;margin-bottom:1px;}'
+    + '.hdr-sub{font-size:7.5px;opacity:0.8;margin-bottom:8px;}'
+    // Balance row
+    + '.bal-row{display:grid;grid-template-columns:1fr auto 1fr auto 1fr;align-items:center;background:rgba(255,255,255,0.08);border-radius:8px;padding:8px 6px;border:1px solid rgba(255,255,255,0.12);}'
+    + '.bal-cell{text-align:center;}'
+    + '.bal-lbl{font-size:5.5px;opacity:0.65;margin-bottom:2px;}'
+    + '.bal-val{font-size:13px;font-weight:700;}'
+    + '.bal-val-main{font-size:17px;font-weight:700;}'
+    + '.bal-unit{font-size:6px;opacity:0.6;}'
+    + '.bal-sep{width:1px;height:24px;background:rgba(255,255,255,0.2);margin:0 2px;}'
+    // Body
+    + '.bd{padding:6px 8px 8px;}'
+    + '.sec-title{font-family:"Amiri",serif;font-size:9.5px;font-weight:700;color:#1A5C32;margin-bottom:4px;padding-bottom:2px;border-bottom:1px solid #e8f5ec;}'
+    // Sub+Sum row
+    + '.sub-sum-row{display:grid;grid-template-columns:1fr 2fr;gap:6px;margin-bottom:5px;}'
+    + '.sub-col,.sum-col{}'
+    + '.mini-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:3px;}'
+    + '.mini-box{border-radius:6px;padding:4px 3px;text-align:center;}'
+    + '.mini-lbl{font-size:5.5px;color:#546358;font-weight:600;margin-bottom:1px;}'
+    + '.mini-val{font-size:15px;font-weight:700;}'
+    + '.prog-bar{height:4px;background:#fee2e2;border-radius:100px;overflow:hidden;margin-top:3px;}'
+    + '.prog-fill{height:100%;background:linear-gradient(90deg,#1A5C32,#3D8B37);border-radius:100px;}'
+    // Committees
+    + '.com-grid{display:grid;grid-template-columns:1fr 1fr;gap:5px;}'
+    + '.com-card{background:#fff;border:1px solid #c2cec5;border-radius:8px;padding:6px 7px;}'
+    + '.com-hdr{display:flex;align-items:center;gap:5px;margin-bottom:5px;}'
+    + '.com-ic{width:22px;height:22px;border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:11px;flex-shrink:0;}'
+    + '.com-info{flex:1;}'
+    + '.com-nm{font-family:"Amiri",serif;font-size:8.5px;font-weight:700;color:#1A5C32;line-height:1.3;}'
+    + '.bdg{font-size:6px;font-weight:700;padding:1px 6px;border-radius:100px;display:inline-block;}'
+    + '.bdg-s{color:#1A5C32;background:#e8f5ec;border:1px solid #b8dfc2;}'
+    + '.bdg-d{color:#c62828;background:#fee2e2;border:1px solid #f5c6c6;}'
+    + '.bdg-p{color:#8a6d00;background:#fef9e7;border:1px solid #f0dfa0;}'
+    + '.com-fin{display:grid;grid-template-columns:1fr auto 1fr;align-items:center;background:#f5f9f6;border-radius:6px;padding:5px 4px;border:1px solid rgba(0,0,0,0.03);}'
+    + '.com-fin-lbl{font-size:5.5px;color:#546358;font-weight:600;margin-bottom:1px;text-align:center;}'
+    + '.com-fin-val{font-size:11px;font-weight:700;text-align:center;}'
+    + '.com-arrow{font-size:9px;color:#aaa;padding:0 2px;}'
+    + '.com-tag{display:inline-block;margin-top:4px;font-size:7.5px;font-weight:700;padding:2px 7px;border-radius:6px;}'
+    + '.com-pend{margin-top:4px;font-size:6px;font-weight:600;color:#8a6d00;}'
+    // Footer
+    + '.ftr{text-align:center;margin-top:5px;padding-top:4px;border-top:1px solid #e8f5ec;font-size:6.5px;color:#546358;font-weight:600;}';
+}
 
 // =================== CALENDAR ===================
 let calendarDate = new Date();
